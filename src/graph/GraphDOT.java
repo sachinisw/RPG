@@ -25,6 +25,14 @@ public class GraphDOT {
 		dotLines.add(getDOTFooter());
 		writeDOTFile(filename);
 	}
+	
+	public void generateDOTNoUndo(String filename){
+		dotLines.add(getDOTHeader());
+		dotLines.add(getDOTEdgesWithoutUndo());
+		dotLines.add(markLeafNodes());
+		dotLines.add(getDOTFooter());
+		writeDOTFile(filename);
+	}
 
 	private String getDOTHeader(){
 		return "digraph {\n";
@@ -39,6 +47,17 @@ public class GraphDOT {
 		for (ActionEdge e : graph.getEdges()) {
 			s += e.convertToDOTString();
 			s += "\n";
+		}
+		return s;
+	}
+	
+	private String getDOTEdgesWithoutUndo(){
+		String s = "";
+		for (ActionEdge e : graph.getEdges()) {
+			if(!e.isReverse()){
+				s += e.convertToDOTString();
+				s += "\n";
+			}
 		}
 		return s;
 	}

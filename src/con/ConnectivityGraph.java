@@ -215,15 +215,10 @@ public class ConnectivityGraph {
 	
 	public ArrayList<String> findStatesDeletedByAction(String action){
 		ArrayList<String> deleteStates = new ArrayList<>();
-		
 		for(int i=0; i<effectArray.size(); i++){
 			EffectElement el = effectArray.get(i);
-//			System.out.println("ACTIONNNNNNNNNNNNNNNNNNNNN   "+action.toLowerCase().trim());
-//			System.out.println("DELETE EFFECT STRING        "+ el.getDelEffects());
-			
 			if(el.getEffectString().substring(el.getEffectString().indexOf(":")+2).toLowerCase().equalsIgnoreCase(action.replace("\t", " ").toLowerCase().trim())){
 				ArrayList<String> delEffects = el.getDelEffects();
-//				System.out.println("MATCH!!!!!!!!!!");
 				for(int j=0; j<delEffects.size(); j++){
 					deleteStates.add(delEffects.get(j));
 				}	

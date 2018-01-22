@@ -50,6 +50,31 @@ public class DOTConfiguration {
 		return compareDOTLines;
 	}
 
+	public ArrayList<String> showAgentInAdversaryWithDeception(TreeSet<String> agent, TreeSet<String> adversary){
+		ArrayList<String> compareDOTLines = new ArrayList<String>();
+		TreeSet<String> properties = new TreeSet<String>();
+		for(int i=0; i<this.adDOTFile.size()-1; i++){ //add all but last }
+			compareDOTLines.add(this.adDOTFile.get(i));
+		}
+		Iterator<String> adIter = adversary.iterator();
+		while(adIter.hasNext()){	//then add properties for similar nodes between ad and ag.
+			String adNode = (String) adIter.next();
+			String [] nodeParts_ad = adNode.substring(1,adNode.length()-1).split("\\\\n");
+			System.out.println(Arrays.toString(nodeParts_ad));
+			Iterator<String> agIter = agent.iterator();
+			while(agIter.hasNext()){
+				String agNode = agIter.next();
+				String [] nodeParts_ag = agNode.substring(1,agNode.length()-1).split("\\\\n");
+				if(isStateEqualWithDeception(nodeParts_ag, nodeParts_ad)){
+					properties.add(adNode+"[style=filled,color=cyan]"); //change DOT property for the node. for now simply color it differently
+				}
+			}
+		}
+		compareDOTLines.addAll(properties);
+		compareDOTLines.add(this.adDOTFile.get(this.adDOTFile.size()-1)); 		//add  last }
+		return compareDOTLines;
+	}
+	
 	private TreeSet<String> extractNodeNames(ArrayList<String> lines){
 		TreeSet<String> nodes = new TreeSet<String>();
 		for(int i=0; i<lines.size(); i++){
@@ -81,6 +106,23 @@ public class DOTConfiguration {
 			Collections.sort(ad);
 			return ag.equals(ad);
 		}
+	}
+	
+	
+	private static boolean isStateEqualWithDeception(String[] agState, String[] adState ){
+		int [] check = new int[agState.length];
+		for (int i=0; i<agState.length; i++) {
+			for (int j=0; j<adState.length; j++) {
+				if(agState[i].equalsIgnoreCase(adState[j])){
+					check[i]=1;
+				}
+			}
+		}
+		int sum = 0;
+		for(int i=0; i<check.length; i++){
+			sum += check[i];
+		}
+		return (sum==check.length);
 	}
 	
 	public void writeCompareDOTFile(String filename, ArrayList<String> compareLines){
@@ -131,9 +173,9 @@ public class DOTConfiguration {
 	}
 
 	public static void main(String[] args) {
-		String adDOT = "/home/sachini/BLOCKS/graph4_ad.dot";
-		String agDOT = "/home/sachini/BLOCKS/graph3_ag.dot";
-		String compareOut = "/home/sachini/BLOCKS/compare_3_4.dot";
+		String adDOT = "/home/sachini/BLOCKS/graph4_ad_noreverse.dot";
+		String agDOT = "/home/sachini/BLOCKS/graph3_ag_noreverse.dot";
+		String compareOut = "/home/sachini/BLOCKS/3_4_norev.dot";
 
 		ArrayList<String> ad = readDOTFile(adDOT);
 		ArrayList<String> ag = readDOTFile(agDOT);
@@ -144,7 +186,8 @@ public class DOTConfiguration {
 		System.out.println(Arrays.toString(agentNodes.toArray()));
 		System.out.println(Arrays.toString(adversaryNodes.toArray()));
 
-		ArrayList<String> compareLines = cdot.showAgentInAdversary(agentNodes, adversaryNodes);
+		//ArrayList<String> compareLines = cdot.showAgentInAdversary(agentNodes, adversaryNodes);
+		ArrayList<String> compareLines = cdot.showAgentInAdversaryWithDeception(agentNodes, adversaryNodes);
 		cdot.writeCompareDOTFile(compareOut, compareLines);
 	}
 }

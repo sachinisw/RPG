@@ -4,11 +4,13 @@ public class ActionEdge {
 	private String action; //edge name
 	private StateVertex from;
 	private StateVertex to;
+	private boolean reverse;
 	
-	public ActionEdge(String name, StateVertex f, StateVertex t){
+	public ActionEdge(String name, StateVertex f, StateVertex t, boolean rev){
 		action = name;
 		from = f;
 		to = t;
+		reverse = rev;
 	}
 
 	public String toString(){
@@ -48,5 +50,13 @@ public class ActionEdge {
 
 	public void setTo(StateVertex to) {
 		this.to = to;
+	}
+
+	public boolean isReverse() {
+		return reverse;
+	}
+
+	public void setReverse(boolean reverse) {
+		this.reverse = reverse;
 	}
 }

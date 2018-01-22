@@ -85,7 +85,12 @@ public class StateGraph {
 			StateVertex to = findVertex(toState);
 			if(from != null && entry.getKey().isEqual(from)){
 				entry.getValue().add(to);
-				edges.add(new ActionEdge(action, from, to));
+				if(hasEdge(toState, fromState)){	//already has an existing reverse edge
+					edges.add(new ActionEdge(action, from, to, true));
+				}else{
+					edges.add(new ActionEdge(action, from, to, false));
+				}
+				
 			}
 		}
 	}

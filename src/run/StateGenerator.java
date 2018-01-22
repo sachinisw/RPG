@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -23,11 +24,11 @@ import rpg.PlanningGraph;
 public class StateGenerator {
 	public final static String ffPath = "/home/sachini/BLOCKS/Metric-FF-new/ff";
 	public final static String domainFile = "/home/sachini/BLOCKS/domain.pddl";
-	public final static String stateFile = "/home/sachini/BLOCKS/states4.txt";
-	public final static String problemFile = "/home/sachini/BLOCKS/problem_4.pddl";
+	public final static String stateFile = "/home/sachini/BLOCKS/states3.txt";
+	public final static String problemFile = "/home/sachini/BLOCKS/problem_3.pddl";
 	public final static String outputPath = "/home/sachini/BLOCKS/outs/"; //clean this directory before running. if not graphs will be wrong
-	public final static String initFile = "/home/sachini/BLOCKS/inits4.txt";
-	public final static String dotFile = "/home/sachini/BLOCKS/graph4_ad.dot";
+	public final static String initFile = "/home/sachini/BLOCKS/inits3.txt";
+	public final static String dotFile = "/home/sachini/BLOCKS/graph3_ad_noreverse.dot";
 
 	public void writeConsoleOutputtoFile(String outfile, String text){
 		PrintWriter writer = null;
@@ -205,7 +206,7 @@ public class StateGenerator {
 		System.out.println(graph.printEdges());
 		return graph;
 	}
-
+	
 	public ArrayList<String> addGraphEdgeForAction(String action, ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph){
 		ArrayList<String> newState = updateStateForAction(action, currentState, con);
 		if(!newState.isEmpty()){
@@ -214,6 +215,16 @@ public class StateGenerator {
 		return newState;
 	}
 
+	public ArrayList<String> addGraphEdgeForActionWithoutUndo(String action, ArrayList<String> currentState, ArrayList<String> prevState,
+			ConnectivityGraph con, StateGraph graph){
+		ArrayList<String> newState = updateStateForAction(action, currentState, con);
+		if(!newState.isEmpty() && !isNowEqualsPrevious(prevState, newState)){
+			graph.addEdge(currentState, newState, action);
+			return newState;
+		}
+		return null;
+	}
+	
 	public ArrayList<String> cleanActions(ArrayList<String> actions, ArrayList<String> currentState,StateGraph graph){
 		ArrayList<String> cleaned  = new ArrayList<String>();
 		for(int i=0; i<actions.size(); i++){
@@ -243,11 +254,21 @@ public class StateGenerator {
 	public void graphToDOT(StateGraph g){
 		State state = new State();
 		state.readStatesFromFile(stateFile);
-		System.out.println(state.getDesirable());
-		System.out.println(state.getUndesirable());
 		GraphDOT dot = new GraphDOT(g, state);
 		dot.generateDOT(dotFile);
 	}
 
+	public void graphToDOTNoUndo(StateGraph g){
+		State state = new State();
+		state.readStatesFromFile(stateFile);
+		GraphDOT dot = new GraphDOT(g, state);
+		dot.generateDOTNoUndo(dotFile);
+	}
+	
+	private boolean isNowEqualsPrevious(ArrayList<String> now, ArrayList<String> prev){
+		Collections.sort(now);
+		Collections.sort(prev);
+		return now.equals(prev);
+	}
 
 }
