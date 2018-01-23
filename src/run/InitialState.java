@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Scanner;
 
 public class InitialState {
@@ -37,5 +38,11 @@ public class InitialState {
 	
 	public String toString(){
 		return Arrays.toString(init.toArray());
+	}
+	
+	public boolean equals(InitialState i){
+		Collections.sort(init);
+		Collections.sort(i.init);
+		return init.equals(i.init);
 	}
 }

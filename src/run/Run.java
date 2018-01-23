@@ -11,8 +11,11 @@ public class Run {
 		if(reverseConfig==0){
 			gen.graphToDOT(graph);
 		}else{
-			gen.graphToDOTNoUndo(graph);
+			//gen.graphToDOTNoUndo(graph);
+			StateGraph tree = graph.convertToTree();
+			gen.applyProbabilitiesToStates(tree);
+			gen.graphToDOT(tree);
 		}
-		graph.printMetrics();
+		//graph.printMetrics();
 	}
 }

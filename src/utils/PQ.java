@@ -1,5 +1,6 @@
 package utils;
 
+import java.text.DecimalFormat;
 import java.util.PriorityQueue;
 
 import graph.PriorityVertex;
@@ -29,6 +30,11 @@ public class PQ {
 			System.out.println(stus.poll());
 		}
 		System.out.println(Integer.MAX_VALUE);
-		System.out.println(Integer.MAX_VALUE+1);
+		System.out.println(Integer.MAX_VALUE+1);//overflow
+		
+		String df = new DecimalFormat(".###").format(0.5235);
+		System.out.println(df);
+		
+		
 	}
 }

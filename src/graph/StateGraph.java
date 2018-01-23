@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.TreeSet;
 
 public class StateGraph {
@@ -367,7 +369,77 @@ public class StateGraph {
 		}
 	}
 
-	public int getNumVertices() {
+	public ActionEdge getEdgeBetweenVertices(StateVertex from, StateVertex to){
+		for (ActionEdge actionEdge : edges) {
+			StateVertex f = actionEdge.getFrom();
+			StateVertex t = actionEdge.getTo();
+			if(f.isEqual(from) && t.isEqual(to)){
+				return actionEdge;
+			}
+		}
+		return null;
+	}
+	
+	//remove reverse edges (undo actions) and convert graph into a tree
+	public StateGraph convertToTree(){
+		HashMap<StateVertex, TreeSet<StateVertex>> adjacencyListTree = new HashMap<StateVertex, TreeSet<StateVertex>>();
+		HashMap<String, StateVertex> verticesTree = new HashMap<>();
+		ArrayList<ActionEdge> edgesTree = new ArrayList<>();
+				
+		for(Map.Entry<StateVertex, TreeSet<StateVertex>> entry : adjacencyList.entrySet()){
+			StateVertex from = entry.getKey();
+			TreeSet<StateVertex> neighbors = entry.getValue();
+			TreeSet<StateVertex> treeNeighbors = new TreeSet<StateVertex>();
+			verticesTree.put(from.getName(), from);
+			adjacencyListTree.put(from, treeNeighbors);
+			for (StateVertex stateVertex : neighbors) {
+				ActionEdge e = getEdgeBetweenVertices(from, stateVertex);
+				if(!e.isReverse()){
+					treeNeighbors.add(stateVertex);
+					verticesTree.put(stateVertex.getName(), stateVertex);
+					edgesTree.add(e);
+				}
+			}
+		}
+		StateGraph tree = new StateGraph();
+		tree.setAdjacencyList(adjacencyListTree);
+		tree.setVertices(verticesTree);
+		tree.setEdges(edgesTree);
+		tree.setNumEdges(edgesTree.size());
+		tree.setNumVertices(verticesTree.size());
+		return tree;
+	}
+	
+	//returns BFS traversal order for vertices for StateGraph converted to tree
+	public ArrayList<StateVertex> doBFS(StateVertex root){
+		StateGraph tree = convertToTree();
+		HashMap<StateVertex, TreeSet<StateVertex>> adj = tree.getAdjacencyList();
+		Queue<StateVertex> queue = new LinkedList<StateVertex>();
+		ArrayList<StateVertex> visitOrder = new ArrayList<StateVertex>();
+		queue.add(root);
+		while(!queue.isEmpty()){
+			StateVertex currentlyVisiting = queue.poll();
+			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
+			for (StateVertex stateVertex : neighbors) {
+				if(!isVertexInList(stateVertex, visitOrder)){
+					queue.add(stateVertex);
+				}
+			}
+			visitOrder.add(currentlyVisiting);
+		}
+		return visitOrder;
+	}
+	
+	private boolean isVertexInList(StateVertex v, ArrayList<StateVertex> visited){
+		for (StateVertex stateVertex : visited) {
+			if(stateVertex.isEqual(v)){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public int getNumVertices(){
 		return numVertices;
 	}
 

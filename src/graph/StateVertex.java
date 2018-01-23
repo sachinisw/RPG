@@ -1,5 +1,6 @@
 package graph;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.TreeSet;
@@ -7,10 +8,12 @@ import java.util.TreeSet;
 public class StateVertex implements Comparable<StateVertex>{
 	private ArrayList<String> states;
 	private String name;
+	private double stateProbability;
 
 	public StateVertex(){
 		states = new ArrayList<>();
 		name = "";
+		stateProbability = 0.0;
 	}
 
 	public boolean isEqual(StateVertex anotherVertex){
@@ -49,10 +52,11 @@ public class StateVertex implements Comparable<StateVertex>{
 
 	public String convertToDOTString(){
 		String s = "\"";
+		String prob = new DecimalFormat(".###").format(getStateProbability())+"\\n";
 		for(int i=0; i<states.size(); i++){
 			s+=states.get(i).substring(1,states.get(i).length()-1)+"\\n";
 		}
-		return  s+ "\"";
+		return  s + prob + "\"";
 	}
 
 	/*return true if node's state contains the goal state
@@ -77,6 +81,14 @@ public class StateVertex implements Comparable<StateVertex>{
 
 	public String toString(){
 		return Arrays.toString(states.toArray());
+	}
+
+	public double getStateProbability() {
+		return stateProbability;
+	}
+
+	public void setStateProbability(double stateProbability) {
+		this.stateProbability = stateProbability;
 	}
 
 }

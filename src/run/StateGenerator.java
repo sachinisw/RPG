@@ -8,27 +8,32 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import con.ConnectivityGraph;
+import graph.ActionEdge;
 import graph.GraphDOT;
 import graph.StateGraph;
+import graph.StateVertex;
 import rpg.PlanningGraph;
 
 public class StateGenerator {
 	public final static String ffPath = "/home/sachini/BLOCKS/Metric-FF-new/ff";
 	public final static String domainFile = "/home/sachini/BLOCKS/domain.pddl";
-	public final static String stateFile = "/home/sachini/BLOCKS/states3.txt";
-	public final static String problemFile = "/home/sachini/BLOCKS/problem_3.pddl";
+	public final static String stateFile = "/home/sachini/BLOCKS/states4.txt";
+	public final static String problemFile = "/home/sachini/BLOCKS/problem_4.pddl";
 	public final static String outputPath = "/home/sachini/BLOCKS/outs/"; //clean this directory before running. if not graphs will be wrong
-	public final static String initFile = "/home/sachini/BLOCKS/inits3.txt";
+	public final static String initFile = "/home/sachini/BLOCKS/inits4.txt";
 	public final static String dotFile = "/home/sachini/BLOCKS/graph3_ad_noreverse.dot";
+	public final static double initProbability = 1.0;
 
 	public void writeConsoleOutputtoFile(String outfile, String text){
 		PrintWriter writer = null;
@@ -186,10 +191,14 @@ public class StateGenerator {
 		return false;
 	}
 
-	public StateGraph enumerateStates(){
+	public InitialState setInitialState(){
 		InitialState init = new InitialState();
 		init.readInitsFromFile(initFile);
-
+		return init;
+	}
+	
+	public StateGraph enumerateStates(){
+		InitialState init = setInitialState();
 		runPlanner();
 		//ArrayList<PlanningGraph> rpgs = readRPG();
 		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();
@@ -271,4 +280,22 @@ public class StateGenerator {
 		return now.equals(prev);
 	}
 
+	public void applyProbabilitiesToStates(StateGraph g){	//g = graph converted to tree
+		InitialState i = setInitialState();
+		StateVertex initVertex = g.findVertex(i.getInit());
+		ArrayList<StateVertex> visitOrder = g.doBFS(initVertex);
+		for (StateVertex current : visitOrder) {
+			if(current.isEqual(initVertex)){
+				current.setStateProbability(initProbability);
+			}
+			TreeSet<StateVertex> neighbors = g.getAdjacencyList().get(current);
+			double neighborCount = neighbors.size();
+			for (StateVertex neighbor : neighbors) {
+				ActionEdge e = g.getEdgeBetweenVertices(current, neighbor);
+				e.setActionProbability(1.0/neighborCount);//assumes equal probability to go to any one of neighbor states
+				neighbor.setStateProbability(current.getStateProbability()*e.getActionProbability());
+			}
+		}
+	}
+	
 }

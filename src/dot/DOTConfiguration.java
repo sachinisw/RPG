@@ -108,11 +108,11 @@ public class DOTConfiguration {
 		}
 	}
 	
-	
+	//compare states without probability number, which is the last element
 	private static boolean isStateEqualWithDeception(String[] agState, String[] adState ){
-		int [] check = new int[agState.length];
-		for (int i=0; i<agState.length; i++) {
-			for (int j=0; j<adState.length; j++) {
+		int [] check = new int[agState.length-1];
+		for (int i=0; i<agState.length-1; i++) {
+			for (int j=0; j<adState.length-1; j++) {
 				if(agState[i].equalsIgnoreCase(adState[j])){
 					check[i]=1;
 				}
@@ -173,9 +173,9 @@ public class DOTConfiguration {
 	}
 
 	public static void main(String[] args) {
-		String adDOT = "/home/sachini/BLOCKS/graph4_ad_noreverse.dot";
+		String adDOT = "/home/sachini/BLOCKS/graph3_ad_noreverse.dot";
 		String agDOT = "/home/sachini/BLOCKS/graph3_ag_noreverse.dot";
-		String compareOut = "/home/sachini/BLOCKS/3_4_norev.dot";
+		String compareOut = "/home/sachini/BLOCKS/3_4_norev_prob.dot";
 
 		ArrayList<String> ad = readDOTFile(adDOT);
 		ArrayList<String> ag = readDOTFile(agDOT);
