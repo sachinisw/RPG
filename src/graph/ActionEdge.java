@@ -1,6 +1,11 @@
 package graph;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+
+import con.ConnectivityGraph;
+import plan.Plan;
+import run.InitialState;
 
 public class ActionEdge {
 	private String action; //edge name
@@ -18,7 +23,7 @@ public class ActionEdge {
 	}
 
 	public String toString(){
-		return from+" --"+ action +"--> "+to;
+		return from+" --"+ action +"--> "+to +"["+ reverse+"]";
 	}
 	
 	public String convertToDOTString(){
@@ -33,6 +38,40 @@ public class ActionEdge {
 			t+=to.getStates().get(i).substring(1,to.getStates().get(i).length()-1)+"\\n";
 		}
 		return "\"" +f+ probF +"\"" + " -> " + "\""+t+ probT +"\"" +"[label=\""+action+"\\n"+ probE +"\"];";
+	}
+	
+	public boolean isReverseOf(ActionEdge anotherEdge){
+		if(from.isEqual(anotherEdge.to) && to.isEqual(anotherEdge.from)){
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean isEqual(ActionEdge anotherEdge){
+		if(from.isEqual(anotherEdge.from) && to.isEqual(anotherEdge.to) && action.equalsIgnoreCase(anotherEdge.action)){
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean isEdgeInPlan(Plan p, ConnectivityGraph c, InitialState init){
+		ArrayList<ArrayList<String>> seq = p.getStateSequence(init.getState(), c);
+//		for(int i=0; i<seq.size(); i++){
+//			System.out.println(seq.get(i));
+//		}
+		for(int i=0; i<p.getPlanSteps().size(); i++){
+			String ac = p.getPlanSteps().get(i).substring(p.getPlanSteps().get(i).indexOf(":")+1,p.getPlanSteps().get(i).length()).trim();
+			StateVertex tempFrom = new StateVertex();
+			StateVertex tempTo = new StateVertex();
+			tempFrom.addStates(seq.get(i));
+			tempTo.addStates(seq.get(i+1));
+			ActionEdge tempEdge = new ActionEdge(ac, tempFrom, tempTo, false);
+			if(isEqual(tempEdge)){
+				System.out.println("match.................."+ac);
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public String getAction() {

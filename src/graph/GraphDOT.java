@@ -5,16 +5,19 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import run.State;
+import run.CriticalState;
+import run.DesirableState;
 
 public class GraphDOT {
 	private StateGraph graph;
-	private State state;
+	private DesirableState desirable;
+	private CriticalState critical;
 	private ArrayList<String> dotLines;
 
-	public GraphDOT(StateGraph g, State s){
+	public GraphDOT(StateGraph g, DesirableState s, CriticalState c){
 		graph = g;
-		state = s;
+		desirable = s;
+		critical = c;
 		dotLines = new ArrayList<>();
 	}
 
@@ -25,7 +28,7 @@ public class GraphDOT {
 		dotLines.add(getDOTFooter());
 		writeDOTFile(filename);
 	}
-	
+
 	public void generateDOTNoUndo(String filename){
 		dotLines.add(getDOTHeader());
 		dotLines.add(getDOTEdgesWithoutUndo());
@@ -37,11 +40,11 @@ public class GraphDOT {
 	private String getDOTHeader(){
 		return "digraph {\n";
 	}
-	
+
 	private String getDOTFooter(){
 		return "}\n";
 	}
-	
+
 	private String getDOTEdges(){
 		String s = "";
 		for (ActionEdge e : graph.getEdges()) {
@@ -50,7 +53,7 @@ public class GraphDOT {
 		}
 		return s;
 	}
-	
+
 	private String getDOTEdgesWithoutUndo(){
 		String s = "";
 		for (ActionEdge e : graph.getEdges()) {
@@ -61,22 +64,22 @@ public class GraphDOT {
 		}
 		return s;
 	}
-	
+
 	private String markLeafNodes(){ 
 		String s = "";
 		ArrayList<StateVertex> leaves = graph.getLeafNodes();
 		for (StateVertex stateVertex : leaves) {
-			if(stateVertex.containsGoalState(state.getUndesirable())){
-				s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=rosybrown1,style=filled,penwidth=3];" + "\n";
-			}else if(stateVertex.containsGoalState(state.getDesirable())){
-				s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=palegreen,style=filled,penwidth=3];" + "\n";
+			if(stateVertex.containsGoalState(desirable.getDesirable())){
+				s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
+			}else if(stateVertex.containsCriticalState(critical.getCritical())){
+				s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
 			}else{
-				s += stateVertex.convertToDOTString() + " [shape=doublecircle,style=filled,penwidth=3];" + "\n";
+				s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
 			}
 		}
 		return s;
 	}
-		
+
 	private void writeDOTFile(String filename){
 		FileWriter writer = null;
 		try {
@@ -99,12 +102,12 @@ public class GraphDOT {
 		this.graph = graph;
 	}
 
-	public State getState() {
-		return state;
+	public DesirableState getState() {
+		return desirable;
 	}
 
-	public void setState(State state) {
-		this.state = state;
+	public void setState(DesirableState state) {
+		this.desirable = state;
 	}
 
 	public ArrayList<String> getDotLines() {
@@ -113,5 +116,13 @@ public class GraphDOT {
 
 	public void setDotLines(ArrayList<String> dotLines) {
 		this.dotLines = dotLines;
+	}
+
+	public CriticalState getCritical() {
+		return critical;
+	}
+
+	public void setCritical(CriticalState critical) {
+		this.critical = critical;
 	}
 }

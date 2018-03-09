@@ -1,57 +1,31 @@
 package run;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class State {
-	private ArrayList<String> undesirable;
-	private ArrayList<String> desirable;
+	public ArrayList<String> statePredicates;
 	
 	public State(){
-		undesirable = new ArrayList<String>();
-		desirable = new ArrayList<String>();
+		statePredicates = new ArrayList<String>();
 	}
 	
-	public void readStatesFromFile(String filename){
-		Scanner reader = null ;
-		try {
-			reader = new Scanner(new File(filename));
-			while(reader.hasNextLine()){
-				String s = reader.nextLine();
-				if(s.split(":")[0].equalsIgnoreCase("desirable")){
-					String line = s.split(":")[1].trim();
-					for(int i=0; i<line.split(",").length; i++){
-						this.desirable.add(line.split(",")[i]);
-					}
-				}else if(s.split(":")[0].equalsIgnoreCase("undesirable")){
-					String line = s.split(":")[1].trim();
-					for(int i=0; i<line.split(",").length; i++){
-						this.undesirable.add(line.split(",")[i]);
-					}
-				}
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}finally{
-			reader.close();
-		}
+	public ArrayList<String> getState() {
+		return statePredicates;
 	}
 
-	public ArrayList<String> getUndesirable() {
-		return undesirable;
+	public void setState(ArrayList<String> st) {
+		this.statePredicates = st;
 	}
-
-	public void setUndesirable(ArrayList<String> undesirable) {
-		this.undesirable = undesirable;
+	
+	public String toString(){
+		return Arrays.toString(statePredicates.toArray());
 	}
-
-	public ArrayList<String> getDesirable() {
-		return desirable;
-	}
-
-	public void setDesirable(ArrayList<String> desirable) {
-		this.desirable = desirable;
+	
+	public boolean equals(State s){
+		Collections.sort(statePredicates);
+		Collections.sort(s.statePredicates);
+		return statePredicates.equals(s.statePredicates);
 	}
 }

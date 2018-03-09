@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Stack;
 import java.util.TreeSet;
 
 public class StateGraph {
@@ -92,7 +93,7 @@ public class StateGraph {
 				}else{
 					edges.add(new ActionEdge(action, from, to, false));
 				}
-				
+
 			}
 		}
 	}
@@ -136,7 +137,6 @@ public class StateGraph {
 		ArrayList<ActionEdge> contains  = new ArrayList<ActionEdge>();
 		StateVertex temp =  new StateVertex();
 		temp.addStates(currentState);
-
 		for(int i=0; i<edges.size(); i++){
 			if(edges.get(i).getAction().equals(action)){
 				contains.add(edges.get(i));
@@ -145,6 +145,7 @@ public class StateGraph {
 		for (ActionEdge actionEdge : contains) {
 			StateVertex stateFrom = actionEdge.getFrom();
 			StateVertex stateTo = actionEdge.getTo();
+//			System.out.println("matching edge:"+actionEdge.toString());
 			if(stateFrom.isEqual(temp)){
 				TreeSet<StateVertex> adjFrom = adjacencyList.get(stateFrom);
 				Iterator<StateVertex> itrF = adjFrom.iterator();
@@ -250,14 +251,14 @@ public class StateGraph {
 
 	//vertex connectivity of a graph g is the smallest number of vertices whose deletion from g disconnects g.
 	public void vertexConnctivity(){
-		
+
 	}
-	
+
 	//The edge connectivity of a graph g is the smallest number of edges whose deletion from g disconnects g.
 	public int getEdgeConnectivity(){
 		return 0;
 	}
-	
+
 	//the number of in-edges for each vertex
 	public HashMap<StateVertex, Integer> getVertexInDegree(){
 		HashMap<StateVertex, Integer> dIn = new HashMap<>();
@@ -295,11 +296,10 @@ public class StateGraph {
 		int [] dist = new int [getNumVertices()];
 		PriorityQueue<PriorityVertex> queue = new PriorityQueue<PriorityVertex>(10, new PriorityVertexComparator()); //priority by distance
 		ArrayList<PriorityVertex> visited = new ArrayList<>();
-		//initialize dist: source = 0, others = infinity
 		HashMap<StateVertex, Integer> vertexIds = assignIntIDToVertex();
 		int srcID = vertexIds.get(source);
 		dist[srcID] = 0;
-		for(int i=0; i<dist.length; i++){
+		for(int i=0; i<dist.length; i++){ 		//initialize dist: source = 0, others = infinity
 			if(i!=srcID){
 				dist[i] = Integer.MAX_VALUE;
 			}
@@ -317,7 +317,6 @@ public class StateGraph {
 				visited.add(current);
 				TreeSet<StateVertex> currentAdj = adjacencyList.get(current.getVertex());
 				for (StateVertex v : currentAdj) {
-					//System.out.println(v.getName());
 					int vId = vertexIds.get(v);
 					int currentId = vertexIds.get(current.getVertex());
 					if(dist[currentId]+1<dist[vId]){ //edge weight=1
@@ -379,41 +378,69 @@ public class StateGraph {
 		}
 		return null;
 	}
-	
+
 	//remove reverse edges (undo actions) and convert graph into a tree
-	public StateGraph convertToTree(){
+	public StateGraph convertToTree(StateVertex init){
 		HashMap<StateVertex, TreeSet<StateVertex>> adjacencyListTree = new HashMap<StateVertex, TreeSet<StateVertex>>();
 		HashMap<String, StateVertex> verticesTree = new HashMap<>();
 		ArrayList<ActionEdge> edgesTree = new ArrayList<>();
-				
-		for(Map.Entry<StateVertex, TreeSet<StateVertex>> entry : adjacencyList.entrySet()){
-			StateVertex from = entry.getKey();
-			TreeSet<StateVertex> neighbors = entry.getValue();
-			TreeSet<StateVertex> treeNeighbors = new TreeSet<StateVertex>();
-			verticesTree.put(from.getName(), from);
-			adjacencyListTree.put(from, treeNeighbors);
-			for (StateVertex stateVertex : neighbors) {
-				ActionEdge e = getEdgeBetweenVertices(from, stateVertex);
-				if(!e.isReverse()){
-					treeNeighbors.add(stateVertex);
-					verticesTree.put(stateVertex.getName(), stateVertex);
-					edgesTree.add(e);
+		ArrayList<StateVertex> alreadyProcessed = new ArrayList<StateVertex>();
+		Queue<StateVertex> queue = new LinkedList<StateVertex>();
+		queue.add(init);
+
+		while(!queue.isEmpty()){
+			StateVertex parent = queue.poll();
+			if(adjacencyListTree.get(parent)==null){
+				adjacencyListTree.put(parent, new TreeSet<StateVertex>());
+			}
+			TreeSet<StateVertex> children = adjacencyList.get(parent);
+			TreeSet<StateVertex> treeNeighbors = adjacencyListTree.get(parent);
+			for (StateVertex child : children) {
+				if(!isVertexAlreadyVisited(child, alreadyProcessed) && !child.isEqual(parent)){
+					queue.add(child);
+					treeNeighbors.add(child);
 				}
 			}
+			alreadyProcessed.add(parent);
+			verticesTree.put(parent.getName(), parent);
+			adjacencyListTree.put(parent, treeNeighbors);
 		}
 		StateGraph tree = new StateGraph();
 		tree.setAdjacencyList(adjacencyListTree);
 		tree.setVertices(verticesTree);
+		for (Map.Entry<StateVertex, TreeSet<StateVertex>> entry : adjacencyListTree.entrySet()) {
+			StateVertex parent = entry.getKey();
+			TreeSet<StateVertex> children = entry.getValue();
+			for (StateVertex child : children) {
+				ActionEdge e = getEdgeBetweenVertices(parent, child);
+				edgesTree.add(e);
+			}
+		}	
 		tree.setEdges(edgesTree);
 		tree.setNumEdges(edgesTree.size());
 		tree.setNumVertices(verticesTree.size());
+		System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
+		System.out.println(tree.toString());
+		System.out.println("TREE EDGE SET----------------------");
+		for (ActionEdge e : edgesTree) {
+			System.out.println(e);
+		}
 		return tree;
 	}
-	
+
+	public ActionEdge findEdgeInEdgeSet(ActionEdge e, ArrayList<ActionEdge> edgeSet){
+		for(int i=0; i<edgeSet.size(); i++){
+			if(edgeSet.get(i).isEqual(e)){
+				return edgeSet.get(i);
+			}
+		}
+		return null;
+	}
+
 	//returns BFS traversal order for vertices for StateGraph converted to tree
-	public ArrayList<StateVertex> doBFS(StateVertex root){
-		StateGraph tree = convertToTree();
-		HashMap<StateVertex, TreeSet<StateVertex>> adj = tree.getAdjacencyList();
+	public ArrayList<StateVertex> doBFSForStateTree(StateVertex root){
+//		StateGraph tree = convertToTree(root); //this method is called for a graph converted to a tree. no need to reconvert it here.
+		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		Queue<StateVertex> queue = new LinkedList<StateVertex>();
 		ArrayList<StateVertex> visitOrder = new ArrayList<StateVertex>();
 		queue.add(root);
@@ -421,7 +448,7 @@ public class StateGraph {
 			StateVertex currentlyVisiting = queue.poll();
 			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
 			for (StateVertex stateVertex : neighbors) {
-				if(!isVertexInList(stateVertex, visitOrder)){
+				if(!isVertexAlreadyVisited(stateVertex, visitOrder)){
 					queue.add(stateVertex);
 				}
 			}
@@ -429,8 +456,32 @@ public class StateGraph {
 		}
 		return visitOrder;
 	}
+
+	//returns DFS traversal order for verties for StateGraph converted to tree
+	public ArrayList<StateVertex> doDFSForStateTree(StateVertex root){
+		StateGraph tree = convertToTree(root);
+		HashMap<StateVertex, TreeSet<StateVertex>> adj = tree.getAdjacencyList();
+		Stack<StateVertex> stack = new Stack<StateVertex>();
+		ArrayList<StateVertex> visitOrder = new ArrayList<StateVertex>();
+		stack.push(root);
+		while(!stack.isEmpty()){
+			StateVertex currentlyVisiting = stack.pop();
+			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
+			for (StateVertex stateVertex : neighbors) {
+				if(!isVertexAlreadyVisited(stateVertex, visitOrder)){
+					stack.add(stateVertex);
+				}
+			}
+			visitOrder.add(currentlyVisiting);
+		}
+		System.out.println("----------------------------");
+		for(int i=0; i<visitOrder.size(); i++){
+			System.out.println(visitOrder.get(i));
+		}
+		return visitOrder;
+	}
 	
-	private boolean isVertexInList(StateVertex v, ArrayList<StateVertex> visited){
+	private boolean isVertexAlreadyVisited(StateVertex v, ArrayList<StateVertex> visited){
 		for (StateVertex stateVertex : visited) {
 			if(stateVertex.isEqual(v)){
 				return true;
@@ -439,6 +490,15 @@ public class StateGraph {
 		return false;
 	}
 	
+	public boolean isActionInEdgeSet(String action){
+		for(int j=0; j<edges.size(); j++){
+			if(action.equals(edges.get(j).getAction())){//remove from actions if action is already in edge set.
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public int getNumVertices(){
 		return numVertices;
 	}

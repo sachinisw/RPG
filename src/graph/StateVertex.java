@@ -63,6 +63,9 @@ public class StateVertex implements Comparable<StateVertex>{
 	 * */
 	public boolean containsGoalState(ArrayList<String> goalstate){
 		ArrayList<String> state = getStates();
+		if(goalstate.isEmpty()){
+			return false;
+		}
 		for (String st : goalstate) {
 			if(!state.contains(st)){
 				return false;
@@ -70,7 +73,46 @@ public class StateVertex implements Comparable<StateVertex>{
 		}
 		return true;
 	}
-
+	
+	/*return true if node's state contains the critical state, as determined by the deception rule
+	 * */
+	public boolean containsCriticalState(ArrayList<String> criticalstate){
+		ArrayList<String> state = getStates();
+		int [] check = new int[criticalstate.size()];
+		if(criticalstate.isEmpty()){
+			return false;
+		}
+		for (int a=0; a<criticalstate.size(); a++) {
+			for(int i=0; i<state.size(); i++){
+				if(!criticalstate.get(a).contains("XX") && criticalstate.get(a).equalsIgnoreCase(state.get(i))){
+					check[a]=1;
+				}else if(criticalstate.get(a).contains("XX")){
+					String ctparts [] = criticalstate.get(a).substring(1,criticalstate.get(a).length()-1).split(" ");
+					String thisstate [] = state.get(i).substring(1,state.get(i).length()-1).split(" ");
+					if(ctparts.length==thisstate.length && ctparts[0].equalsIgnoreCase(thisstate[0])){
+						int lim = 1;
+						for(int x=1; x<ctparts.length; x++){
+							if(thisstate[x].equals("XXXX") && ctparts[x].equals("XX")){
+								lim++;
+							}
+							else if(ctparts[x].equals(thisstate[x])){
+								lim++;
+							}
+						}
+						if(lim==ctparts.length){
+							check[a]=1;
+						}
+					}
+				}
+			}
+		}
+		int sum = 0;
+		for(int i=0; i<check.length; i++){
+			sum += check[i];
+		}
+		return (sum==check.length);
+	}
+		
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}
@@ -90,5 +132,4 @@ public class StateVertex implements Comparable<StateVertex>{
 	public void setStateProbability(double stateProbability) {
 		this.stateProbability = stateProbability;
 	}
-
 }
