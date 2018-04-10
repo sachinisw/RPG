@@ -6,6 +6,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import run.CriticalState;
+import run.DesirableState;
+
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Stack;
@@ -17,15 +22,19 @@ public class StateGraph {
 	private ArrayList<ActionEdge> edges;
 	private int numVertices;
 	private int numEdges;
+	private CriticalState critical;
+	private DesirableState desirable;
 
 	/**
 	 * Construct empty Graph
 	 */
-	public StateGraph() {
+	public StateGraph(CriticalState c, DesirableState d) {
 		adjacencyList = new HashMap<StateVertex, TreeSet<StateVertex>>();
 		vertices = new HashMap<String, StateVertex>();
 		edges = new ArrayList<ActionEdge>();
 		numVertices = numEdges = 0;
+		critical = c;
+		desirable = d;
 	}
 
 	/**
@@ -116,7 +125,7 @@ public class StateGraph {
 		for (StateVertex v : vertices.values()) {
 			s += v.toString() + ": ";
 			for (StateVertex w : adjacencyList.get(v)) {
-				s += w.toString() + " ";
+				s += w.toString() + " " + "["+w.getStateProbability()+"]";
 			}
 			s += "\n";
 		}
@@ -267,7 +276,10 @@ public class StateGraph {
 				dIn.put(actionEdge.getTo(), 1);
 			}else{
 				dIn.put(actionEdge.getTo(), dIn.get(actionEdge.getTo()).intValue()+1);
-			}		
+			}
+			if(!dIn.containsKey(actionEdge.getFrom())){
+				dIn.put(actionEdge.getFrom(), 0);
+			}
 		}
 		return dIn;
 	}
@@ -405,7 +417,7 @@ public class StateGraph {
 			verticesTree.put(parent.getName(), parent);
 			adjacencyListTree.put(parent, treeNeighbors);
 		}
-		StateGraph tree = new StateGraph();
+		StateGraph tree = new StateGraph(critical, desirable);
 		tree.setAdjacencyList(adjacencyListTree);
 		tree.setVertices(verticesTree);
 		for (Map.Entry<StateVertex, TreeSet<StateVertex>> entry : adjacencyListTree.entrySet()) {
@@ -419,6 +431,8 @@ public class StateGraph {
 		tree.setEdges(edgesTree);
 		tree.setNumEdges(edgesTree.size());
 		tree.setNumVertices(verticesTree.size());
+		tree.markVerticesContainingCriticalState(critical);
+		tree.markVerticesContainingDesirableState(desirable);
 		System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
 		System.out.println(tree.toString());
 		System.out.println("TREE EDGE SET----------------------");
@@ -439,46 +453,46 @@ public class StateGraph {
 
 	//returns BFS traversal order for vertices for StateGraph converted to tree
 	public ArrayList<StateVertex> doBFSForStateTree(StateVertex root){
-//		StateGraph tree = convertToTree(root); //this method is called for a graph converted to a tree. no need to reconvert it here.
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		Queue<StateVertex> queue = new LinkedList<StateVertex>();
-		ArrayList<StateVertex> visitOrder = new ArrayList<StateVertex>();
+		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
+		ArrayList<StateVertex> order = new ArrayList<StateVertex>();
 		queue.add(root);
+		visited.add(root);
 		while(!queue.isEmpty()){
 			StateVertex currentlyVisiting = queue.poll();
+			order.add(currentlyVisiting);
 			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
 			for (StateVertex stateVertex : neighbors) {
-				if(!isVertexAlreadyVisited(stateVertex, visitOrder)){
+				if(!isVertexAlreadyVisited(stateVertex, visited)){
 					queue.add(stateVertex);
+					visited.add(stateVertex);
 				}
 			}
-			visitOrder.add(currentlyVisiting);
 		}
-		return visitOrder;
+		return order;
 	}
 
-	//returns DFS traversal order for verties for StateGraph converted to tree
+	//returns DFS traversal order for verties for StateGraph converted to tree. check if this is right...fixed to match BFS
 	public ArrayList<StateVertex> doDFSForStateTree(StateVertex root){
-		StateGraph tree = convertToTree(root);
-		HashMap<StateVertex, TreeSet<StateVertex>> adj = tree.getAdjacencyList();
+		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		Stack<StateVertex> stack = new Stack<StateVertex>();
-		ArrayList<StateVertex> visitOrder = new ArrayList<StateVertex>();
+		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
+		ArrayList<StateVertex> order = new ArrayList<StateVertex>();
 		stack.push(root);
+		visited.add(root);
 		while(!stack.isEmpty()){
 			StateVertex currentlyVisiting = stack.pop();
+			order.add(currentlyVisiting);
 			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
 			for (StateVertex stateVertex : neighbors) {
-				if(!isVertexAlreadyVisited(stateVertex, visitOrder)){
+				if(!isVertexAlreadyVisited(stateVertex, visited)){
 					stack.add(stateVertex);
+					visited.add(stateVertex);
 				}
 			}
-			visitOrder.add(currentlyVisiting);
 		}
-		System.out.println("----------------------------");
-		for(int i=0; i<visitOrder.size(); i++){
-			System.out.println(visitOrder.get(i));
-		}
-		return visitOrder;
+		return order;
 	}
 	
 	private boolean isVertexAlreadyVisited(StateVertex v, ArrayList<StateVertex> visited){
@@ -499,6 +513,38 @@ public class StateGraph {
 		return false;
 	}
 
+	public StateVertex getRoot(){
+		HashMap<StateVertex, Integer> inDegrees = getVertexInDegree();
+		Iterator<Map.Entry<StateVertex, Integer>> itr = inDegrees.entrySet().iterator();
+		while(itr.hasNext()){
+			Entry<StateVertex, Integer> e = itr.next();
+			if(e.getValue().intValue()==0){
+				return e.getKey();
+			}
+		}
+		return null;
+	}
+	
+	public void markVerticesContainingCriticalState(CriticalState critical){
+		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
+		while(itr.hasNext()){
+			StateVertex v = itr.next().getValue();
+			if(v.containsCriticalState(critical.getCritical())){
+				v.setContainsCriticalState(true);
+			}
+		}
+	}
+	
+	public void markVerticesContainingDesirableState(DesirableState desirable){ //arg comes from input file
+		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
+		while(itr.hasNext()){
+			StateVertex v = itr.next().getValue();
+			if(v.containsDesirableState(desirable.getDesirable())){
+				v.setContainsDesirableState(true);
+			}
+		}
+	}
+	
 	public int getNumVertices(){
 		return numVertices;
 	}
@@ -537,5 +583,21 @@ public class StateGraph {
 
 	public void setEdges(ArrayList<ActionEdge> edges) {
 		this.edges = edges;
+	}
+
+	public CriticalState getCritical() {
+		return critical;
+	}
+
+	public void setCritical(CriticalState critical) {
+		this.critical = critical;
+	}
+
+	public DesirableState getDesirable() {
+		return desirable;
+	}
+
+	public void setDesirable(DesirableState desirable) {
+		this.desirable = desirable;
 	}
 }

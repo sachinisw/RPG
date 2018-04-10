@@ -17,6 +17,7 @@ import java.util.TreeSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
+import actors.Agent;
 import con.ConnectivityGraph;
 import graph.ActionEdge;
 import graph.GraphDOT;
@@ -29,16 +30,14 @@ import rpg.PlanningGraph;
 public class StateGenerator {
 	public final static String ffPath = "/home/sachini/BLOCKS/Metric-FF-new/ff";
 	public final static String domain = "blocks";//changes stoppable condition.
-	public final static String domainFile = "/home/sachini/BLOCKS/domain.pddl";
-	public final static String desirableStateFile = "/home/sachini/BLOCKS/states4.txt";//empty for attacker. one line for user's desirable goal
-	public final static String problemFile = "/home/sachini/BLOCKS/problem_4.pddl";
-	public final static String outputPath = "/home/sachini/BLOCKS/outs/"; //clean this directory before running. if not graphs will be wrong
-	public final static String criticalStateFile = "/home/sachini/BLOCKS/critical.txt";
-	public final static String dotFilePrefix = "/home/sachini/BLOCKS/graph_ad_noreverse_";
 	public final static String dotFileExt = ".dot";
 	public final static double initProbability = 1.0;
-	public final static double attackerActionProbability = 0.1;	
-
+	public Agent agent;
+	
+	public StateGenerator(Agent a){
+		agent = a;
+	}
+	
 	public void writeConsoleOutputtoFile(String outfile, String text){
 		PrintWriter writer = null;
 		try {
@@ -77,17 +76,17 @@ public class StateGenerator {
 		case 1: //create plan
 			String command = ffPath+ " -o "+ domainpath+ " -f "+ probfilename;
 			String plan = executeShellCommand(command);
-			writeConsoleOutputtoFile(outputPath +"plan-"+probfilename.substring(probfilename.length()-14,probfilename.length()-5), plan);
+			writeConsoleOutputtoFile(agent.outputPath +"plan-"+probfilename.substring(probfilename.length()-14,probfilename.length()-5), plan);
 			break;
 		case 2:	//create relaxed planning graph
 			String command_rpg = ffPath +" -o "+ domainpath+ " -f "+ probfilename+" -i 126";
 			String rpg = executeShellCommand(command_rpg);
-			writeConsoleOutputtoFile(outputPath +"rpg-"+probfilename.substring(probfilename.length()-14,probfilename.length()-5), rpg);
+			writeConsoleOutputtoFile(agent.outputPath +"rpg-"+probfilename.substring(probfilename.length()-14,probfilename.length()-5), rpg);
 			break;
 		case 3:	//create connectivity graph
 			String command_con = ffPath +" -o "+ domainpath+ " -f "+ probfilename+" -i 125";
 			String con = executeShellCommand(command_con);
-			writeConsoleOutputtoFile(outputPath+"connectivity-"+probfilename.substring(probfilename.length()-14,probfilename.length()-5), con);
+			writeConsoleOutputtoFile(agent.outputPath+"connectivity-"+probfilename.substring(probfilename.length()-14,probfilename.length()-5), con);
 			break;
 		default:
 			System.out.println("UNSUPPORTED COMMAND");
@@ -98,7 +97,7 @@ public class StateGenerator {
 	public ArrayList<String> getRPGFiles(){		
 		ArrayList<String> rpgFilePaths = new ArrayList<String>();
 		try {
-			File dir = new File(outputPath);
+			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
 				if(fileItem.getName().contains("rpg")){
@@ -117,7 +116,7 @@ public class StateGenerator {
 	public ArrayList<String> getConnectivityFiles(){		
 		ArrayList<String> conFilePaths = new ArrayList<String>();
 		try {
-			File dir = new File(outputPath);
+			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
 				if(fileItem.getName().contains("con")){
@@ -134,7 +133,7 @@ public class StateGenerator {
 	public ArrayList<String> getPlanFiles(){		
 		ArrayList<String> planFilePaths = new ArrayList<String>();
 		try {
-			File dir = new File(outputPath);
+			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
 				if(fileItem.getName().contains("plan")){
@@ -181,9 +180,9 @@ public class StateGenerator {
 	}
 
 	public void runPlanner(){
-		runFF(1, StateGenerator.domainFile, StateGenerator.problemFile); //Plan
-		runFF(2, StateGenerator.domainFile, StateGenerator.problemFile); //RPG
-		runFF(3, StateGenerator.domainFile, StateGenerator.problemFile); //connectivity
+		runFF(1, agent.domainFile, agent.problemFile); //Plan
+		runFF(2, agent.domainFile, agent.problemFile); //RPG
+		runFF(3, agent.domainFile, agent.problemFile); //connectivity
 	}
 
 	public ArrayList<String> updateStateForAction(String action, ArrayList<String> currentState, ConnectivityGraph conGraph){
@@ -223,7 +222,7 @@ public class StateGenerator {
 	}
 
 	private boolean stoppableBlocks(ArrayList<String> state){
-		//stop expanding if only one block is onTable, one block is clear and hand is empty. can make this more descriptive later.
+		//stop expanding if only one block is onTable, one block is clear and hand is empty. i.e. all blocks are vertically stacked. can make this more descriptive later.
 		int onTableCount = 0;
 		int handEmptyCount = 0;
 		int clearCount = 0;
@@ -246,16 +245,20 @@ public class StateGenerator {
 
 	public StateGraph enumerateStates(State in, ArrayList<State> seen){ //draw a state transition graph starting with state 'in'
 		runPlanner();
-		//ArrayList<PlanningGraph> rpgs = readRPG();
-		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();
-
-		StateGraph graph = new StateGraph();
+		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();		//ArrayList<PlanningGraph> rpgs = readRPG();
+		DesirableState ds = new DesirableState(agent.desirableStateFile);
+		ds.readStatesFromFile();
+		CriticalState cs = new CriticalState(agent.criticalStateFile);
+		cs.readCriticalState();
+		StateGraph graph = new StateGraph(cs, ds);
 		graph.addVertex(in.getState());
 
 		for(int i=0; i<cons.size(); i++){
 			ArrayList<String> currentState = in.getState();
 			recursiveAddEdge(currentState, cons.get(i), graph, seen);
 		}
+		graph.markVerticesContainingCriticalState(cs);
+		graph.markVerticesContainingDesirableState(ds);
 		System.out.println("---------------enumerateStates()--------------------");
 		System.out.println(graph.toString());
 		System.out.println(graph.printEdges());
@@ -304,7 +307,7 @@ public class StateGenerator {
 	}
 
 	public ArrayList<String> cleanActions(ArrayList<String> actions, ArrayList<String> currentState, StateGraph graph, 
-			ArrayList<State> seen, ConnectivityGraph con){
+		ArrayList<State> seen, ConnectivityGraph con){
 		ArrayList<String> bi  = new ArrayList<String>();
 		ArrayList<String> cleaned  = new ArrayList<String>();
 		for(int i=0; i<actions.size(); i++){ //remove bidirectional connections (1)
@@ -365,21 +368,17 @@ public class StateGenerator {
 	}
 
 	public void graphToDOT(StateGraph g, int namesuffix){
-		DesirableState state = new DesirableState();
-		state.readStatesFromFile(desirableStateFile);
-		CriticalState cs = new CriticalState(criticalStateFile);
-		cs.readCriticalState();
-		GraphDOT dot = new GraphDOT(g, state, cs);
-		dot.generateDOT(dotFilePrefix+namesuffix+dotFileExt);
+		GraphDOT dot = new GraphDOT(g);
+		dot.generateDOT(agent.dotFilePrefix+namesuffix+dotFileExt);
 	}
 
 	public void graphToDOTNoUndo(StateGraph g){//not used
-		DesirableState state = new DesirableState();
-		state.readStatesFromFile(desirableStateFile);
-		CriticalState cs = new CriticalState(criticalStateFile);
+		DesirableState state = new DesirableState(agent.desirableStateFile);
+		state.readStatesFromFile();
+		CriticalState cs = new CriticalState(agent.criticalStateFile);
 		cs.readCriticalState();
-		GraphDOT dot = new GraphDOT(g, state, cs);
-		dot.generateDOTNoUndo(dotFilePrefix);
+		GraphDOT dot = new GraphDOT(g);
+		dot.generateDOTNoUndo(agent.dotFilePrefix);
 	}
 
 	private boolean isNowEqualsPrevious(ArrayList<String> now, ArrayList<String> prev){

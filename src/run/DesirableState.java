@@ -7,16 +7,18 @@ import java.util.Scanner;
 
 //reads a user's desirable state from file. Desirable State = user's goal.
 public class DesirableState {
+	private String desirableStateFile;
 	private ArrayList<String> desirable;
 	
-	public DesirableState(){
+	public DesirableState(String filename){
+		desirableStateFile = filename;
 		desirable = new ArrayList<String>();
 	}
 	
-	public void readStatesFromFile(String filename){
+	public void readStatesFromFile(){
 		Scanner reader = null ;
 		try {
-			reader = new Scanner(new File(filename));
+			reader = new Scanner(new File(this.desirableStateFile));
 			while(reader.hasNextLine()){
 				String s = reader.nextLine();
 				if(s.split(":")[0].equalsIgnoreCase("desirable")){
