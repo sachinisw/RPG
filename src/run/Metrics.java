@@ -22,7 +22,7 @@ public class Metrics {
 		double [] us = user.computeMetric();
 		System.arraycopy(at, 0, metrics, 0, at.length);
 		System.arraycopy(us, 0, metrics, metrics.length-1, us.length);
-		DecimalFormat df = new DecimalFormat("#.000"); 
+		DecimalFormat df = new DecimalFormat("#.00"); 
 		for (int i=0; i<metrics.length; i++) {
 			metrics[i] = Double.valueOf(df.format(metrics[i]));
 		}

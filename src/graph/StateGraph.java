@@ -154,7 +154,7 @@ public class StateGraph {
 		for (ActionEdge actionEdge : contains) {
 			StateVertex stateFrom = actionEdge.getFrom();
 			StateVertex stateTo = actionEdge.getTo();
-//			System.out.println("matching edge:"+actionEdge.toString());
+			//			System.out.println("matching edge:"+actionEdge.toString());
 			if(stateFrom.isEqual(temp)){
 				TreeSet<StateVertex> adjFrom = adjacencyList.get(stateFrom);
 				Iterator<StateVertex> itrF = adjFrom.iterator();
@@ -271,15 +271,26 @@ public class StateGraph {
 	//the number of in-edges for each vertex
 	public HashMap<StateVertex, Integer> getVertexInDegree(){
 		HashMap<StateVertex, Integer> dIn = new HashMap<>();
-		for (ActionEdge actionEdge : edges) {
-			if(!dIn.containsKey(actionEdge.getTo())){
-				dIn.put(actionEdge.getTo(), 1);
-			}else{
-				dIn.put(actionEdge.getTo(), dIn.get(actionEdge.getTo()).intValue()+1);
+		if(edges.size()>0){ //at least 1 edge (i.e. 2 nodes in graph)
+			for (ActionEdge actionEdge : edges) {
+				if(!dIn.containsKey(actionEdge.getTo())){
+					dIn.put(actionEdge.getTo(), 1);
+				}else{
+					dIn.put(actionEdge.getTo(), dIn.get(actionEdge.getTo()).intValue()+1);
+				}
+				if(!dIn.containsKey(actionEdge.getFrom())){
+					dIn.put(actionEdge.getFrom(), 0);
+				}
 			}
-			if(!dIn.containsKey(actionEdge.getFrom())){
-				dIn.put(actionEdge.getFrom(), 0);
+		}else{//tree only has root
+			StateVertex root = null;
+			Iterator<Entry<StateVertex, TreeSet<StateVertex>>> itr = adjacencyList.entrySet().iterator();
+			while(itr.hasNext()){
+				Entry<StateVertex, TreeSet<StateVertex>> e = itr.next();
+				if(e.getValue().size()==0)
+					root = e.getKey();
 			}
+			dIn.put(root, 0);
 		}
 		return dIn;
 	}
@@ -451,6 +462,16 @@ public class StateGraph {
 		return null;
 	}
 
+	public ArrayList<ActionEdge> findEdgeForStateTransition(StateVertex from, StateVertex to){
+		ArrayList<ActionEdge> actions = new ArrayList<ActionEdge>();
+		for(int i=0; i<edges.size(); i++){
+			if(edges.get(i).getFrom().isEqual(from) && edges.get(i).getTo().isEqual(to)){
+				actions.add(edges.get(i));
+			}
+		}
+		return actions;
+	}
+
 	//returns BFS traversal order for vertices for StateGraph converted to tree
 	public ArrayList<StateVertex> doBFSForStateTree(StateVertex root){
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
@@ -494,7 +515,7 @@ public class StateGraph {
 		}
 		return order;
 	}
-	
+
 	private boolean isVertexAlreadyVisited(StateVertex v, ArrayList<StateVertex> visited){
 		for (StateVertex stateVertex : visited) {
 			if(stateVertex.isEqual(v)){
@@ -503,7 +524,7 @@ public class StateGraph {
 		}
 		return false;
 	}
-	
+
 	public boolean isActionInEdgeSet(String action){
 		for(int j=0; j<edges.size(); j++){
 			if(action.equals(edges.get(j).getAction())){//remove from actions if action is already in edge set.
@@ -524,7 +545,7 @@ public class StateGraph {
 		}
 		return null;
 	}
-	
+
 	public void markVerticesContainingCriticalState(CriticalState critical){
 		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
 		while(itr.hasNext()){
@@ -534,7 +555,7 @@ public class StateGraph {
 			}
 		}
 	}
-	
+
 	public void markVerticesContainingDesirableState(DesirableState desirable){ //arg comes from input file
 		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
 		while(itr.hasNext()){
@@ -544,7 +565,63 @@ public class StateGraph {
 			}
 		}
 	}
-	
+
+	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
+		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
+		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+		Stack<StateVertex> stack = new Stack<StateVertex>();
+		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
+		stack.push(getRoot());
+		visited.add(getRoot());
+		ArrayList<StateVertex> temp = new ArrayList<>();
+		while(!stack.isEmpty()){
+			StateVertex currentlyVisiting = stack.pop();
+			temp.add(currentlyVisiting);
+			for (StateVertex leaf : getLeafNodes()) {
+				if (currentlyVisiting.isEqual(leaf)){
+					ArrayList<StateVertex> path = new ArrayList<>();
+					path.addAll(temp);
+					paths.add(path);
+					temp.clear();
+				}
+			}
+			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
+			for (StateVertex stateVertex : neighbors) {
+				if(!isVertexAlreadyVisited(stateVertex, visited)){
+					stack.add(stateVertex);
+					visited.add(stateVertex);					
+				}
+			}
+		}	
+		for (ArrayList<StateVertex> path : paths) {
+			ArrayList<StateVertex> anc = findAncestors(path.get(0));
+			int index=0;
+			for(int i=anc.size()-1; i>=0; i--){
+				path.add(index++, anc.get(i));
+			}
+		}
+		return paths;
+	}
+
+	public ArrayList<StateVertex> findAncestors(StateVertex v){
+		ArrayList<StateVertex> ancestors = new ArrayList<>();
+		StateVertex current = v;
+		while(!current.isEqual(getRoot())){	
+			Iterator<Map.Entry<StateVertex, TreeSet<StateVertex>>> itr = getAdjacencyList().entrySet().iterator();
+			while(itr.hasNext()){
+				Entry<StateVertex, TreeSet<StateVertex>> e = itr.next();
+				for (StateVertex child : e.getValue()) {
+					if(child.isEqual(current)){
+						ancestors.add(e.getKey());
+						current = e.getKey();
+					}
+				}
+			}
+
+		}
+		return ancestors;
+	}
+
 	public int getNumVertices(){
 		return numVertices;
 	}

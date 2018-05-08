@@ -8,9 +8,9 @@ import java.util.ArrayList;
 public class CSVGenerator {
 
 	private String outputfile;
-	private ArrayList<DataLine> data;
-	
-	public CSVGenerator(String filename, ArrayList<DataLine> dat){
+	private ArrayList<String> data;
+
+	public CSVGenerator(String filename, ArrayList<String> dat){
 		outputfile = filename;
 		data = dat;
 	}
@@ -19,12 +19,11 @@ public class CSVGenerator {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(outputfile, "UTF-8");
-			writer.write("OB,C,R,D");
+			writer.write("o,C,R,D,WC,WR,WD,WC(o),WR(o),W(1-D(o)),F(o) = WC(o) + WR(o) + W(1-D(o))");
 			writer.println();
 
 			for(int i=0; i<data.size(); i++){			
-				writer.write(data.get(i).toString());
-				writer.println();
+				writer.write(data.get(i));
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -34,7 +33,7 @@ public class CSVGenerator {
 			writer.close();
 		}
 	}
-	
+
 	public String getOutputfile() {
 		return outputfile;
 	}

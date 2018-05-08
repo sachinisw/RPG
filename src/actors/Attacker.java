@@ -51,12 +51,16 @@ public class Attacker extends Agent{
 	private double computeCertaintyMetric(){
 		StateVertex attakerRoot = this.attackerState.getRoot();
 		TreeSet<StateVertex> rootNeighbors = this.attackerState.getAdjacencyList().get(attakerRoot);
-		double neighbors = (double) rootNeighbors.size();
-		return attakerRoot.getStateProbability()/neighbors;
+		if(!rootNeighbors.isEmpty()){
+			double neighbors = (double) rootNeighbors.size();
+			return attakerRoot.getStateProbability()/neighbors;
+		}else{
+			return 1.0; //single root. no neighbors
+		}
 	}
 	
 	private double computeRiskMetric(){	
-		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());
+		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
 		for (StateVertex stateVertex : visitOrder) {
 			if(stateVertex.isContainsCriticalState()){
 				return stateVertex.getStateProbability(); //give me the first one. i want the first instance where attack is generated.
