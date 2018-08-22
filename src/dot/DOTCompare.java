@@ -107,21 +107,6 @@ public class DOTCompare {
 			return ag.equals(ad);
 		}
 	}
-//	private static boolean isStateEqualWithDeception(String[] agState, String[] adState ){
-//		int [] check = new int[agState.length-1];
-//		for (int i=0; i<agState.length-1; i++) {
-//			for (int j=0; j<adState.length-1; j++) {
-//				if(agState[i].equalsIgnoreCase(adState[j])){
-//					check[i]=1;
-//				}
-//			}
-//		}
-//		int sum = 0;
-//		for(int i=0; i<check.length; i++){
-//			sum += check[i];
-//		}
-//		return (sum==check.length);
-//	}
 
 //	compare the agent's state node with adversary's state node using deception rule.
 //	rule: ag=X O P [X==T], ad=XX X O P [X=T, XX=M]

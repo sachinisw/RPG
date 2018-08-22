@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Observation {
-	private ArrayList<String> observations;
+	private ArrayList<String> observations;//for training data. contains true class labels
 
 	public Observation(){
 		observations = new ArrayList<String>();

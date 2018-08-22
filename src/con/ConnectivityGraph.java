@@ -227,7 +227,7 @@ public class ConnectivityGraph {
 		return deleteStates;
 	}
 	
-	public ArrayList<String> findApplicableActionsInState(ArrayList<String> state){
+	public ArrayList<String> findApplicableActionsInState(ArrayList<String> state){ //requires state predicates to be in parenthesis
 		ArrayList<String> applicableActions = new ArrayList<String>();
 		for(int i=0; i<effectArray.size(); i++){
 			EffectElement el = effectArray.get(i);

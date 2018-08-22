@@ -29,7 +29,7 @@ public class CriticalState {
 		
 	}
 
-	public ArrayList<String> getCritical() {
+	public ArrayList<String> getCriticalState() {
 		return critical;
 	}
 

@@ -23,6 +23,8 @@ import graph.ActionEdge;
 import graph.GraphDOT;
 import graph.StateGraph;
 import graph.StateVertex;
+import landmark.RelaxedPlanningGraph;
+import landmark.RelaxedPlanningGraphGenerator;
 import plan.Plan;
 import plan.PlanExtractor;
 import rpg.PlanningGraph;
@@ -159,6 +161,17 @@ public class StateGenerator {
 		return rpgs;
 	}
 
+	public ArrayList<RelaxedPlanningGraph> readRelaxedPlanningGraph(){ //used exclusively for landmarks
+		ArrayList<String> rpgFiles = getRPGFiles();
+		ArrayList<RelaxedPlanningGraph> relaxedpgs = new ArrayList<RelaxedPlanningGraph>();
+		for(int i=0; i<rpgFiles.size(); i++){
+			RelaxedPlanningGraphGenerator rpgGen = new RelaxedPlanningGraphGenerator();
+			rpgGen.readFFOutput(rpgFiles.get(i));
+			relaxedpgs.add(rpgGen.rpg);
+		}
+		return relaxedpgs;
+	}
+	
 	public ArrayList<ConnectivityGraph> readConnectivityGraphs(){
 		ArrayList<String> conGraphFiles = getConnectivityFiles();
 		ArrayList<ConnectivityGraph> connectivities = new ArrayList<ConnectivityGraph>();
@@ -213,7 +226,7 @@ public class StateGenerator {
 	private boolean stoppablePAG(ArrayList<String> state){
 		//stop expanding if state contains"information-leakage" for attacker or "msg-sent safe-email" for user
 		for(int i=0; i<state.size(); i++){
-			System.out.println(">>> "+state.get(i));
+//			System.out.println(">>> "+state.get(i));
 			if(state.get(i).contains("information-leakage") || (state.get(i).contains("MSG-SENT SAFE-EMAIL"))){
 				return true;
 			}
@@ -231,7 +244,7 @@ public class StateGenerator {
 				handEmptyCount++;
 			}
 			if(state.get(i).contains("CLEAR")){
-				handEmptyCount++;
+				clearCount++;
 			}
 			if(state.get(i).contains("ONTABLE")){
 				onTableCount++;
@@ -245,7 +258,7 @@ public class StateGenerator {
 
 	public StateGraph enumerateStates(State in, ArrayList<State> seen){ //draw a state transition graph starting with state 'in'
 		runPlanner();
-		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();		//ArrayList<PlanningGraph> rpgs = readRPG();
+		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();		
 		DesirableState ds = new DesirableState(agent.desirableStateFile);
 		ds.readStatesFromFile();
 		CriticalState cs = new CriticalState(agent.criticalStateFile);
@@ -259,13 +272,13 @@ public class StateGenerator {
 		}
 		graph.markVerticesContainingCriticalState(cs);
 		graph.markVerticesContainingDesirableState(ds);
-		System.out.println("---------------enumerateStates()--------------------");
-		System.out.println(graph.toString());
-		System.out.println(graph.printEdges());
-		return graph;
+//		System.out.println("---------------enumerateStates()--------------------");
+//		System.out.println(graph.toString());
+//		System.out.println(graph.printEdges());
+		return graph; //this graph is bidirectional
 	}
 
-	public ArrayList<State> getStatesAfterObservations(Observation ob, State in){
+	public ArrayList<State> getStatesAfterObservations(Observation ob, State in, boolean tracegenerator){//true if running trace generator, false otherwise
 		ArrayList<State> stateseq = new ArrayList<State>();
 		ArrayList<String> obs = ob.getObservations();
 		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();
@@ -277,10 +290,17 @@ public class StateGenerator {
 			temp.addAll(stateseq.get(index-1).getState());
 			current.setState(temp);
 			for(int i=0; i<cons.size(); i++){ //this size=1 because there is 1 problem
-				ArrayList<String> added = cons.get(i).findStatesAddedByAction(o);
-				ArrayList<String> dels = cons.get(i).findStatesDeletedByAction(o);
-				current.statePredicates.removeAll(dels);
-				current.statePredicates.addAll(added);
+				if(!tracegenerator){
+					ArrayList<String> added = cons.get(i).findStatesAddedByAction(o.split(":")[1]);
+					ArrayList<String> dels = cons.get(i).findStatesDeletedByAction(o.split(":")[1]);
+					current.statePredicates.removeAll(dels);
+					current.statePredicates.addAll(added);
+				}else{
+					ArrayList<String> added = cons.get(i).findStatesAddedByAction(o);
+					ArrayList<String> dels = cons.get(i).findStatesDeletedByAction(o);
+					current.statePredicates.removeAll(dels);
+					current.statePredicates.addAll(added);
+				}
 			}
 			index++;
 			stateseq.add(current);
@@ -310,7 +330,7 @@ public class StateGenerator {
 		ArrayList<State> seen, ConnectivityGraph con){
 		ArrayList<String> bi  = new ArrayList<String>();
 		ArrayList<String> cleaned  = new ArrayList<String>();
-		for(int i=0; i<actions.size(); i++){ //remove bidirectional connections (1)
+		for(int i=0; i<actions.size(); i++){ //remove if the action undoes the immediately previous state (reverting). if not for this, infinite loop (1)
 			if(!graph.isEdgeBidirectional(actions.get(i), currentState)){
 				bi.add(actions.get(i));
 			}
@@ -355,21 +375,24 @@ public class StateGenerator {
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
 			if(domain.equals("blocks"))//reversible domains
+				//Treat each path as from root as an independent path. so when cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing bidirectional connections that are already visited. and any other actions leading to already visited states so far.
 			else if(domain.equals("pag"))//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
-			System.out.println("ac->"+actions);System.out.println("cl->"+cleaned);
+//			System.out.println("ac->"+actions);System.out.println("cl->"+cleaned);//DEBUG
 			for (String action : cleaned) {
-				System.out.println(action);
+//				System.out.println("current="+action); //DEBUG	
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph);
 				recursiveAddEdge(newState, con, graph, seen);
 			}
 		}
 	}
 
-	public void graphToDOT(StateGraph g, int namesuffix){
-		GraphDOT dot = new GraphDOT(g);
-		dot.generateDOT(agent.dotFilePrefix+namesuffix+dotFileExt);
+	public void graphToDOT(StateGraph g, int namesuffix, int foldersuffix, boolean writeDOTFile){
+		if(writeDOTFile){
+			GraphDOT dot = new GraphDOT(g); //name format = /home/sachini/BLOCKS/scenarios/2/dot/graph_ag_noreverse_1_4.dot
+			dot.generateDOT(agent.dotFilePrefix+agent.dotFileSuffix+foldersuffix+"_"+namesuffix+dotFileExt);
+		}
 	}
 
 	public void graphToDOTNoUndo(StateGraph g){//not used
@@ -410,35 +433,6 @@ public class StateGenerator {
 
 	//DONT KNOW HOW TO DO THIS YET.
 	public void applyBiasedProbabilitiesToStates(StateGraph g){//g is graph converted to tree
-		//		ArrayList<Plan> plans = readPlans(); //for the attacker's domain I use this to assign varying probabilities to actions in state graph.
-		//		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();
-		//		InitialState i = setInitialState();	
-		//		StateVertex initVertex = g.findVertex(i.getInit());
-		//		ArrayList<StateVertex> visitOrder = g.doDFSForStateTree(initVertex);
-		//		for (StateVertex current : visitOrder) {
-		//			if(current.isEqual(initVertex)){
-		//				current.setStateProbability(initProbability);
-		//			}
-		//			TreeSet<StateVertex> neighbors = g.getAdjacencyList().get(current);
-		//			int neighborCount = neighbors.size();
-		//			for (StateVertex neighbor : neighbors) {
-		//				ActionEdge e = g.getEdgeBetweenVertices(current, neighbor);
-		//				if(e.isEdgeInPlan(plans.get(0), cons.get(0), i)){ //For now this arraylist has only 1 element
-		//					System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"+e);
-		//					e.setActionProbability(attackerActionProbability);
-		//				}else{
-		//					double unsetneighborCount=0;
-		//					for (StateVertex stateVertex : neighbors) {
-		//						if(stateVertex.getStateProbability()==0.0){
-		//							unsetneighborCount++;
-		//						}
-		//					}
-		//					e.setActionProbability(1.0/unsetneighborCount);//assumes equal probability to go to any one of neighbor states
-		//				}
-		//				e.setActionProbability(1.0/neighborCount);//assumes equal probability to go to any one of neighbor states
-		//				neighbor.setStateProbability(neighbor.getStateProbability()+current.getStateProbability()*e.getActionProbability());
-		//			}
-		//		}
 	}
 
 }

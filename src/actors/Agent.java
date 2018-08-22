@@ -8,14 +8,16 @@ public abstract class Agent {
 	public String outputPath;
 	public String criticalStateFile;
 	public String dotFilePrefix;
+	public String dotFileSuffix;
 	
-	public Agent(String dom, String des, String pro, String out, String cri, String dot){
+	public Agent(String dom, String des, String pro, String out, String cri, String dotp, String dots){
 		this.domainFile = dom;
 		this.desirableStateFile = des;
 		this.problemFile = pro;
 		this.outputPath = out;
 		this.criticalStateFile = cri;
-		this.dotFilePrefix = dot;
+		this.dotFilePrefix = dotp;
+		this.dotFileSuffix = dots;
 	}
 	
 	public abstract double[] computeMetric();

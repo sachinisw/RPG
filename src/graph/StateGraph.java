@@ -154,7 +154,6 @@ public class StateGraph {
 		for (ActionEdge actionEdge : contains) {
 			StateVertex stateFrom = actionEdge.getFrom();
 			StateVertex stateTo = actionEdge.getTo();
-			//			System.out.println("matching edge:"+actionEdge.toString());
 			if(stateFrom.isEqual(temp)){
 				TreeSet<StateVertex> adjFrom = adjacencyList.get(stateFrom);
 				Iterator<StateVertex> itrF = adjFrom.iterator();
@@ -410,16 +409,15 @@ public class StateGraph {
 		ArrayList<StateVertex> alreadyProcessed = new ArrayList<StateVertex>();
 		Queue<StateVertex> queue = new LinkedList<StateVertex>();
 		queue.add(init);
-
 		while(!queue.isEmpty()){
 			StateVertex parent = queue.poll();
-			if(adjacencyListTree.get(parent)==null){
+			if(adjacencyListTree.get(parent)==null){ //initialize adj list for parent (current node) if doesn't exist
 				adjacencyListTree.put(parent, new TreeSet<StateVertex>());
 			}
-			TreeSet<StateVertex> children = adjacencyList.get(parent);
+			TreeSet<StateVertex> children = adjacencyList.get(parent);//find current node's children from adj list. this will have 2 way connections
 			TreeSet<StateVertex> treeNeighbors = adjacencyListTree.get(parent);
-			for (StateVertex child : children) {
-				if(!isVertexAlreadyVisited(child, alreadyProcessed) && !child.isEqual(parent)){
+			for (StateVertex child : children) { //add current node's children as tree node's children. removing 2 way connections
+				if(!isVertexInSpecifiedList(child, alreadyProcessed) && !child.isEqual(parent)){
 					queue.add(child);
 					treeNeighbors.add(child);
 				}
@@ -444,12 +442,12 @@ public class StateGraph {
 		tree.setNumVertices(verticesTree.size());
 		tree.markVerticesContainingCriticalState(critical);
 		tree.markVerticesContainingDesirableState(desirable);
-		System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
-		System.out.println(tree.toString());
-		System.out.println("TREE EDGE SET----------------------");
-		for (ActionEdge e : edgesTree) {
-			System.out.println(e);
-		}
+		//		System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
+		//		System.out.println(tree.toString());
+		//		System.out.println("TREE EDGE SET----------------------");
+		//		for (ActionEdge e : edgesTree) {
+		//			System.out.println(e);
+		//		}
 		return tree;
 	}
 
@@ -485,7 +483,7 @@ public class StateGraph {
 			order.add(currentlyVisiting);
 			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
 			for (StateVertex stateVertex : neighbors) {
-				if(!isVertexAlreadyVisited(stateVertex, visited)){
+				if(!isVertexInSpecifiedList(stateVertex, visited)){
 					queue.add(stateVertex);
 					visited.add(stateVertex);
 				}
@@ -507,7 +505,7 @@ public class StateGraph {
 			order.add(currentlyVisiting);
 			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
 			for (StateVertex stateVertex : neighbors) {
-				if(!isVertexAlreadyVisited(stateVertex, visited)){
+				if(!isVertexInSpecifiedList(stateVertex, visited)){
 					stack.add(stateVertex);
 					visited.add(stateVertex);
 				}
@@ -516,7 +514,7 @@ public class StateGraph {
 		return order;
 	}
 
-	private boolean isVertexAlreadyVisited(StateVertex v, ArrayList<StateVertex> visited){
+	private boolean isVertexInSpecifiedList(StateVertex v, ArrayList<StateVertex> visited){ //finds the specified vertex in specified list
 		for (StateVertex stateVertex : visited) {
 			if(stateVertex.isEqual(v)){
 				return true;
@@ -550,7 +548,7 @@ public class StateGraph {
 		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
 		while(itr.hasNext()){
 			StateVertex v = itr.next().getValue();
-			if(v.containsCriticalState(critical.getCritical())){
+			if(v.containsCriticalState(critical.getCriticalState())){
 				v.setContainsCriticalState(true);
 			}
 		}
@@ -567,40 +565,55 @@ public class StateGraph {
 	}
 
 	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
-		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
 		Stack<StateVertex> stack = new Stack<StateVertex>();
 		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
+		ArrayList<StateVertex> base = new ArrayList<>();
 		stack.push(getRoot());
-		visited.add(getRoot());
-		ArrayList<StateVertex> temp = new ArrayList<>();
 		while(!stack.isEmpty()){
-			StateVertex currentlyVisiting = stack.pop();
-			temp.add(currentlyVisiting);
-			for (StateVertex leaf : getLeafNodes()) {
-				if (currentlyVisiting.isEqual(leaf)){
-					ArrayList<StateVertex> path = new ArrayList<>();
-					path.addAll(temp);
-					paths.add(path);
-					temp.clear();
-				}
-			}
-			TreeSet<StateVertex> neighbors = adj.get(currentlyVisiting);
+			StateVertex current = stack.pop();
+			visited.add(current);
+			base.add(current);
+			TreeSet<StateVertex> neighbors = adj.get(current);
 			for (StateVertex stateVertex : neighbors) {
-				if(!isVertexAlreadyVisited(stateVertex, visited)){
-					stack.add(stateVertex);
-					visited.add(stateVertex);					
+				stack.add(stateVertex);
+			}
+			if(isVertexInSpecifiedList(current, getLeafNodes())){ //found a leaf. now compute the path from root. (base  must have all nodes in path)
+				ArrayList<StateVertex> path = new ArrayList<>();
+				path.addAll(base);
+				int index = path.size()-1;
+				ArrayList<StateVertex> copy = new ArrayList<>();
+				copy.addAll(stack);
+				while(canBackTrack(path.get(index), copy) && index>0){
+					base.remove(path.get(index));
+					index--;
 				}
-			}
-		}	
-		for (ArrayList<StateVertex> path : paths) {
-			ArrayList<StateVertex> anc = findAncestors(path.get(0));
-			int index=0;
-			for(int i=anc.size()-1; i>=0; i--){
-				path.add(index++, anc.get(i));
-			}
+				paths.add(path);
+			}	
 		}
 		return paths;
+	}
+
+	private boolean canBackTrack(StateVertex current, ArrayList<StateVertex> unprocessed){ //return false, when you find the first node with unvisited children
+		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+		TreeSet<StateVertex> neighbors = adj.get(current);
+		for (StateVertex stateVertex : neighbors) {
+			if(isVertexInSpecifiedList(stateVertex, unprocessed)){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public ArrayList<ArrayList<StateVertex>> getUndesirablePaths(ArrayList<ArrayList<StateVertex>> allpathsfromroot){
+		ArrayList<ArrayList<StateVertex>> undesirablePaths = new ArrayList<ArrayList<StateVertex>>();
+		for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state
+			if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){
+				undesirablePaths.add(path);
+			}
+		}
+		return undesirablePaths;
 	}
 
 	public ArrayList<StateVertex> findAncestors(StateVertex v){
@@ -617,7 +630,6 @@ public class StateGraph {
 					}
 				}
 			}
-
 		}
 		return ancestors;
 	}

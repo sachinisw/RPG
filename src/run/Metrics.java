@@ -4,17 +4,25 @@ import java.text.DecimalFormat;
 
 import actors.Attacker;
 import actors.User;
+import con.ConnectivityGraph;
+import landmark.RelaxedPlanningGraph;
 
 
 public class Metrics {
 	private Attacker attacker;
 	private User user;
 	private double [] metrics;
+	private int distanceToCritical;
+	private int distanceToDesirable;
+	private int landmarkMetric;
 	
 	public Metrics(Attacker at, User us){
 		this.attacker = at;
 		this.user = us;
 		metrics = new double[3];
+		distanceToCritical = 0;
+		distanceToDesirable = 0;
+		landmarkMetric = 0;
 	}
 	
 	public void computeMetrics(){
@@ -28,6 +36,18 @@ public class Metrics {
 		}
 	}
 
+	public void computeDistanceToCrtical(){
+		distanceToCritical = attacker.computeDistanceToCriticalStateFromRoot();
+	}
+	
+	public void computeDistanceToDesirable(){
+		distanceToDesirable= user.computeDistanceToDesirableStateFromRoot();
+	}
+	
+	public void computeAttackLandmarks(RelaxedPlanningGraph arpg, ConnectivityGraph con){
+		landmarkMetric = attacker.computeLandmarkMetric(arpg, con);
+	}
+	
 	public double[] getMetrics() {
 		return metrics;
 	}
@@ -42,6 +62,30 @@ public class Metrics {
 			s += d+",";
 		}
 		return s.substring(0, s.length()-1);
+	}
+
+	public int getDistanceToCritical() {
+		return distanceToCritical;
+	}
+
+	public void setDistanceToCritical(int distanceToCritical) {
+		this.distanceToCritical = distanceToCritical;
+	}
+
+	public int getDistanceToDesirable() {
+		return distanceToDesirable;
+	}
+
+	public void setDistanceToDesirable(int distanceToDesirable) {
+		this.distanceToDesirable = distanceToDesirable;
+	}
+
+	public int getLandmarkMetric() {
+		return landmarkMetric;
+	}
+
+	public void setLandmarkMetric(int landmarkMetric) {
+		this.landmarkMetric = landmarkMetric;
 	}
 	
 }

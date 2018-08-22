@@ -30,6 +30,18 @@ public class StateVertex implements Comparable<StateVertex>{
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+	        return false;
+	    }
+	    if (!StateVertex.class.isAssignableFrom(obj.getClass())) {
+	        return false;
+	    }
+	    final StateVertex other = (StateVertex) obj;
+	    return this.isEqual(other);
+	}
+	
+	@Override
 	public int compareTo(StateVertex anotherVertex) {
 		if(this.isEqual(anotherVertex)){
 			return 0;
