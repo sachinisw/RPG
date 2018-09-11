@@ -15,7 +15,7 @@ public class InitialState extends State{
 		try {
 			reader = new Scanner(new File(filename));
 			while(reader.hasNextLine()){
-				statePredicates.add(reader.nextLine());
+				statePredicates.add(reader.nextLine().trim());
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

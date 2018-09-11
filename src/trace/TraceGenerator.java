@@ -45,6 +45,9 @@ public class TraceGenerator {
 		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)));
 		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
 		graphs.add(treeAgent);
+		gen.graphToDOT(graphAgent, 0, 0, true); //TODO: remove after debug
+		gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
+		System.out.println(graphAgent);//TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
@@ -89,7 +92,7 @@ public class TraceGenerator {
 				for (ActionEdge actionEdge : actions) {
 					if(edgeInUndesirablePath(actionEdge, undesirable)){ //find trouble action. causing critical state. must be flagged
 						//Y for steps until critical state N for steps after critical state
-						if(edgeTriggersCriticalState(actionEdge)){ 
+						if(edgeTriggersCriticalState(actionEdge, attacker.getCritical().getCriticalState())){ 
 							trc.add("N:"+actionEdge.getAction());
 						}else{
 							trc.add("Y:"+actionEdge.getAction());
@@ -166,8 +169,8 @@ public class TraceGenerator {
 		return false;
 	}
 
-	private static boolean edgeTriggersCriticalState(ActionEdge e) {
-		if(e.getTo().isContainsCriticalState()){
+	private static boolean edgeTriggersCriticalState(ActionEdge e, ArrayList<String> criticalstate) {
+		if(e.getTo().containsCriticalState(criticalstate)){
 			return true;
 		}
 		return false;
@@ -193,7 +196,7 @@ public class TraceGenerator {
 
 	public static void generateTraceForScenario(){
 		for(int instance=0; instance<=22; instance++){
-			if(instance==21){
+			if(instance==1){
 				String domainFile = ConfigParameters.prefix+instance+ConfigParameters.domainFile;
 				String desirableStateFile = ConfigParameters.prefix+instance+ConfigParameters.desirableStateFile;
 				String a_problemFile = ConfigParameters.prefix+instance+ConfigParameters.a_problemFile;
@@ -216,6 +219,8 @@ public class TraceGenerator {
 				ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, obs, user.getInitialState());
 				System.out.println("Writing traces to files");
 				writeTracesToFile(generateTrace(attackerState.get(0), userState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
+				
+				//make the stoppable condition for grid better.
 			}
 		}
 	}

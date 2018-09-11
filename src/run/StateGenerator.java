@@ -31,7 +31,8 @@ import rpg.PlanningGraph;
 
 public class StateGenerator {
 	public final static String ffPath = "/home/sachini/BLOCKS/Metric-FF-new/ff";
-	public final static String domain = "blocks";//changes stoppable condition.
+	public final static String domain = "grid";//changes stoppable condition.
+	public final static int grid_size = 2; //max coordinate in grid. only applicable for grid domains. TODO: find way to automate the extraction of this value
 	public final static String dotFileExt = ".dot";
 	public final static double initProbability = 1.0;
 	public Agent agent;
@@ -217,6 +218,8 @@ public class StateGenerator {
 	public boolean stoppable(ArrayList<String> state){
 		if(domain.equals("blocks")){
 			return stoppableBlocks(state);
+		}else if(domain.equals("grid")){
+			return stoppableGrid(state);
 		}else if(domain.equals("pag")){
 			return stoppablePAG(state);
 		}
@@ -256,6 +259,27 @@ public class StateGenerator {
 		return false;
 	}
 
+	private boolean stoppableGrid(ArrayList<String> state){ //NOTE: change grid_size value for larger problem instances
+		//stop expanding if state<> indicate that robot is at the top-right edge of the grid (i.e. largest x,y). assumes robot always start at 0,0
+		String curpos = "";
+		for (String string : state) {
+			if(string.contains("AT-ROBOT")){
+				curpos = string.substring(string.indexOf("PLACE_"));
+				//System.out.println(string);
+				break;
+			}
+		}
+		int x = Integer.parseInt(curpos.substring(curpos.indexOf("_")+1,curpos.indexOf("_")+2));
+		int y = Integer.parseInt(curpos.substring(curpos.length()-2,curpos.length()-1));
+		//System.out.println("x="+x+" y="+y);
+		if((x==grid_size) && (y==grid_size)){ //if at right edge or at top edge
+			//System.out.println("!!!!!!!!!!met");
+			return true;
+		}
+		//System.out.println("==========not met");
+		return false;
+	}
+	
 	public StateGraph enumerateStates(State in, ArrayList<State> seen){ //draw a state transition graph starting with state 'in'
 		runPlanner();
 		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();		
@@ -370,18 +394,20 @@ public class StateGenerator {
 
 	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen){
 		if(stoppable(currentState)){
+			System.out.println("STOPPeING AT---------------+"+currentState);
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
-			if(domain.equals("blocks"))//reversible domains
+			if(domain.equals("blocks") || domain.equals("grid") )//reversible domains. i.e. you can go back to previous state
 				//Treat each path as from root as an independent path. so when cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing bidirectional connections that are already visited. and any other actions leading to already visited states so far.
-			else if(domain.equals("pag"))//sequential domains
+			else if(domain.equals("pag") )//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
-//			System.out.println("ac->"+actions);System.out.println("cl->"+cleaned);//DEBUG
+			System.out.println("ac->"+actions);System.out.println("cl->"+cleaned);//DEBUG
+			
 			for (String action : cleaned) {
-//				System.out.println("current="+action); //DEBUG	
+				System.out.println("current====="+action); //DEBUG	
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph);
 				recursiveAddEdge(newState, con, graph, seen);
 			}

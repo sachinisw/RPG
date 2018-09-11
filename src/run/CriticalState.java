@@ -21,7 +21,7 @@ public class CriticalState {
 		try {
 			reader = new Scanner(new File(criticalStateFile));
 			while(reader.hasNextLine()){
-				critical.add(reader.nextLine());
+				critical.add(reader.nextLine().trim());
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

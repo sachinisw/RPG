@@ -81,7 +81,7 @@ public class LandmarkExtractor {
 			lmCandidates.add(itr.next());
 		}
 		for (LGGNode node : lmCandidates) {
-			System.out.println("current node---"+ node);
+			System.out.println("current node---"+ node); 
 			boolean isGoal = false, isInit = false, isVerifiedCandidate = false;
 			if(node.containsState(init)){ //initial state is a trivial landmark
 				System.out.println("init state");

@@ -44,6 +44,13 @@ public class Test {
 		}
 		double num = ThreadLocalRandom.current().nextDouble(0, 1);
 		System.out.println(num);
+		
+		String s = "(AT-ROBOT PLACE_0_0)";
+		System.out.println(s.substring(s.indexOf("PLACE_")));
+		int x = Integer.parseInt(s.substring(s.indexOf("_")+1,s.indexOf("_")+2));
+		System.out.println("x="+x);
+		int y = Integer.parseInt(s.substring(s.length()-2,s.length()-1));
+		System.out.println("y="+y);
 	}
 
 }
