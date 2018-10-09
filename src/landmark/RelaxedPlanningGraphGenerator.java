@@ -96,7 +96,7 @@ public class RelaxedPlanningGraphGenerator {
 		RelaxedPlanningGraphGenerator test = new RelaxedPlanningGraphGenerator();
 		test.readFFOutput(inputfilerpg);
 		ArrayList<ConnectivityGraph> cons = test.readConnectivityGraphs(inputfilecon);
-		System.out.println(test.rpg.toString());
+//		System.out.println(test.rpg.toString());
 		LandmarkExtractor lm = new LandmarkExtractor(test.rpg, cons.get(0));
 		LGG lgg = lm.extractLandmarks(critical);
 		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical, init,lmoutput); //writes cleaned landmarks to lmoutput

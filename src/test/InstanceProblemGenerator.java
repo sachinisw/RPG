@@ -10,9 +10,14 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.TreeSet;
 
-public class ProblemGenerator {
-
-	private static ArrayList<String> readGoals(String cspath){ //call twice to read criticals and desirables
+public class InstanceProblemGenerator {
+	/**
+	 * Generate 20 problem scenarios (and files needed for producing test data) for each test instance
+	 * This is called second. For each problem scenario in each instance, generate reduced trace considering landmarks
+	 * @author sachini
+	 *
+	 */
+	public static ArrayList<String> readGoals(String cspath){ //call twice to read criticals and desirables
 		ArrayList<String> gs = new ArrayList<String>();
 		Scanner reader;
 		try {
@@ -28,7 +33,7 @@ public class ProblemGenerator {
 		return gs;
 	}
 
-	private static TreeSet<String> readInits(String initpath){
+	public static TreeSet<String> readInits(String initpath){
 		TreeSet<String> init = new TreeSet<String>();
 		Scanner reader;
 		try {
@@ -71,29 +76,29 @@ public class ProblemGenerator {
 		ArrayList<String> domout = generateDomain(readTemplate(domainTemplatePath), objects);
 		ArrayList<String> aout = generateProblem(prob, filterInits(inits, objects), critical);
 		ArrayList<String> uout = generateProblem(prob, filterInits(inits, ds), desirable); //TODO: i am doing only one deception scenario. For that scenario inits must be filtered for the user
-		writeToFile(domout, outputpath, String.valueOf(id), ProblemGeneratorConfigs.domfilename); //write domain
-		writeToFile(aout, outputpath, String.valueOf(id), ProblemGeneratorConfigs.aprobfilename); //write problem_a.pddl
-		writeToFile(uout, outputpath, String.valueOf(id), ProblemGeneratorConfigs.uprobfilename); //write problem_u.pddl
+		writeToFile(domout, outputpath, String.valueOf(id), TestGeneratorConfigs.domfilename); //write domain
+		writeToFile(aout, outputpath, String.valueOf(id), TestGeneratorConfigs.aprobfilename); //write problem_a.pddl
+		writeToFile(uout, outputpath, String.valueOf(id), TestGeneratorConfigs.uprobfilename); //write problem_u.pddl
 		adata.addAll(filterInits(inits, objects));
 		udata.addAll(filterInits(inits, ds));
-		writeToFile(adata, outputpath, String.valueOf(id), ProblemGeneratorConfigs.ainit); //write inits_a
-		writeToFile(udata, outputpath, String.valueOf(id), ProblemGeneratorConfigs.uinit); //write inits_u
-		writeToFile(getCriticalState(critical), outputpath, String.valueOf(id), ProblemGeneratorConfigs.critical); //write critical.txt
-		writeToFile(getDesirableState(desirable), outputpath, String.valueOf(id), ProblemGeneratorConfigs.desirable); //write desirable.txt
+		writeToFile(adata, outputpath, String.valueOf(id), TestGeneratorConfigs.ainit); //write inits_a
+		writeToFile(udata, outputpath, String.valueOf(id), TestGeneratorConfigs.uinit); //write inits_u
+		writeToFile(getCriticalState(critical), outputpath, String.valueOf(id), TestGeneratorConfigs.critical); //write critical.txt
+		writeToFile(getDesirableState(desirable), outputpath, String.valueOf(id), TestGeneratorConfigs.desirable); //write desirable.txt
 		createDirectories(outputpath, String.valueOf(id)); //create directories to store output files
-		copyApplicableObsFileToScenario(origtracepath+String.valueOf(id), outputpath+String.valueOf(id)+"/"+ProblemGeneratorConfigs.obsdir+"/"+String.valueOf(id)); //copy idth file from /traces at template level to scenarios/i/obs
+		copyApplicableObsFileToScenario(origtracepath+String.valueOf(id), outputpath+String.valueOf(id)+"/"+TestGeneratorConfigs.obsdir+"/"+String.valueOf(id)); //copy idth file from /traces at template level to scenarios/i/obs
 		//TODO: copy reduced lm based observations to obslm dir
 	}			
 
 	public static void createDirectories(String outputpath, String scenarioid) {
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.datadir+"/decision/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.datadir+"/inputdecisiontree/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.datadir+"/weighted/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.dotdir+"/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.outdir+"/attacker/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.outdir+"/user/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.obsdir+"/").mkdirs();
-		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.obslm+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.datadir+"/decision/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.datadir+"/inputdecisiontree/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.datadir+"/weighted/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.dotdir+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.outdir+"/attacker/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.outdir+"/user/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.obsdir+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.obslm+"/").mkdirs();
 	}
 
 
@@ -146,7 +151,7 @@ public class ProblemGenerator {
 		out.addAll(probTemplate);
 		for (int i=0; i<probTemplate.size(); i++) {
 			if(probTemplate.get(i).equals("<INITS>")){
-				if(ProblemGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
 					String init = "";
 					for (String string : inits) {
 						init+= string +"\n";
@@ -154,7 +159,7 @@ public class ProblemGenerator {
 					out.set(i, init);
 				}
 			}else if(probTemplate.get(i).equals("<GOAL_STATE>")) {
-				if(ProblemGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
 					out.set(i, goal.replace(",", ""));
 				}
 			}
@@ -165,7 +170,7 @@ public class ProblemGenerator {
 	public static ArrayList<String> generateDomain(ArrayList<String> Template, TreeSet<String> objects) {
 		for (int i=0; i<Template.size(); i++) {
 			if(Template.get(i).equals("<OBJECTS>")){
-				if(ProblemGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
 					String obs = "";
 					for (String string : objects) {
 						obs+= string +" - block" +"\n";
@@ -207,13 +212,13 @@ public class ProblemGenerator {
 
 	public static void main(String[] args) {
 		for(int instance=1; instance<=3; instance++){
-			String domainTemplate = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.template_domain;
-			String problemTemplate = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.template_problemgen;
-			String cspath = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.criticalStateFile;
-			String dspath = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.desirablestates;
-			String problemoutput = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.problemgen_output; //add problem id (i)
-			String initspath = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.initFile;
-			String origtracepath = ProblemGeneratorConfigs.prefix+instance+ProblemGeneratorConfigs.traces;
+			String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
+			String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
+			String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
+			String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
+			String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
+			String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
+			String origtracepath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.traces;
 			ArrayList<String> criticals = readGoals(cspath);
 			ArrayList<String> desirables = readGoals(dspath);
 			TreeSet<String> inits = readInits(initspath);

@@ -30,9 +30,9 @@ public class Planner {
 			}
 			p.waitFor();
 		} catch (IOException e) {
-			System.err.println("TraceGenerator:runFF()"+ command+ " " + e.getMessage());
+			System.err.println("Planner:runFF()"+ command+ " " + e.getMessage());
 		} catch (InterruptedException e) {
-			System.err.println("TraceGenerator:runFF()"+ command+ " " + e.getMessage());
+			System.err.println("Planner:runFF()"+ command+ " " + e.getMessage());
 		}
 		return sb.toString();
 	}
