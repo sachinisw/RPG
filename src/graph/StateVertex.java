@@ -3,6 +3,7 @@ package graph;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.TreeSet;
 
 public class StateVertex implements Comparable<StateVertex>{
@@ -21,10 +22,8 @@ public class StateVertex implements Comparable<StateVertex>{
 	}
 
 	public boolean isEqual(StateVertex anotherVertex){
-		if(states.size()== anotherVertex.getStates().size()){
-			if(states.containsAll(anotherVertex.getStates()) && anotherVertex.getStates().containsAll(states)){
-				return true;
-			}
+		if(states.containsAll(anotherVertex.getStates()) && anotherVertex.getStates().containsAll(states)){
+			return true;
 		}
 		return false;
 	}
@@ -32,22 +31,22 @@ public class StateVertex implements Comparable<StateVertex>{
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null) {
-	        return false;
-	    }
-	    if (!StateVertex.class.isAssignableFrom(obj.getClass())) {
-	        return false;
-	    }
-	    final StateVertex other = (StateVertex) obj;
-	    return this.isEqual(other);
+			return false;
+		}
+		if (!StateVertex.class.isAssignableFrom(obj.getClass())) {
+			return false;
+		}
+		final StateVertex other = (StateVertex) obj;
+		return this.isEqual(other);
 	}
-	
+
 	@Override
 	public int compareTo(StateVertex anotherVertex) {
-		if(this.isEqual(anotherVertex)){
-			return 0;
-		}else{
-			return 1;
-		}
+		return this.hashCode() - anotherVertex.hashCode();
+	}
+
+	public int hashCode(){
+		return Objects.hash(this.getStates());
 	}
 
 	public String getName() {
@@ -89,7 +88,7 @@ public class StateVertex implements Comparable<StateVertex>{
 		}
 		return true;
 	}
-	
+
 	/*return true if node's state contains the critical state
 	 * */
 	public boolean containsCriticalState(ArrayList<String> criticalstate){
@@ -104,7 +103,7 @@ public class StateVertex implements Comparable<StateVertex>{
 		}
 		return true;
 	}
-	
+
 	/*return true if node's state contains the desirable state
 	 * */
 	public boolean containsDesirableState(ArrayList<String> desirablestate){
@@ -119,44 +118,7 @@ public class StateVertex implements Comparable<StateVertex>{
 		}
 		return true;
 	}
-//	NOT USING XXXX, XX anymore for the blocks.
-//	public boolean containsCriticalState(ArrayList<String> criticalstate){
-//		ArrayList<String> state = getStates();
-//		int [] check = new int[criticalstate.size()];
-//		if(criticalstate.isEmpty()){
-//			return false;
-//		}
-//		for (int a=0; a<criticalstate.size(); a++) {
-//			for(int i=0; i<state.size(); i++){
-//				if(!criticalstate.get(a).contains("XX") && criticalstate.get(a).equalsIgnoreCase(state.get(i))){
-//					check[a]=1;
-//				}else if(criticalstate.get(a).contains("XX")){
-//					String ctparts [] = criticalstate.get(a).substring(1,criticalstate.get(a).length()-1).split(" ");
-//					String thisstate [] = state.get(i).substring(1,state.get(i).length()-1).split(" ");
-//					if(ctparts.length==thisstate.length && ctparts[0].equalsIgnoreCase(thisstate[0])){
-//						int lim = 1;
-//						for(int x=1; x<ctparts.length; x++){
-//							if(thisstate[x].equals("XXXX") && ctparts[x].equals("XX")){
-//								lim++;
-//							}
-//							else if(ctparts[x].equals(thisstate[x])){
-//								lim++;
-//							}
-//						}
-//						if(lim==ctparts.length){
-//							check[a]=1;
-//						}
-//					}
-//				}
-//			}
-//		}
-//		int sum = 0;
-//		for(int i=0; i<check.length; i++){
-//			sum += check[i];
-//		}
-//		return (sum==check.length);
-//	}
-		
+	
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}

@@ -2,6 +2,7 @@ package landmark;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class LGGNode implements Comparable<LGGNode>{
 	private ArrayList<String> value;
@@ -30,6 +31,10 @@ public class LGGNode implements Comparable<LGGNode>{
 		return isEqual(c);       // Compare the data members and return accordingly 
 	}
 
+	public int hashCode(){
+		return Objects.hash(this.value);
+	}
+	
 	public boolean containsState(ArrayList<String> state){ //returns true if <state> contains <value>
 		int [] check = new int[value.size()];
 		int id = 0;
@@ -62,10 +67,7 @@ public class LGGNode implements Comparable<LGGNode>{
 
 	@Override
 	public int compareTo(LGGNode o) {
-		if(this.isEqual(o)){
-			return 0;
-		}
-		return 1;
+		return this.hashCode() - o.hashCode();
 	}
 
 	public ArrayList<String> getValue() {

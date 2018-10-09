@@ -2,6 +2,7 @@ package graph;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import con.ConnectivityGraph;
 import plan.Plan;
@@ -52,6 +53,10 @@ public class ActionEdge {
 			return true;
 		}
 		return false;
+	}
+	
+	public int hashCode(){
+		return Objects.hash(this.getFrom(),this.getTo());
 	}
 	
 	public boolean isEdgeInPlan(Plan p, ConnectivityGraph c, InitialState init){

@@ -19,24 +19,24 @@ public class Attacker extends Agent{
 	public CriticalState critical;
 	public String initFile;
 	public StateGraph attackerState;
-	
+
 	public Attacker(String dom, String des, String pro, String out, String cri, String ini, String dotp, String dots) {
 		super(dom, des, pro, out, cri, dotp, dots);
 		this.attackerActionProbability = 0.1;
 		this.initFile = ini;
 	}
-	
+
 	public void setUndesirableState(){
 		this.critical = new CriticalState(this.criticalStateFile);
 		this.critical.readCriticalState();
 	}
-	
+
 	public InitialState getInitialState(){
 		InitialState init = new InitialState();
 		init.readInitsFromFile(initFile);
 		return init;
 	}
-	
+
 	public CriticalState getUndesirableState(){
 		return this.critical;
 	}
@@ -44,7 +44,7 @@ public class Attacker extends Agent{
 	public void setState(StateGraph g){
 		this.attackerState = g;
 	}
-	
+
 	@Override
 	public double[] computeMetric() {
 		setUndesirableState();
@@ -52,7 +52,7 @@ public class Attacker extends Agent{
 		double r = computeRiskMetric();
 		return new double[]{c,r};
 	}
-	
+
 	private double computeCertaintyMetric(){
 		StateVertex attakerRoot = this.attackerState.getRoot();
 		TreeSet<StateVertex> rootNeighbors = this.attackerState.getAdjacencyList().get(attakerRoot);
@@ -63,7 +63,7 @@ public class Attacker extends Agent{
 			return 1.0; //single root. no neighbors
 		}
 	}
-	
+
 	private double computeRiskMetric(){	//probability of the node containing the first occurrence of undesirable state in attacker's state graph
 		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
 		for (StateVertex stateVertex : visitOrder) {
@@ -73,54 +73,77 @@ public class Attacker extends Agent{
 		}
 		return 0.0;
 	}
-	
-	public int computeDistanceToCriticalStateFromRoot(){ //number of steps from root (current state) to undesirable state
+
+	//number of steps from root (current state) to undesirable state. If undesirable state occur multiple times, take the min distance
+	public int computeDistanceToCriticalStateFromRoot(String domain){ 
 		ArrayList<ArrayList<StateVertex>> dfsPaths = attackerState.getAllPathsFromRoot();
-		ArrayList<ArrayList<StateVertex>> criticalpaths = new ArrayList<ArrayList<StateVertex>>(); //assumes multiple critical states. for now just 1
+		ArrayList<ArrayList<StateVertex>> criticalpaths = new ArrayList<ArrayList<StateVertex>>(); //there could be 1 or more critical paths. take the min.
 		for (ArrayList<StateVertex> path : dfsPaths) {
-			if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){
+			boolean found = false;
+			for (StateVertex stateVertex : path) {
+				if(stateVertex.containsCriticalState(critical.getCriticalState())){
+					found = true;
+				}
+			}
+			if (found){
 				criticalpaths.add(path);
 			}
+			//			if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){ //TODO: see if code above will work for blocks example. if works then we can delete this code
+			//				criticalpaths.add(path);
+			//			}
 		}
-		int length = 0;
+		int lens [] = new int [criticalpaths.size()];
+		int index = 0;
 		for (ArrayList<StateVertex> arrayList : criticalpaths) {
+			int length = 0;
 			for (StateVertex stateVertex : arrayList) {
 				length++;
+				System.out.println("vertex====="+stateVertex + " length->"+length);
 				if(stateVertex.containsCriticalState(critical.getCriticalState())){
-					return length-1;//count edges until first occurrence.
+					length-=1;//count edges until first occurrence.
 				}
 			}
+			System.out.println("dist to critical=========="+length);
+			lens[index++]=length;
 		}
-		return -1;
+		if(lens.length>0){
+			int min = lens[0];
+			for (int x=1; x<lens.length; x++) {
+				if(min>lens[x]){
+					min=lens[x];
+				}
+			}
+			return min;
+		}
+		return -1; //there are no critical paths. 1 node graph
 	}
-	
+
 	//number of remaining undesirable landmarks in the domain
-	public int computeLandmarkMetric(RelaxedPlanningGraph at, ConnectivityGraph con){
+	public int computeLandmarkMetric(RelaxedPlanningGraph at, ConnectivityGraph con, String lmoutput){
 		LandmarkExtractor lm = new LandmarkExtractor(at, con);
-//		ArrayList<String> criticals = new ArrayList<String>();
-//		for (String item : critical.getCriticalState()) { //make criticals lose paranthesis
-//			criticals.add(item.substring(1, item.length()-1));
-//		}
-//		ArrayList<String> inits = new ArrayList<String>();
-//		for (String item : getInitialState().getState()) { //make inits lose paranthesis
-//			inits.add(item.substring(1, item.length()-1));
-//		}
-		LGG lgg = lm.extractLandmarks(critical.getCriticalState()); //OK to have paranthesis; TODO:: CHECK WITH ACTUAL DATA SET
-		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical.getCriticalState(), getInitialState().getState());
+		LGG lgg = lm.extractLandmarks(critical.getCriticalState());
+		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical.getCriticalState(), getInitialState().getState(),lmoutput);
 		int[] lmcounter = new int[verified.size()];
-		int index = 0;
+		int currentLM = 0;
 		int remainingLm = 0;
-		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
+		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());
+//		System.out.println("***************************************** "+visitOrder);
 		for (LGGNode node : verified) {
+//			System.out.println("verified lm=="+node);
 			ArrayList<String> data = node.getValue();
-			for (String item : data) {
-				for (StateVertex v : visitOrder) {
+			for (StateVertex v : visitOrder) {
+				int count = 0;
+				for (String item : data) {
 					if(listContainsState(v.getStates(), item)){
-						lmcounter[index] = 1;
+						count++;
 					}
 				}
+				if(count==data.size()){
+//					System.out.println("v has lm="+v);
+					lmcounter[currentLM] = 1;
+				}
 			}
-			index++;
+			currentLM++;
 		}
 		for (int item : lmcounter) {
 			if(item==1){
@@ -129,10 +152,10 @@ public class Attacker extends Agent{
 		}
 		return remainingLm;
 	}
-	
-	private boolean listContainsState(ArrayList<String> states, String state){
+
+	private boolean listContainsState(ArrayList<String> states, String state){ //state has surrounding paranthesis.
 		for (String s : states) {
-			if(s.substring(1, s.length()-1).equalsIgnoreCase(state)){
+			if(s.equalsIgnoreCase(state)){
 				return true;
 			}
 		}

@@ -1,5 +1,6 @@
 package landmark;
 
+import java.util.Objects;
 
 public class LGGEdge {
 	private LGGNode from;
@@ -19,6 +20,10 @@ public class LGGEdge {
 		}
 		LGGEdge c = (LGGEdge) o; // typecast o to Complex so that we can compare data members 
 		return (from.isEqual(c.from) && to.isEqual(c.to));       // Compare the data members and return accordingly 
+	}
+	
+	public int hashCode(){
+		return Objects.hash(this.getFrom(),this.getTo());
 	}
 	
 	public LGGNode getFrom() {

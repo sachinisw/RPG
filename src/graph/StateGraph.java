@@ -409,19 +409,28 @@ public class StateGraph {
 		ArrayList<StateVertex> alreadyProcessed = new ArrayList<StateVertex>();
 		Queue<StateVertex> queue = new LinkedList<StateVertex>();
 		queue.add(init);
+		//						System.out.println("THIS IS THE GRAPH ADJ LIST-----------------------------------------------------------------------------");
+		//						System.out.println(adjacencyList.toString());
+		//						System.out.println("\n\n");
 		while(!queue.isEmpty()){
 			StateVertex parent = queue.poll();
 			if(adjacencyListTree.get(parent)==null){ //initialize adj list for parent (current node) if doesn't exist
 				adjacencyListTree.put(parent, new TreeSet<StateVertex>());
 			}
 			TreeSet<StateVertex> children = adjacencyList.get(parent);//find current node's children from adj list. this will have 2 way connections
+			//																System.out.println("PARENT------------------>"+parent);
 			TreeSet<StateVertex> treeNeighbors = adjacencyListTree.get(parent);
+			//																System.out.println("current neighbors##################################"+treeNeighbors);
 			for (StateVertex child : children) { //add current node's children as tree node's children. removing 2 way connections
+				//																System.out.println("CHILD---------------"+child);
 				if(!isVertexInSpecifiedList(child, alreadyProcessed) && !child.isEqual(parent)){
 					queue.add(child);
+					//																System.out.println("Added!!!!!!!!!!!!!!!!   "+Objects.hashCode(child.getStates()));
+					//																System.out.println("list contains() "+treeNeighbors.contains(child));
 					treeNeighbors.add(child);
 				}
 			}
+			//																System.out.println("current neighbors##################################AFTER ADDING..........."+treeNeighbors);
 			alreadyProcessed.add(parent);
 			verticesTree.put(parent.getName(), parent);
 			adjacencyListTree.put(parent, treeNeighbors);
@@ -442,12 +451,12 @@ public class StateGraph {
 		tree.setNumVertices(verticesTree.size());
 		tree.markVerticesContainingCriticalState(critical);
 		tree.markVerticesContainingDesirableState(desirable);
-		//		System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
-		//		System.out.println(tree.toString());
-		//		System.out.println("TREE EDGE SET----------------------");
-		//		for (ActionEdge e : edgesTree) {
-		//			System.out.println(e);
-		//		}
+		//				System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
+		//				System.out.println(tree.toString());
+		//				System.out.println("TREE EDGE SET----------------------");
+		//				for (ActionEdge e : edgesTree) {
+		//					System.out.println(e);
+		//				}
 		return tree;
 	}
 
@@ -606,11 +615,25 @@ public class StateGraph {
 		return true;
 	}
 
-	public ArrayList<ArrayList<StateVertex>> getUndesirablePaths(ArrayList<ArrayList<StateVertex>> allpathsfromroot){
+	public ArrayList<ArrayList<StateVertex>> getUndesirablePaths(ArrayList<ArrayList<StateVertex>> allpathsfromroot, String domainName){
 		ArrayList<ArrayList<StateVertex>> undesirablePaths = new ArrayList<ArrayList<StateVertex>>();
-		for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state
-			if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){
-				undesirablePaths.add(path);
+		if(domainName.equalsIgnoreCase("blocks")){
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For blocks only
+				if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){
+					undesirablePaths.add(path);
+				}
+			}
+		}else if(domainName.equalsIgnoreCase("EASYIPC")){
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For grid navigation, crical node may occur before reaching leaf nodes.
+				boolean found = false;
+				for (StateVertex stateVertex : path) {
+					if(stateVertex.containsCriticalState(critical.getCriticalState())){
+						found = true;
+					}
+				}
+				if(found){
+					undesirablePaths.add(path);
+				}
 			}
 		}
 		return undesirablePaths;

@@ -54,28 +54,44 @@ public class User extends Agent{
 		return 0.0;
 	}
 	
-	public int computeDistanceToDesirableStateFromRoot(){ //number of steps from root (current state) to desirable state
+	public int computeDistanceToDesirableStateFromRoot(){ //number of steps from root (current state) to desirable state. there could be 1 or more desirable paths. take the min.
 		ArrayList<ArrayList<StateVertex>> dfsPaths = userState.getAllPathsFromRoot();
-		ArrayList<ArrayList<StateVertex>> desirablepaths = new ArrayList<ArrayList<StateVertex>>(); //assumes multiple desirable states. for now just 1
+		ArrayList<ArrayList<StateVertex>> desirablepaths = new ArrayList<ArrayList<StateVertex>>(); 
 		for (ArrayList<StateVertex> path : dfsPaths) {
-			if(path.get(path.size()-1).containsCriticalState(desirable.getDesirable())){
+//			if(path.get(path.size()-1).containsCriticalState(desirable.getDesirable())){ //TODO: see Attacker.java line-91
+//				desirablepaths.add(path);
+//			}
+			boolean found = false;
+			for (StateVertex stateVertex : path) {
+				if(stateVertex.containsCriticalState(desirable.getDesirable())){
+					found = true;
+				}
+			}
+			if (found){
 				desirablepaths.add(path);
 			}
 		}
-		int length = 0;
-//		for (ArrayList<StateVertex> arrayList : desirablepaths) {
-//			System.out.println(Arrays.toString(arrayList.toArray()));
-//		}
+		int lens [] = new int [desirablepaths.size()];
+		int index = 0;
 		for (ArrayList<StateVertex> arrayList : desirablepaths) {
+			int length = 0;
 			for (StateVertex stateVertex : arrayList) {
 				length++;
-//				System.out.println("vertex"+ stateVertex + "\nlen="+length);
 				if(stateVertex.containsCriticalState(desirable.getDesirable())){
-//					System.out.println("breaking=="+ stateVertex + " len="+(length-1));
-					return length-1;//count edges until first occurrence.
+					length-=1;//count edges until first occurrence.
 				}
 			}
+			lens[index++]=length;//loop counts vertices. edges=vertex count-1
 		}
-		return -1;
+		if(lens.length>0){
+			int min = lens[0];
+			for (int x=1; x<lens.length; x++) {
+				if(min>lens[x]){
+					min=lens[x];
+				}
+			}
+			return min;
+		}
+		return -1; //there are no desirable paths. 1 node graph
 	}
 }

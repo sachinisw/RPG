@@ -1,10 +1,10 @@
 package landmark;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeSet;
 
 //landmark generation graph -> reference paper "ordered landmarks in planning" (Hoffmann)
@@ -35,7 +35,45 @@ public class LGG {
 		}
 		return v;
 	}
-
+	
+	public LGGNode removeLGGNode(LGGNode node) { //removes the row for node in adjacency list.
+		System.out.println("removing---------"+node);
+		LGGNode v = findLGGNode(node.getValue());
+		if (v != null) {
+			if(vertices.remove(v)){
+				numVertices -= 1;
+			}
+			TreeSet<LGGNode> neighbors = adjacencyList.get(v); //get node's neighbor set. remove edges node-neighbor
+			for (LGGNode neighbornode : neighbors) {
+				LGGEdge edge = findEdge(v, neighbornode);
+				if( edges.remove(edge)){
+					numEdges--;
+				}
+			}
+			adjacencyList.remove(v); //remove node's row from adjacency list
+			Iterator<Map.Entry<LGGNode, TreeSet<LGGNode>>> itr = adjacencyList.entrySet().iterator();
+			while(itr.hasNext()){ //from remaining vertices, find occurrences of node in neighbor list. remove any vertex-node edges
+//				TreeSet<LGGNode> remainingNodeNeighbors = itr.next().getValue();
+//				LGGNode current = itr.next().getKey();
+				Map.Entry<LGGNode, TreeSet<LGGNode>> pair = itr.next();
+				System.out.println("current= "+pair.getKey());
+				System.out.println("neighbors="+Arrays.toString(pair.getValue().toArray()));
+				Iterator<LGGNode> treeItr = pair.getValue().iterator();
+				while(treeItr.hasNext()) {
+					LGGNode curNeighbor = treeItr.next();
+					if(curNeighbor.isEqual(node)){
+						LGGEdge edge = findEdge(pair.getKey(), curNeighbor);
+						if( edges.remove(edge)){
+							treeItr.remove();
+							numEdges--;
+						}
+					}
+				}
+			}
+		}
+		return v;
+	}
+	
 	public LGGNode findLGGNode(ArrayList<String> data){
 		LGGNode in = new LGGNode(data);
 		for (LGGNode node : vertices) {
@@ -63,7 +101,7 @@ public class LGG {
 			}
 		}
 	}
-
+	
 	public boolean hasEdge(ArrayList<String> stateFrom, ArrayList<String> stateTo) {
 		if (!hasVertex(stateFrom) || !hasVertex(stateTo))
 			return false;
@@ -72,6 +110,16 @@ public class LGG {
 		return adjacencyList.get(from).contains(to);
 	}
 
+	public LGGEdge findEdge(LGGNode from, LGGNode to){
+		LGGEdge edge = new LGGEdge(from, to);
+		for (LGGEdge lggEdge : edges) {
+			if(lggEdge.equals(edge)){
+				return lggEdge;
+			}
+		}
+		return null;
+	}
+	
 	public boolean hasVertex(ArrayList<String> state) {
 		if(findLGGNode(state)!= null){
 			return true;
@@ -90,26 +138,6 @@ public class LGG {
 			s += "\n";
 		}
 		return s;
-	}
-
-	//remove unverified landmarks
-	public void applyVerication(ArrayList<LGGNode> vlm){
-		Iterator<LGGNode> itr = getAdjacencyList().keySet().iterator();
-		while(itr.hasNext()){	//remove node itself
-			if (!itr.next().find(vlm)) {
-				itr.remove();
-			}
-		}
-		Iterator<Entry<LGGNode, TreeSet<LGGNode>>> it = getAdjacencyList().entrySet().iterator(); 
-		while (it.hasNext()) { //remove edges in remaining nodes connected to the unverified node
-			Map.Entry<LGGNode, TreeSet<LGGNode>> pair = (Map.Entry<LGGNode, TreeSet<LGGNode>>)it.next();
-			Iterator<LGGNode> nbr = pair.getValue().iterator();
-			while(nbr.hasNext()){
-				if(nbr.next().find(vlm)){
-					nbr.remove();
-				}
-			}
-		}
 	}
 
 	public HashMap<LGGNode, TreeSet<LGGNode>> getAdjacencyList() {

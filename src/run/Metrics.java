@@ -15,14 +15,16 @@ public class Metrics {
 	private int distanceToCritical;
 	private int distanceToDesirable;
 	private int landmarkMetric;
+	private String domain;
 	
-	public Metrics(Attacker at, User us){
+	public Metrics(Attacker at, User us, String dom){
 		this.attacker = at;
 		this.user = us;
 		metrics = new double[3];
 		distanceToCritical = 0;
 		distanceToDesirable = 0;
 		landmarkMetric = 0;
+		domain = dom;
 	}
 	
 	public void computeMetrics(){
@@ -37,15 +39,15 @@ public class Metrics {
 	}
 
 	public void computeDistanceToCrtical(){
-		distanceToCritical = attacker.computeDistanceToCriticalStateFromRoot();
+		distanceToCritical = attacker.computeDistanceToCriticalStateFromRoot(domain);
 	}
 	
 	public void computeDistanceToDesirable(){
 		distanceToDesirable= user.computeDistanceToDesirableStateFromRoot();
 	}
 	
-	public void computeAttackLandmarks(RelaxedPlanningGraph arpg, ConnectivityGraph con){
-		landmarkMetric = attacker.computeLandmarkMetric(arpg, con);
+	public void computeAttackLandmarks(RelaxedPlanningGraph arpg, ConnectivityGraph con, String lmoutput){
+		landmarkMetric = attacker.computeLandmarkMetric(arpg, con, lmoutput);
 	}
 	
 	public double[] getMetrics() {
@@ -86,6 +88,14 @@ public class Metrics {
 
 	public void setLandmarkMetric(int landmarkMetric) {
 		this.landmarkMetric = landmarkMetric;
+	}
+
+	public String getDomain() {
+		return domain;
+	}
+
+	public void setDomain(String domain) {
+		this.domain = domain;
 	}
 	
 }

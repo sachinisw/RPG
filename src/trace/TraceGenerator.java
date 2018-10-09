@@ -17,6 +17,11 @@ import run.Observation;
 import run.State;
 import run.StateGenerator;
 
+/**
+ * Generate observation traces for training the decision tree
+ * @author sachini
+ *
+ */
 public class TraceGenerator {
 
 	public final static int filterLimit = 80;
@@ -45,9 +50,9 @@ public class TraceGenerator {
 		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)));
 		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
 		graphs.add(treeAgent);
-		gen.graphToDOT(graphAgent, 0, 0, true); //TODO: remove after debug
-		gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
-		System.out.println(graphAgent);//TODO: remove after debug
+//		gen.graphToDOT(graphAgent, 0, 0, true); //TODO: remove after debug
+//		gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
+//		System.out.println(graphAgent);//TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
@@ -62,7 +67,7 @@ public class TraceGenerator {
 		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
 		//		ArrayList<ArrayList<StateVertex>> us = user.getAllPathsFromRoot();
 		ArrayList<ArrayList<StateVertex>> at = attacker.getAllPathsFromRoot();
-		ArrayList<ArrayList<StateVertex>> undesirable = attacker.getUndesirablePaths(at);
+		ArrayList<ArrayList<StateVertex>> undesirable = attacker.getUndesirablePaths(at,ConfigParameters.domain);
 		//		for(int i=0; i<us.size(); i++){ //adds paths from user domain to trace. these paths are included in attacker domain also. decided it was not needed.
 		//			ArrayList<StateVertex> list = us.get(i);
 		//			ArrayList<String> trc = new ArrayList<String>();
@@ -196,7 +201,7 @@ public class TraceGenerator {
 
 	public static void generateTraceForScenario(){
 		for(int instance=0; instance<=22; instance++){
-			if(instance==1){
+			if(instance==0){
 				String domainFile = ConfigParameters.prefix+instance+ConfigParameters.domainFile;
 				String desirableStateFile = ConfigParameters.prefix+instance+ConfigParameters.desirableStateFile;
 				String a_problemFile = ConfigParameters.prefix+instance+ConfigParameters.a_problemFile;

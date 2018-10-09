@@ -95,28 +95,29 @@ public class RelaxedPlanningGraphGenerator {
 
 
 	public static void main(String[] args) {
-		String inputfilerpg = "/home/sachini/BLOCKS/scenarios/31/outs/attacker/rpg-problem-a";
-		String inputfilecon = "/home/sachini/BLOCKS/scenarios/31/outs/attacker/connectivity-problem-a";
+		String inputfilerpg = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/rpg-problem-a";
+		String inputfilecon = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/connectivity-problem-a";
+		String lmoutput = "/home/sachini/BLOCKS/scenarios/30/outs/verifiedlm.txt";
 		ArrayList<String> critical = new ArrayList<String>();
 		ArrayList<String> init = new ArrayList<String>();
-//		critical.add("AT C A"); //prob 30
-//		critical.add("ON B D");
-//		init.add("HANDEMPTY");
-//		init.add("CLEAR A");
-//		init.add("ONTABLE A");
-//		init.add("CLEAR B");
-//		init.add("ONTABLE B");
-//		init.add("ONTABLE C");
-//		init.add("ON D C");
-//		init.add("CLEAR D");
+		critical.add("(ON C A)"); //prob 30
+		critical.add("(ON B D)");
+		init.add("(HANDEMPTY)");
+		init.add("(CLEAR A)");
+		init.add("(ONTABLE A)");
+		init.add("(CLEAR B)");
+		init.add("(ONTABLE B)");
+		init.add("(ONTABLE C)");
+		init.add("(ON D C)");
+		init.add("(CLEAR D)");
 		 
-		critical.add("(AT D)"); //prob 31. Give these with paranthesis
-		init.add("(AT A)");
-		init.add("(ADJ A B)");
-		init.add("(ADJ A E)");
-		init.add("(ADJ B C)");
-		init.add("(ADJ C D)");
-		init.add("(ADJ A D)");
+//		critical.add("(AT D)"); //prob 31. Give these with paranthesis
+//		init.add("(AT A)");
+//		init.add("(ADJ A B)");
+//		init.add("(ADJ A E)");
+//		init.add("(ADJ B C)");
+//		init.add("(ADJ C D)");
+//		init.add("(ADJ A D)");
 
 		RelaxedPlanningGraphGenerator test = new RelaxedPlanningGraphGenerator();
 		test.readFFOutput(inputfilerpg);
@@ -124,6 +125,7 @@ public class RelaxedPlanningGraphGenerator {
 		System.out.println(test.rpg.toString());
 		LandmarkExtractor lm = new LandmarkExtractor(test.rpg, cons.get(0));
 		LGG lgg = lm.extractLandmarks(critical);
-		lm.verifyLandmarks(lgg, critical, init);
+		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical, init,lmoutput);
+		lm.removeUnverifiedLandmarksFromLGG(lgg, verified);
 	}
 }

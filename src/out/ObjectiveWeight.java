@@ -26,10 +26,9 @@ public class ObjectiveWeight {
 		        WeightGroup wg = new WeightGroup(Double.valueOf(line.split(",")[0]), Double.valueOf(line.split(",")[1]), Double.valueOf(line.split(",")[2]));
 		        weights.add(wg);
 		    }
+			 it.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		} finally {
-		    LineIterator.closeQuietly(it);
 		}
 	}
 

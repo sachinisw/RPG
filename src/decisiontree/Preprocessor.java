@@ -154,10 +154,11 @@ public class Preprocessor {
 	}
 	
 	public static void main(String[] args) {
-		int scenario = 21;
-		String path = "/home/sachini/BLOCKS/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
-		String out = "/home/sachini/BLOCKS/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation
-		String outFull = "/home/sachini/BLOCKS/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+		int scenario = 1;
+		String domain = "EASYIPC";//BLOCKS
+		String path = "/home/sachini/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
+		String out = "/home/sachini/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation
+		String outFull = "/home/sachini/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
 		Preprocessor pre = new Preprocessor(path);
 		ArrayList<DataFile> dataFile = pre.readDataFiles(pre.getDataFiles());
 		double [] minmax = pre.findObjectiveFunctionValueMinMax(dataFile);
