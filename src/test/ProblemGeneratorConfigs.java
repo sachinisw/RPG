@@ -18,7 +18,7 @@ public class ProblemGeneratorConfigs {
 	public final static String plans = "/plans/";
 	public final static String problemgen_output = "/scenarios/";
 	
-	//PROBLEM SPECIFIC FILES
+	//FILES FOR PROBLEM IN EACH TEST INSTANCE
 	public final static String domfilename = "domain.pddl";
 	public final static String aprobfilename = "problem_a.pddl";
 	public final static String uprobfilename = "problem_u.pddl";
@@ -27,9 +27,10 @@ public class ProblemGeneratorConfigs {
 	public final static String critical = "critical.txt";
 	public final static String desirable = "desirable.txt";
 	public final static String outdir = "outs";
-	public final static String obsdir = "obs";
+	public final static String obsdir = "obs"; //full observations
 	public final static String datadir = "data";
 	public final static String dotdir = "dot";
+	public final static String obslm = "obslm"; //landmark restricted observations
 	public final static int problemCount = 20;
 //	public final static String lmFile = "/outs/verifiedlm.txt";
 }

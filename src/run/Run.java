@@ -130,27 +130,10 @@ public class Run {
 		results.writeOutput();
 	}
 
-	public static void main(String[] args) { 
+	public static void run(String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
+			String a_out, String criticalfile, String a_init, String a_dotsuf, String u_prob, String u_out, String u_init, String u_dotpre, 
+			String u_dotsuf, String obs, String wt_csv, String ds_csv, String ow, String lm_out, boolean writedot) {
 		int reverseConfig = 1;
-		String domainfile = TrainConfigs.domainFile;
-		String desirablefile = TrainConfigs.desirableStateFile;
-		String criticalfile = TrainConfigs.criticalStateFile;
-		String a_prob = TrainConfigs.a_problemFile;
-		String a_out = TrainConfigs.a_outputPath;
-		String a_init = TrainConfigs.a_initFile;
-		String a_dotpre = TrainConfigs.a_dotFilePrefix;
-		String a_dotsuf = TrainConfigs.a_dotFileSuffix;
-		String u_prob = TrainConfigs.u_problemFile;
-		String u_out = TrainConfigs.u_outputPath;
-		String u_init = TrainConfigs.u_initFile;
-		String u_dotpre = TrainConfigs.u_dotFilePrefix;
-		String u_dotsuf = TrainConfigs.u_dotFileSuffix;
-		String wt_csv = TrainConfigs.weightedCSV;
-		String ds_csv = TrainConfigs.decisionCSV;
-		String ow = TrainConfigs.owFile;
-		String lm_out = TrainConfigs.lmoutputFile;
-		String obs = TrainConfigs.observationFiles;
-		boolean writedot = TrainConfigs.writeDOT;
 		Attacker attacker = new Attacker(domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
 		User user = new User(domainfile, desirablefile, u_prob, u_out, criticalfile, u_init, u_dotpre, u_dotsuf);
 		ArrayList<String> obFiles = getObservationFiles(obs);
@@ -165,9 +148,65 @@ public class Run {
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
 			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, curobs, attacker.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot);//generate graph for attacker and user
 			ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, curobs, user.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot);
-			computeMetricsWeighted(TrainConfigs.domain, curobs, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+".csv", ow);
-			computeMetricsForDecisionTree(TrainConfigs.domain, curobs, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+".csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed  
+			computeMetricsWeighted(domain, curobs, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+".csv", ow);
+			computeMetricsForDecisionTree(domain, curobs, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+".csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed  
 			//			}
+		}
+	}
+	public static void main(String[] args) { 
+		int mode = 1; //0-train, 1-test
+		if(mode==0) {
+			String domain = TrainConfigs.domain;
+			String domainfile = TrainConfigs.domainFile;
+			String desirablefile = TrainConfigs.desirableStateFile;
+			String criticalfile = TrainConfigs.criticalStateFile;
+			String a_prob = TrainConfigs.a_problemFile;
+			String a_out = TrainConfigs.a_outputPath;
+			String a_init = TrainConfigs.a_initFile;
+			String a_dotpre = TrainConfigs.a_dotFilePrefix;
+			String a_dotsuf = TrainConfigs.a_dotFileSuffix;
+			String u_prob = TrainConfigs.u_problemFile;
+			String u_out = TrainConfigs.u_outputPath;
+			String u_init = TrainConfigs.u_initFile;
+			String u_dotpre = TrainConfigs.u_dotFilePrefix;
+			String u_dotsuf = TrainConfigs.u_dotFileSuffix;
+			String wt_csv = TrainConfigs.weightedCSV;
+			String ds_csv = TrainConfigs.decisionCSV;
+			String ow = TrainConfigs.owFile;
+			String lm_out = TrainConfigs.lmoutputFile;
+			String obs = TrainConfigs.observationFiles;
+			boolean writedot = TrainConfigs.writeDOT;
+			run(domain, domainfile, desirablefile, a_prob, a_dotpre, 
+					a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre, 
+					u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot);
+		}else {
+			String domain = TestConfigs.domain;
+			boolean writedot = TestConfigs.writeDOT;
+			for (int instance=1; instance<=3; instance++) { //3 instances
+				String domainfile = TestConfigs.prefix+instance+TestConfigs.domainFile;
+				String desirablefile = TestConfigs.prefix+instance+TestConfigs.desirableStateFile;
+				String criticalfile = TestConfigs.prefix+instance+TestConfigs.criticalStateFile;
+				String a_prob = TestConfigs.prefix+instance+TestConfigs.a_problemFile;
+				String a_out = TestConfigs.prefix+instance+TestConfigs.a_outputPath;
+				String a_init = TestConfigs.prefix+instance+TestConfigs.a_initFile;
+				String a_dotpre = TestConfigs.prefix+instance+TestConfigs.a_dotFilePrefix;
+				String a_dotsuf = TestConfigs.prefix+instance+TestConfigs.a_dotFileSuffix;
+				String u_prob = TestConfigs.prefix+instance+TestConfigs.u_problemFile;
+				String u_out = TestConfigs.prefix+instance+TestConfigs.u_outputPath;
+				String u_init = TestConfigs.prefix+instance+TestConfigs.u_initFile;
+				String u_dotpre = TestConfigs.prefix+instance+TestConfigs.u_dotFilePrefix;
+				String u_dotsuf = TestConfigs.prefix+instance+TestConfigs.u_dotFileSuffix;
+				String wt_csv = TestConfigs.prefix+instance+TestConfigs.weightedCSV;
+				String ds_csv = TestConfigs.prefix+instance+TestConfigs.decisionCSV;
+				String ow = TestConfigs.prefix+instance+TestConfigs.owFile;
+				String lm_out = TestConfigs.prefix+instance+TestConfigs.lmoutputFile;
+				String obs = TestConfigs.prefix+instance+TestConfigs.observationFiles;
+				for (int x=0; x<TestConfigs.instanceCases; x++) { //each instance has 20 problems
+					run(domain, domainfile, desirablefile, a_prob, a_dotpre, 
+							a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre, 
+							u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out,writedot);
+				}
+			}
 		}
 	}
 }

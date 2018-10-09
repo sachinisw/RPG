@@ -84,7 +84,6 @@ public class RelaxedPlanningGraphGenerator {
 		}
 	}
 
-	//TEST ONLY. DONT NEED THIS METHOD HERE
 	public ArrayList<ConnectivityGraph> readConnectivityGraphs(String inputfile){
 		ArrayList<ConnectivityGraph> connectivities = new ArrayList<ConnectivityGraph>();
 		ConnectivityGraph graph = new ConnectivityGraph(inputfile);
@@ -93,7 +92,17 @@ public class RelaxedPlanningGraphGenerator {
 		return connectivities;
 	}
 
-
+	public static void runLandmarkGenerator(String inputfilerpg, String inputfilecon, ArrayList<String> critical, ArrayList<String> init, String lmoutput) {
+		RelaxedPlanningGraphGenerator test = new RelaxedPlanningGraphGenerator();
+		test.readFFOutput(inputfilerpg);
+		ArrayList<ConnectivityGraph> cons = test.readConnectivityGraphs(inputfilecon);
+		System.out.println(test.rpg.toString());
+		LandmarkExtractor lm = new LandmarkExtractor(test.rpg, cons.get(0));
+		LGG lgg = lm.extractLandmarks(critical);
+		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical, init,lmoutput); //writes cleaned landmarks to lmoutput
+		lm.removeUnverifiedLandmarksFromLGG(lgg, verified);
+	}
+	
 	public static void main(String[] args) {
 		String inputfilerpg = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/rpg-problem-a";
 		String inputfilecon = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/connectivity-problem-a";
@@ -118,14 +127,6 @@ public class RelaxedPlanningGraphGenerator {
 //		init.add("(ADJ B C)");
 //		init.add("(ADJ C D)");
 //		init.add("(ADJ A D)");
-
-		RelaxedPlanningGraphGenerator test = new RelaxedPlanningGraphGenerator();
-		test.readFFOutput(inputfilerpg);
-		ArrayList<ConnectivityGraph> cons = test.readConnectivityGraphs(inputfilecon);
-		System.out.println(test.rpg.toString());
-		LandmarkExtractor lm = new LandmarkExtractor(test.rpg, cons.get(0));
-		LGG lgg = lm.extractLandmarks(critical);
-		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical, init,lmoutput);
-		lm.removeUnverifiedLandmarksFromLGG(lgg, verified);
+		runLandmarkGenerator(inputfilerpg, inputfilecon, critical, init, lmoutput);
 	}
 }

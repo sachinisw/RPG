@@ -22,7 +22,7 @@ import test.ProblemGeneratorConfigs;
  * @author sachini
  *
  */
-public class TestTemplateGenerator {
+public class TemplateGenerator {
 
 	public final static int filterLimit = 80;
 	public final static double selectProbability = 0.80;

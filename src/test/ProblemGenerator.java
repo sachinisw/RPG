@@ -58,7 +58,7 @@ public class ProblemGenerator {
 		return dom;
 	}
 
-	public static void generateFilesForTestScenario(int id, String critical, String desirable, 
+	public static void generateProblemsForTestInstance(int id, String critical, String desirable, 
 			TreeSet<String> inits, String domainTemplatePath, String problemTemplatepath, String outputpath, String origtracepath) {
 		TreeSet<String> objects = new TreeSet<String>();
 		ArrayList<String> adata = new ArrayList<>();
@@ -82,6 +82,7 @@ public class ProblemGenerator {
 		writeToFile(getDesirableState(desirable), outputpath, String.valueOf(id), ProblemGeneratorConfigs.desirable); //write desirable.txt
 		createDirectories(outputpath, String.valueOf(id)); //create directories to store output files
 		copyApplicableObsFileToScenario(origtracepath+String.valueOf(id), outputpath+String.valueOf(id)+"/"+ProblemGeneratorConfigs.obsdir+"/"+String.valueOf(id)); //copy idth file from /traces at template level to scenarios/i/obs
+		//TODO: copy reduced lm based observations to obslm dir
 	}			
 
 	public static void createDirectories(String outputpath, String scenarioid) {
@@ -92,6 +93,7 @@ public class ProblemGenerator {
 		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.outdir+"/attacker/").mkdirs();
 		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.outdir+"/user/").mkdirs();
 		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.obsdir+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+ProblemGeneratorConfigs.obslm+"/").mkdirs();
 	}
 
 
@@ -216,7 +218,7 @@ public class ProblemGenerator {
 			ArrayList<String> desirables = readGoals(dspath);
 			TreeSet<String> inits = readInits(initspath);
 			for (int i=0; i<20; i++) {
-				generateFilesForTestScenario(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
+				generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
 						problemoutput, origtracepath);
 				if(i==2) break;
 			}
