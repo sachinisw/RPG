@@ -13,11 +13,11 @@ import java.util.TreeSet;
 
 /*
  * reads two dot files and merges ag (agent's dot) into adversary's dot */
-public class DOTConfiguration {
+public class DOTCompare {
 	private ArrayList<String> agDOTFile;
 	private ArrayList<String> adDOTFile;
 
-	public DOTConfiguration(ArrayList<String> ag, ArrayList<String> ad){
+	public DOTCompare(ArrayList<String> ag, ArrayList<String> ad){
 		this.agDOTFile = ag;
 		this.adDOTFile = ad;
 	}
@@ -74,7 +74,7 @@ public class DOTConfiguration {
 		compareDOTLines.add(this.adDOTFile.get(this.adDOTFile.size()-1)); 		//add  last }
 		return compareDOTLines;
 	}
-	
+
 	private TreeSet<String> extractNodeNames(ArrayList<String> lines){
 		TreeSet<String> nodes = new TreeSet<String>();
 		for(int i=0; i<lines.size(); i++){
@@ -107,24 +107,46 @@ public class DOTConfiguration {
 			return ag.equals(ad);
 		}
 	}
-	
-	
-	private static boolean isStateEqualWithDeception(String[] agState, String[] adState ){
-		int [] check = new int[agState.length];
-		for (int i=0; i<agState.length; i++) {
-			for (int j=0; j<adState.length; j++) {
-				if(agState[i].equalsIgnoreCase(adState[j])){
-					check[i]=1;
+
+//	compare the agent's state node with adversary's state node using deception rule.
+//	rule: ag=X O P [X==T], ad=XX X O P [X=T, XX=M]
+//	compare states without probability number, which is the last element
+		private static boolean isStateEqualWithDeception(String[] agState, String[] adState ){
+			int [] check = new int[agState.length-1];
+			for (int i=0; i<agState.length-1; i++) {
+				for (int j=0; j<adState.length-1; j++) {
+					if(!adState[j].contains("XXXX")){
+						if(agState[i].equalsIgnoreCase(adState[j])){
+							check[i]=1;
+						}
+					}else if(adState[j].contains("XXXX")){
+						String partsAd[] = adState[j].split(" ");
+						String optAd = partsAd[0].trim();
+						String partsAg[] = agState[i].split(" ");
+						String optAg = partsAg[0].trim();
+						if(partsAd.length==partsAg.length){
+							int count = 0;
+							for(int x=1; x<partsAd.length; x++){
+								if(partsAd[x].equals("XXXX") && partsAg[x].equals("XX")){
+									count++;
+								}else if(partsAd[x].equals(partsAg[x])){
+									count++;
+								}
+							}
+							if(optAd.equalsIgnoreCase(optAg) && count==partsAg.length-1){
+								check[i]=1;
+							}
+						}
+					}
 				}
 			}
+			int sum = 0;
+			for(int i=0; i<check.length; i++){
+				sum += check[i];
+			}
+			return (sum==check.length);
 		}
-		int sum = 0;
-		for(int i=0; i<check.length; i++){
-			sum += check[i];
-		}
-		return (sum==check.length);
-	}
-	
+
 	public void writeCompareDOTFile(String filename, ArrayList<String> compareLines){
 		FileWriter writer = null;
 		try {
@@ -173,14 +195,14 @@ public class DOTConfiguration {
 	}
 
 	public static void main(String[] args) {
-		String adDOT = "/home/sachini/BLOCKS/graph4_ad_noreverse.dot";
-		String agDOT = "/home/sachini/BLOCKS/graph3_ag_noreverse.dot";
-		String compareOut = "/home/sachini/BLOCKS/3_4_norev.dot";
+		String adDOT = "/home/sachini/BLOCKS/graph_ad_noreverse.dot";
+		String agDOT = "/home/sachini/BLOCKS/graph_ag_noreverse.dot";
+		String compareOut = "/home/sachini/BLOCKS/3_4_norev_prob.dot";
 
 		ArrayList<String> ad = readDOTFile(adDOT);
 		ArrayList<String> ag = readDOTFile(agDOT);
 
-		DOTConfiguration cdot = new DOTConfiguration(ag, ad);
+		DOTCompare cdot = new DOTCompare(ag, ad);
 		TreeSet<String> adversaryNodes = cdot.extractNodeNames(ad);
 		TreeSet<String> agentNodes = cdot.extractNodeNames(ag);
 		System.out.println(Arrays.toString(agentNodes.toArray()));

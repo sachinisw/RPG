@@ -158,13 +158,10 @@ public class PlanningGraph {
 		
 	//this is to extract RPG after the first action
 	public String readFFOutput(String filename){
-		
 		String outStr="";
-		
 	    try {
             FileReader fileReader = new FileReader(filename);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
-
             while((outStr = bufferedReader.readLine()) != null) {
                 int levelCounter =  populate(outStr);             
                 //stop reading after 1 iteration. 
@@ -174,7 +171,6 @@ public class PlanningGraph {
     				continue;
     			}	
     		}    
-
             bufferedReader.close();            
 	    } 
 	    catch (FileNotFoundException e) {
@@ -182,101 +178,76 @@ public class PlanningGraph {
 	    } catch (IOException e) {
 			e.printStackTrace();
 		}
-	    
 	    return outStr;
 	}
 	
 	public int populate(String inputStr){
-	
 		if(inputStr.equals("LEVEL 0:")){			
 			this.L0Counter++;
 		}
-
 		Pattern p = Pattern.compile("LEVEL\\s\\d{1,}:");
 		Matcher m = p.matcher(inputStr);
-
 		if(m.find()){
 			this.level++;
 			layer = new GraphLayer();
 			layer.setLayerID(level);	
 			levelStart = true;
 		}
-
 		if(inputStr.equalsIgnoreCase("FACTS:")){
 			readingFacts = true;
-
 		}else if (inputStr.equalsIgnoreCase("EFS:")){
 			readingEffects = true;
 		}
-
 		if(readingFacts && (inputStr.startsWith("(") )){
 			layer.addFact(inputStr);
-
 			if(inputStr.equals("")){
 				readingFacts = false;
 			}
 		}
-
 		if(readingEffects && (inputStr.startsWith("effect") )){
 			layer.addEffect(inputStr);
-
 			if(inputStr.equals("")){
 				readingEffects = false;
 			}
 		}
-
-		if(levelStart && L0Counter <= 1){
-			//add layer to array list.
-			//levelstart = false
+		if(levelStart && L0Counter <= 1){ //add layer to array list.
 			RPG.add(layer);
 			levelStart = false;
 		}
-
 		return L0Counter;
 	}
 
 	public String toString(){
 		String outstr = "";
-		
 		for (int i=0; i<RPG.size(); i++){
 			outstr += RPG.get(i).toString() + "\n-------------------------------------------\n\n";
 		}
-		
 		return outstr;
 	}
 	
 	public int findEffect(String predicateEffect){
-		
 		int findEffect = -1;
 		TreeSet<Integer> tree = new TreeSet<Integer>();
-		
 		for(int i=0; i<RPG.size(); i++){
 			GraphLayer layer = RPG.get(i);
-			findEffect = layer.findEffect(predicateEffect);
-			
+			findEffect = layer.findEffect(predicateEffect);	
 			if(findEffect > -1){
 				tree.add(findEffect);
 			}
 		}
-		
 		return tree.first();
-		
 	}
 	
 	public int findFact(String predicateFact){
-		
 		int findFact = -1;
 		TreeSet<Integer> tree = new TreeSet<Integer>();
-		
 		for(int i=0; i<RPG.size(); i++){
 			GraphLayer layer = RPG.get(i);
 			findFact = layer.findFactLayer(predicateFact);
-			
 			if(findFact > -1){
 				tree.add(findFact);
 			}
 		}
-		
 		return tree.first();
 	}
 	
