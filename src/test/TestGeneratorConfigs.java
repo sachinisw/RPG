@@ -1,9 +1,9 @@
 package test;
 
-public class ProblemGeneratorConfigs {
+public class TestGeneratorConfigs {
 	//TEMPLATES
 	public final static String domain = "BLOCKS";//BLOCKS,EASYIPC,LOGISTICS
-	public final static String testscenario = "1";
+	public final static String testscenario = "1"; //this is which trained attack scenario it is. e.g. BLOCKS has 4 testable attack scenarios.
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+testscenario+"/inst";
 	public final static String criticalstates = "/cs.txt";
 	public final static String desirablestates = "/ds.txt";
@@ -26,11 +26,14 @@ public class ProblemGeneratorConfigs {
 	public final static String uinit = "inits_u.txt";
 	public final static String critical = "critical.txt";
 	public final static String desirable = "desirable.txt";
+	public final static String arpg = "rpg-problem_a";
+	public final static String acon = "connectivity-problem_a";
+	public final static String lmFile = "verifiedlm.txt";
 	public final static String outdir = "outs";
 	public final static String obsdir = "obs"; //full observations
 	public final static String datadir = "data";
 	public final static String dotdir = "dot";
 	public final static String obslm = "obslm"; //landmark restricted observations
-	public final static int problemCount = 20;
-//	public final static String lmFile = "/outs/verifiedlm.txt";
+	public final static int testProblemCount = 20;
+	public final static int testInstanceCount = 3;
 }
