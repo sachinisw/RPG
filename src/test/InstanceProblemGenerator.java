@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.TreeSet;
@@ -106,12 +107,12 @@ public class InstanceProblemGenerator {
 		File source = new File(spath);
 		File dest = new File(dpath);
 		try {
-			Files.copy(source.toPath(), dest.toPath());
+			Files.copy(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static ArrayList<String> getCriticalState(String critical) {
 		ArrayList<String> c = new ArrayList<String>();
 		String parts [] = critical.split(",");
@@ -225,9 +226,9 @@ public class InstanceProblemGenerator {
 			for (int i=0; i<20; i++) {
 				generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
 						problemoutput, origtracepath);
-				if(i==2) break;
+				//if(i==2) break;
 			}
-			//Call Run.java for fiels that get generated after this.
+			//Call Run.java for files that get generated after this.
 		}
 	}
 }

@@ -5,6 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Scanner;
 
 import plan.Plan;
@@ -54,81 +57,21 @@ public class TestInstanceGenerator {
 //		//		return trace;
 //	}
 
-//	private static ArrayList<ArrayList<String>> selectTracesRandomly(ArrayList<ArrayList<String>> unfiltered){
-//		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
-//		if(unfiltered.size() > filterLimit){
-//			for (int i = 0; i < unfiltered.size(); i++) { //select all Y
-//				ArrayList<String> tr = unfiltered.get(i);
-//				for (String s : tr) {
-//					if(s.contains("Y:")){
-//						trace.add(tr);
-//						break;
-//					}
-//				}
-//			}
-//			for (int i = 0; i < unfiltered.size() && trace.size()<=100; i++) {
-//				ArrayList<String> tr = unfiltered.get(i);
-//				if(listContainsAllNo(tr) && selectCurrentTrace(tr)){ //filter and select all N traces
-//					trace.add(tr);
-//				}
-//			}
-//		}else{
-//			trace.addAll(unfiltered);
-//		}
-//		return trace;
-//	}
-
-//	private static boolean listContainsAllNo(ArrayList<String> list){
-//		int count = 0;
-//		for (String string : list) {
-//			if(string.contains("N:")){
-//				count++;
-//			}
-//		}
-//		return count==list.size();
-//	}
-
-//	private static double randDouble(int min, int max) {
-//		return ThreadLocalRandom.current().nextInt(min, max + 1);
-//	}
-
-//	private static boolean selectCurrentTrace(ArrayList<String> tr){
-//		if(randDouble(0, 1)> selectProbability){
-//			return true;
-//		}
-//		return false;
-//	}
-
-//	private static boolean edgeInUndesirablePath(ActionEdge e, ArrayList<ArrayList<StateVertex>> undesirable){
-//		for (ArrayList<StateVertex> undesirablePath : undesirable) {
-//			for (StateVertex undesirableState : undesirablePath) {
-//				if(e.getTo().isEqual(undesirableState)){
-//					return true;
-//				}
-//			}
-//		}
-//		return false;
-//	}
-
-//	private static boolean edgeTriggersCriticalState(ActionEdge e, ArrayList<String> criticalstate) {
-//		if(e.getTo().containsCriticalState(criticalstate)){
-//			return true;
-//		}
-//		return false;
-//	}
-
-	private static void writeTracesToFile(ArrayList<ArrayList<String>> traceset, String tracepath){
+	private static void writeTracesToFile(HashMap<String, ArrayList<String>> traceset, String tracepath){
 		PrintWriter writer = null;
-		for (int i = 0; i < traceset.size(); i++) {
-			ArrayList<String> tr = traceset.get(i);
+		Iterator<Entry<String, ArrayList<String>>> itr = traceset.entrySet().iterator();
+		while(itr.hasNext()) {
+			Entry<String, ArrayList<String>> e = itr.next();
+			ArrayList<String> tr = e.getValue();
+			String key = e.getKey();
 			try{
-				writer = new PrintWriter(tracepath+"/"+i, "UTF-8");
+				writer = new PrintWriter(tracepath+"/"+Integer.parseInt(key), "UTF-8");
 				for (String string : tr) {
 					writer.write(string);
 					writer.println();
 				}
-			}catch (FileNotFoundException | UnsupportedEncodingException  e) {
-				e.printStackTrace();
+			}catch (FileNotFoundException | UnsupportedEncodingException  ex) {
+				ex.printStackTrace();
 			}finally{
 				writer.close();
 			}
@@ -201,15 +144,16 @@ public class TestInstanceGenerator {
 			Planner.runFF(1, domainpath, problemspath+"problem_"+i+".pddl", planspath); //just create a plan
 		}
 		ArrayList<Plan> plans = Planner.readPlans(planspath);
-		ArrayList<ArrayList<String>> traceset = new ArrayList<>();
+		HashMap<String, ArrayList<String>> traceset = new HashMap<>();
 		for (Plan plan : plans) {
 			ArrayList<String> steps = plan.getPlanSteps();
+			String pid= plan.getPlanID().substring(plan.getPlanID().indexOf("_")+1).trim();
 			int index=0;
 			for (String step : steps) {
 				steps.set(index, "?:"+step.substring(step.indexOf(":")+2,step.length()));
 				index++;
 			}
-			traceset.add(steps);
+			traceset.put(pid, steps); //insert in order of plan-id so that trace file aligns with plan file
 		}
 		writeTracesToFile(traceset, tracepath);
 	}
@@ -217,7 +161,7 @@ public class TestInstanceGenerator {
 	//generates common templates and full trace set (all actions including) for each test instance {1,2,3}
 	public static void generateInstancesAndFullTrace(){ 
 		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
-			if(instance==3){
+//			if(instance==1){
 				String domainFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.domainFile;
 				String problemFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problem;
 				String criticalStateFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
@@ -227,7 +171,7 @@ public class TestInstanceGenerator {
 				ArrayList<String> criticals =  readCriticals(criticalStateFile);
 				generateProblems(criticals, problemFile, problemspath);
 				generatePlans(problemspath, domainFile, planspath, tracepath);
-			}
+//			}
 		}
 	}
 	

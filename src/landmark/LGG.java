@@ -1,7 +1,6 @@
 package landmark;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,7 +36,7 @@ public class LGG {
 	}
 	
 	public LGGNode removeLGGNode(LGGNode node) { //removes the row for node in adjacency list.
-		System.out.println("removing---------"+node);
+//		System.out.println("removing---------"+node);
 		LGGNode v = findLGGNode(node.getValue());
 		if (v != null) {
 			if(vertices.remove(v)){
@@ -56,8 +55,8 @@ public class LGG {
 //				TreeSet<LGGNode> remainingNodeNeighbors = itr.next().getValue();
 //				LGGNode current = itr.next().getKey();
 				Map.Entry<LGGNode, TreeSet<LGGNode>> pair = itr.next();
-				System.out.println("current= "+pair.getKey());
-				System.out.println("neighbors="+Arrays.toString(pair.getValue().toArray()));
+//				System.out.println("current= "+pair.getKey());
+//				System.out.println("neighbors="+Arrays.toString(pair.getValue().toArray()));
 				Iterator<LGGNode> treeItr = pair.getValue().iterator();
 				while(treeItr.hasNext()) {
 					LGGNode curNeighbor = treeItr.next();

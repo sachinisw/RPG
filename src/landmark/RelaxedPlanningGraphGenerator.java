@@ -92,18 +92,18 @@ public class RelaxedPlanningGraphGenerator {
 		return connectivities;
 	}
 
-	public static void runLandmarkGenerator(String inputfilerpg, String inputfilecon, ArrayList<String> critical, ArrayList<String> init, String lmoutput) {
+	public void runLandmarkGenerator(String inputfilerpg, String inputfilecon, ArrayList<String> critical, ArrayList<String> init, String lmoutput) {
 		RelaxedPlanningGraphGenerator test = new RelaxedPlanningGraphGenerator();
 		test.readFFOutput(inputfilerpg);
 		ArrayList<ConnectivityGraph> cons = test.readConnectivityGraphs(inputfilecon);
 //		System.out.println(test.rpg.toString());
 		LandmarkExtractor lm = new LandmarkExtractor(test.rpg, cons.get(0));
 		LGG lgg = lm.extractLandmarks(critical);
-		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical, init,lmoutput); //writes cleaned landmarks to lmoutput
-		lm.removeUnverifiedLandmarksFromLGG(lgg, verified);
+		lm.verifyLandmarks(lgg, critical, init, lmoutput); //writes cleaned landmarks to lmoutput
 	}
 	
 	public static void main(String[] args) {
+		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
 		String inputfilerpg = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/rpg-problem-a";
 		String inputfilecon = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/connectivity-problem-a";
 		String lmoutput = "/home/sachini/BLOCKS/scenarios/30/outs/verifiedlm.txt";
@@ -127,6 +127,6 @@ public class RelaxedPlanningGraphGenerator {
 //		init.add("(ADJ B C)");
 //		init.add("(ADJ C D)");
 //		init.add("(ADJ A D)");
-		runLandmarkGenerator(inputfilerpg, inputfilecon, critical, init, lmoutput);
+		rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, critical, init, lmoutput);
 	}
 }
