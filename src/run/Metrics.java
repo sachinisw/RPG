@@ -14,7 +14,9 @@ public class Metrics {
 	private double [] metrics;
 	private int distanceToCritical;
 	private int distanceToDesirable;
-	private int landmarkMetric;
+	private int lmRemaining;
+	private double stateContainsLandmark;
+	private double statesAddingLM;
 	private String domain;
 	
 	public Metrics(Attacker at, User us, String dom){
@@ -23,8 +25,10 @@ public class Metrics {
 		metrics = new double[3];
 		distanceToCritical = 0;
 		distanceToDesirable = 0;
-		landmarkMetric = 0;
+		lmRemaining = 0;
 		domain = dom;
+		stateContainsLandmark = 0.0;
+		statesAddingLM = 0.0;
 	}
 	
 	public void computeMetrics(){
@@ -46,8 +50,20 @@ public class Metrics {
 		distanceToDesirable= user.computeDistanceToDesirableStateFromRoot();
 	}
 	
-	public void computeAttackLandmarks(RelaxedPlanningGraph arpg, ConnectivityGraph con, String lmoutput){
-		landmarkMetric = attacker.computeLandmarkMetric(arpg, con, lmoutput);
+	public void generateAttackerLandmarks(RelaxedPlanningGraph arpg, ConnectivityGraph con, String lmoutput) {
+		attacker.setVerifiedLandmarks(arpg, con, lmoutput);
+	}
+	
+	public void computeAttackLandmarksRemaining(){
+		lmRemaining = attacker.countRemainingLandmarks();
+	}
+	
+	public void percentOfLandmarksStateContain() {
+		stateContainsLandmark = attacker.percentOfLandmarksStateContain();
+	}
+	
+	public void currentAddsLandmark() {
+		statesAddingLM = attacker.stateAddsFactLandmark();
 	}
 	
 	public double[] getMetrics() {
@@ -82,12 +98,12 @@ public class Metrics {
 		this.distanceToDesirable = distanceToDesirable;
 	}
 
-	public int getLandmarkMetric() {
-		return landmarkMetric;
+	public int getRemainingLandmarks() {
+		return lmRemaining;
 	}
 
 	public void setLandmarkMetric(int landmarkMetric) {
-		this.landmarkMetric = landmarkMetric;
+		this.lmRemaining = landmarkMetric;
 	}
 
 	public String getDomain() {
@@ -96,6 +112,22 @@ public class Metrics {
 
 	public void setDomain(String domain) {
 		this.domain = domain;
+	}
+
+	public double getStateContainsLandmark() {
+		return stateContainsLandmark;
+	}
+
+	public void setStateContainsLandmark(double stateContainsLandmark) {
+		this.stateContainsLandmark = stateContainsLandmark;
+	}
+
+	public double getStateAddsLandmark() {
+		return statesAddingLM;
+	}
+
+	public void setStateAddsLandmark(double stateAddsLandmark) {
+		this.statesAddingLM = stateAddsLandmark;
 	}
 	
 }

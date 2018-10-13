@@ -13,9 +13,7 @@ public class TestGeneratorConfigs {
 	public final static String template_problem = "/problem_template.pddl";
 	public final static String template_domain = "/domain_template.pddl";
 	public final static String template_problemgen = "/probgen_template.pddl";
-	public final static String traces = "/traces/"; //base path. must be followed by a number 1, 2...
 	public final static String problems = "/problems/";
-	public final static String plans = "/plans/";
 	public final static String problemgen_output = "/scenarios/";
 	
 	//FILES FOR PROBLEM IN EACH TEST INSTANCE
@@ -34,6 +32,7 @@ public class TestGeneratorConfigs {
 	public final static String datadir = "data";
 	public final static String dotdir = "dot";
 	public final static String obslm = "obslm"; //landmark restricted observations
+	public final static String tempplan = "temp";
 	public final static int testProblemCount = 20;
 	public final static int testInstanceCount = 3;
 }

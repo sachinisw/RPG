@@ -241,6 +241,12 @@ public class LandmarkExtractor {
 			writer = new PrintWriter(lmoutputfilepath, "UTF-8");
 			writer.write(":LGG VERIFIED"+"\n");
 			writer.write(lgg.toString()+"\n");
+			writer.write(":VERIFIED LM");
+			String s = "";
+			for (LGGNode lggNode : vlm) {
+				s+=lggNode.toString()+"\n";
+			}
+			writer.write(s);
 			writer.write(":LGG UNVERIFIED ACHIEVERS"+"\n");
 			Iterator<Entry<String, String>> its=  achievers.entrySet().iterator();
 			while(its.hasNext()){

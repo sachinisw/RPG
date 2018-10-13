@@ -125,8 +125,8 @@ public class PlanningGraph {
 //			}
 		}
 //		System.out.println("EFFECT SEARCHED:: " + predicateEffect);
-		System.out.println("RPG ID::: " + rpgID);
-		System.out.println("LAYER VALUES::  " + layer);
+//		System.out.println("RPG ID::: " + rpgID);
+//		System.out.println("LAYER VALUES::  " + layer);
 //		System.out.println("SERACH RESULT: " + result);
 		 //return the graph layer corresponding to the action given in actionid
 //		if (result > -1){

@@ -2,6 +2,7 @@ package run;
 
 public class TrainConfigs {
 	public static final int scenario = 1;
+	public static final int runmode = 0; //0=train, 1=test
 	public static final boolean writeDOT = false;
 	public static final String domain = "BLOCKS"; //EASYIPC /home/sachini/domains/BLOCKS
 	public static String observationFiles = "/home/sachini/domains/"+domain +"/scenarios/"+scenario+"/obs/";

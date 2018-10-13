@@ -6,6 +6,9 @@ import java.util.Arrays;
 public class BinnedDataLine {
 	private String observation;
 	private String label;
+	private double certainty;
+	private double risk;
+	private double desirability;
 	private int distToCritical;
 	private int distToDesirable;
 	private int remainingLandmarks;
@@ -13,9 +16,12 @@ public class BinnedDataLine {
 	private int [] fValBins;//break range of min, max for bins of 0.1. can change granularity later
 	private double min, max;
 	
-	public BinnedDataLine(String ob, String lb, int cri, int des, int rem, double f, double mn, double mx){
+	public BinnedDataLine(String ob, String lb, double c, double r, double d, int cri, int des, int rem, double f, double mn, double mx){
 		observation = ob;
 		label = lb;
+		certainty = c;
+		risk = r;
+		desirability = d;
 		fo = f;
 		min = mn;
 		max = mx;
@@ -61,7 +67,8 @@ public class BinnedDataLine {
 	}
 	
 	public String toString(){
-		return observation + "," + fo +"," + Arrays.toString(fValBins).substring(1, Arrays.toString(fValBins).length()-1) + "," + distToCritical+ "," + distToDesirable +"," + remainingLandmarks +"," + label;
+		return observation + "," + certainty +","+ risk + "," + desirability + "," 
+				+ fo +"," + Arrays.toString(fValBins).substring(1, Arrays.toString(fValBins).length()-1) + "," + distToCritical+ "," + distToDesirable +"," + remainingLandmarks +"," + label;
 	}
 	
 	public int[] getCbins() {
@@ -118,5 +125,29 @@ public class BinnedDataLine {
 
 	public void setRemainingLandmarks(int remainingLandmarks) {
 		this.remainingLandmarks = remainingLandmarks;
+	}
+
+	public double getCertainty() {
+		return certainty;
+	}
+
+	public void setCertainty(double certainty) {
+		this.certainty = certainty;
+	}
+
+	public double getRisk() {
+		return risk;
+	}
+
+	public void setRisk(double risk) {
+		this.risk = risk;
+	}
+
+	public double getDesirability() {
+		return desirability;
+	}
+
+	public void setDesirability(double desirability) {
+		this.desirability = desirability;
 	}
 }

@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Scanner;
@@ -35,7 +34,7 @@ public class DOTCompare {
 		while(adIter.hasNext()){	//then add properties for similar nodes between ad and ag.
 			String adNode = (String) adIter.next();
 			String [] nodeParts_ad = adNode.substring(1,adNode.length()-1).split("\\\\n");
-			System.out.println(Arrays.toString(nodeParts_ad));
+//			System.out.println(Arrays.toString(nodeParts_ad));
 			Iterator<String> agIter = agent.iterator();
 			while(agIter.hasNext()){
 				String agNode = agIter.next();
@@ -60,7 +59,7 @@ public class DOTCompare {
 		while(adIter.hasNext()){	//then add properties for similar nodes between ad and ag.
 			String adNode = (String) adIter.next();
 			String [] nodeParts_ad = adNode.substring(1,adNode.length()-1).split("\\\\n");
-			System.out.println(Arrays.toString(nodeParts_ad));
+//			System.out.println(Arrays.toString(nodeParts_ad));
 			Iterator<String> agIter = agent.iterator();
 			while(agIter.hasNext()){
 				String agNode = agIter.next();
@@ -205,8 +204,8 @@ public class DOTCompare {
 		DOTCompare cdot = new DOTCompare(ag, ad);
 		TreeSet<String> adversaryNodes = cdot.extractNodeNames(ad);
 		TreeSet<String> agentNodes = cdot.extractNodeNames(ag);
-		System.out.println(Arrays.toString(agentNodes.toArray()));
-		System.out.println(Arrays.toString(adversaryNodes.toArray()));
+//		System.out.println(Arrays.toString(agentNodes.toArray()));
+//		System.out.println(Arrays.toString(adversaryNodes.toArray()));
 
 		//ArrayList<String> compareLines = cdot.showAgentInAdversary(agentNodes, adversaryNodes);
 		ArrayList<String> compareLines = cdot.showAgentInAdversaryWithDeception(agentNodes, adversaryNodes);

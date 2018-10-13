@@ -9,6 +9,8 @@ public class DataLine {
 	private int fDistanceToCriticalState;
 	private int fDistanceToDesirableState;
 	private int fRemainingUndesirableLandmarks;
+	private double fPercentLMIn;
+	private double fPercentLMAdded;
 	public double funcValue;
 	
 	public DataLine(String o, Metrics m){
@@ -18,7 +20,9 @@ public class DataLine {
 		funcValue = 0.0;
 		fDistanceToCriticalState = m.getDistanceToCritical();
 		fDistanceToDesirableState = m.getDistanceToDesirable();
-		fRemainingUndesirableLandmarks = m.getLandmarkMetric();
+		fRemainingUndesirableLandmarks = m.getRemainingLandmarks();
+		fPercentLMIn = m.getStateContainsLandmark();
+		fPercentLMAdded = m.getStateAddsLandmark();
 	}
 	
 	public void computeObjectiveFunctionValue(){
@@ -26,15 +30,19 @@ public class DataLine {
 	}
 	
 	public String toString(){ //for current observation return full string of weighted metrics for all weights
-		return observation + "," + metrics.toString() + "," + funcValue + ","+ fDistanceToCriticalState +","+ fDistanceToDesirableState +","+ fRemainingUndesirableLandmarks +","+ classLabel + "\n";
+		return observation + "," + metrics.toString() + "," + funcValue + ","
+			+ fDistanceToCriticalState +","+ fDistanceToDesirableState +","+ fRemainingUndesirableLandmarks + "," + fPercentLMIn +
+			","+ fPercentLMAdded+ ","+ classLabel + "\n";
 	}
 	
 	public String getObservation() {
 		return observation;
 	}
+	
 	public void setObservation(String observation) {
 		this.observation = observation;
 	}
+	
 	public Metrics getMetrics() {
 		return metrics;
 	}
@@ -72,5 +80,21 @@ public class DataLine {
 
 	public void setfRemainingUndesirableLandmarks(int fRemainingUndesirableLandmarks) {
 		this.fRemainingUndesirableLandmarks = fRemainingUndesirableLandmarks;
+	}
+
+	public double isfContainsUndersirableLandmark() {
+		return fPercentLMIn;
+	}
+
+	public void setfContainsUndersirableLandmark(double fContainsUndersirableLandmark) {
+		this.fPercentLMIn = fContainsUndersirableLandmark;
+	}
+
+	public double isfAddsLandmarks() {
+		return fPercentLMAdded;
+	}
+
+	public void setfAddsLandmarks(double fAddsLandmarks) {
+		this.fPercentLMAdded = fAddsLandmarks;
 	}
 }
