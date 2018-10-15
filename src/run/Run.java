@@ -25,6 +25,8 @@ import out.WeightGroup;
 public class Run {
 
 	private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
+	private static final boolean asTraceGenerator = false;
+	
 	public static ArrayList<String> getObservationFiles(String obsfiles){
 		ArrayList<String> obFiles = new ArrayList<String>();
 		try {
@@ -73,11 +75,33 @@ public class Run {
 		return graphs;
 	}
 
-	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, Observation ob, InitialState init, int reverseConfig, int obFileId, boolean writedot){
+	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, Observation ob, InitialState init, int reverseConfig, int obFileId, boolean writedot, boolean fulltrace){
 		StateGenerator gen = new StateGenerator(agent);
-		ArrayList<State> state = gen.getStatesAfterObservations(ob, init, false);
-		ArrayList<StateGraph> graphs = process(state, gen, reverseConfig, obFileId, writedot); //graph for attacker
-		return graphs;
+		ArrayList<State> state = null;
+		if(fulltrace) {
+			state = gen.getStatesAfterObservations(ob, init, asTraceGenerator);
+			ArrayList<StateGraph> graphs = process(state, gen, reverseConfig, obFileId, writedot); //graph for attacker
+			return graphs;
+		}else {
+			ArrayList<String> cleaned = new ArrayList<String>();
+			int starpos = 0;
+			for (String o : ob.getObservations()) { //remove the * at the start
+				if(o.contains("*")) {
+					starpos++;
+					cleaned.add(o.substring(1));
+				}else {
+					cleaned.add(o);
+				}
+			}
+			Observation cleanOb = new Observation();
+			cleanOb.setObservations(cleaned);
+			state = gen.getStatesAfterObservations(cleanOb, init, asTraceGenerator);
+			List<State> l = state.subList(starpos, state.size());
+			ArrayList<State> substates = new ArrayList<State>();
+			substates.addAll(l);
+			ArrayList<StateGraph> graphs = process(substates, gen, reverseConfig, obFileId, writedot);
+			return graphs;
+		}
 	}
 
 
@@ -126,8 +150,7 @@ public class Run {
 			metrics.computeDistanceToDesirable();
 			metrics.generateAttackerLandmarks(arpg, con, lmoutput);
 			metrics.computeAttackLandmarksRemaining();
-			metrics.percentOfLandmarksStateContain();
-			metrics.currentAddsLandmark();
+			metrics.percentOfLandmarksInState();
 			DataLine data = new DataLine(ob.getObservations().get(i-1), metrics);
 			data.computeObjectiveFunctionValue();
 			items.add(data.toString());
@@ -148,25 +171,33 @@ public class Run {
 		//		ArrayList<RelaxedPlanningGraph> u_rpg = getRPGForObservations(user);
 		for (String file : obFiles) {
 			String name[] = file.split("/");
-			//			if(Integer.parseInt(name[name.length-1])==4){ //for scenario4 //DEBUG;;;; remove after fixing
-			//			if(file.contains("19")){ //19 for scenario 1, 20 for scenario2
+//						if(Integer.parseInt(name[name.length-1])==0){ //for scenario4 //DEBUG;;;; remove after fixing
+//						if(file.contains("0")){ //0 for scenario 1, 20 for scenario2
 			//			if(file.contains("7")){ //for grid
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
-			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, curobs, attacker.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot);//generate graph for attacker and user
-			ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, curobs, user.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot);
+			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, curobs, attacker.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);//generate graph for attacker and user
+			ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, curobs, user.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);
 			if(full) {
 				computeMetricsWeighted(domain, curobs, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+".csv", ow);
 				computeMetricsForDecisionTree(domain, curobs, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+".csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
 			}else {
-				computeMetricsWeighted(domain, curobs, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+"lm.csv", ow);
-				computeMetricsForDecisionTree(domain, curobs, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+"lm.csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
-
+				Observation cleaned = new Observation();
+				ArrayList<String> cl = new ArrayList<>();
+				for (String o : curobs.getObservations()) {
+					if(!o.contains("*")) {
+						cl.add(o);
+					}
+				}
+				cleaned.setObservations(cl);
+				computeMetricsWeighted(domain, cleaned, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+"lm.csv", ow);
+				computeMetricsForDecisionTree(domain, cleaned, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+"lm.csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
 			}
-			//			}
+//						}
 		}
 	}
+	
 	public static void main(String[] args) { 
-		int mode = 0; //0=train, 1=test
+		int mode = 0; //0=train, 1=test README:: CHANGE HERE FIRST
 		if(mode==TrainConfigs.runmode) {
 			LOGGER.log(Level.CONFIG, "Run mode: TRAINING");
 			String domain = TrainConfigs.domain;
@@ -228,10 +259,8 @@ public class Run {
 							a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre_lm, 
 							u_dotsuf, obslm, wt_csv, ds_csv, ow, lm_out_short, writedot, false);
 					LOGGER.log(Level.INFO, "Finished reduced case: "+ x +" for test instance:" +instance );
-//					break;
 				}
 				LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
-//				break;
 			}
 		}
 	}

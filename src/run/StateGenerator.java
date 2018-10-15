@@ -325,7 +325,7 @@ public class StateGenerator {
 		return graph; //this graph is bidirectional
 	}
 
-	public ArrayList<State> getStatesAfterObservations(Observation ob, State in, boolean tracegenerator){//true if running trace generator, false otherwise
+	public ArrayList<State> getStatesAfterObservations(Observation ob, State in, boolean tracegenerator){//README:: true if running trace generator, false otherwise
 		ArrayList<State> stateseq = new ArrayList<State>();
 		ArrayList<String> obs = ob.getObservations();
 		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();

@@ -1,7 +1,7 @@
 package actors;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.TreeSet;
 
 import con.ConnectivityGraph;
@@ -173,33 +173,13 @@ public class Attacker extends Agent{
 				}
 			}
 		}
-		return Double.valueOf(count)/Double.valueOf(verifiedLandmarks.size());
+//		System.out.println("state==>"+root.getStates()+"lm in state--"+count);
+//		System.out.println("landmarks==>"+verifiedLandmarks.size());
+		DecimalFormat decimalFormat = new DecimalFormat("##.##");
+		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(verifiedLandmarks.size()));
+		return Double.valueOf(format);
 	}
 	
-	//from states that are immediately possible what percentage adds some landmark?
-	public double stateAddsFactLandmark() {
-		HashMap<StateVertex, TreeSet<StateVertex>> adjlist = attackerState.getAdjacencyList();
-		TreeSet<StateVertex> rootsneighbors = adjlist.get(attackerState.getRoot());
-		int nbrhavinglm = 0;
-		for (StateVertex v : rootsneighbors) {
-			ArrayList<String> vstate = v.getStates();
-			int count = 0;
-			for (String st : vstate) {
-				for (LGGNode node : this.verifiedLandmarks) {
-					ArrayList<String> nodestate = node.getValue();
-					if(listContainsState(nodestate, st)) {	
-						count++;
-					}
-				}
-			}
-			if(count>0) { //neighbor v has landmarks
-				nbrhavinglm++;
-			}
-			
-		}
-		return Double.valueOf(nbrhavinglm)/Double.valueOf(rootsneighbors.size());
-	}
-
 	private boolean listContainsState(ArrayList<String> states, String state){ //state has surrounding paranthesis.
 		for (String s : states) {
 			if(s.equalsIgnoreCase(state)){

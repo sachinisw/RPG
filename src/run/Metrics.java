@@ -58,14 +58,10 @@ public class Metrics {
 		lmRemaining = attacker.countRemainingLandmarks();
 	}
 	
-	public void percentOfLandmarksStateContain() {
+	public void percentOfLandmarksInState() {
 		stateContainsLandmark = attacker.percentOfLandmarksStateContain();
 	}
-	
-	public void currentAddsLandmark() {
-		statesAddingLM = attacker.stateAddsFactLandmark();
-	}
-	
+		
 	public double[] getMetrics() {
 		return metrics;
 	}

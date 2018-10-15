@@ -278,6 +278,7 @@ public class InstanceProblemGenerator {
 		return objects;
 	}
 
+	//This is called second.
 	public static void main(String[] args) {
 		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
 			String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;

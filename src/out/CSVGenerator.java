@@ -24,7 +24,7 @@ public class CSVGenerator {
 			if(type==1){
 				writer.write("o,C,R,D,WC,WR,WD,WCo,WRo,W1-Do,Fo,Label");//Fo = WCo + WRo + W1-Do
 			}else if(type==0){
-				writer.write("o,C,R,D,Fo,DistToCritical,DistToDesirable,RemainingUndesirableLM,CurrentHasLM,CurentAddsLM,Label");
+				writer.write("o,C,R,D,Fo,DistToCritical,DistToDesirable,RemainingUndesirableLM,CurrentHasLM,Label");
 			}
 			writer.println();
 

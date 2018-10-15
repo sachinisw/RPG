@@ -162,8 +162,12 @@ public class ReducedTraceGenerator {
 				break;
 			}
 		}
-		for(int i=startpoint-1; i<rootplan.size(); i++) {
-			actions.add(rootplan.get(i));
+		for(int i=0; i<rootplan.size(); i++) {
+			if(i<startpoint-1) {
+				actions.add("*"+rootplan.get(i)); //README:: ignore obs with * when generating feature values for reduced trace
+			}else {
+				actions.add(rootplan.get(i));
+			}
 		}
 		return actions;
 	}
@@ -210,7 +214,6 @@ public class ReducedTraceGenerator {
 				Planner.runFF(1, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath); 
 				Planner.runFF(2, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
 				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
-				//				if(j==2) break; //remove after debug
 			}
 		}
 	}
@@ -228,7 +231,6 @@ public class ReducedTraceGenerator {
 				ArrayList<String> inits = readInits(initfile);
 				RelaxedPlanningGraphGenerator rpggen = new RelaxedPlanningGraphGenerator();
 				rpggen.runLandmarkGenerator(rpgpath, conpath, criticals, inits, lmoutpath); //using file set for each scenario in each instance, generate landmarks
-				//				if(j==2) break; //remove after debug
 			}
 		}
 	}
@@ -263,7 +265,6 @@ public class ReducedTraceGenerator {
 				HashMap<String, ArrayList<String>> criticallm= extractLMBeforeUndesirableState(lms);
 				ArrayList<String> clmactions = actionsAddingCriticalLandmark(criticallm, conpath, obspath);	//after this find the action that first adds this landmark. remove actions before that action from the trace
 				writeToFile(clmactions, obslmpath, String.valueOf(j));//write trace to file
-				//				if(j==2) break; //remove after debug
 			}
 		}
 	}

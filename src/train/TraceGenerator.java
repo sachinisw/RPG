@@ -1,4 +1,4 @@
-package trace;
+package train;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -200,21 +200,21 @@ public class TraceGenerator {
 	}
 
 	public static void generateTraceForScenario(){
-		for(int instance=0; instance<=22; instance++){
-			if(instance==0){
-				String domainFile = ConfigParameters.prefix+instance+ConfigParameters.domainFile;
-				String desirableStateFile = ConfigParameters.prefix+instance+ConfigParameters.desirableStateFile;
-				String a_problemFile = ConfigParameters.prefix+instance+ConfigParameters.a_problemFile;
-				String a_outputPath = ConfigParameters.prefix+instance+ConfigParameters.a_outputPath;
-				String criticalStateFile = ConfigParameters.prefix+instance+ConfigParameters.criticalStateFile;
-				String a_initFile = ConfigParameters.prefix+instance+ConfigParameters.a_initFile;
-				String a_dotFilePrefix = ConfigParameters.prefix+instance;
-				String u_problemFile = ConfigParameters.prefix+instance+ConfigParameters.u_problemFile;
-				String u_outputPath = ConfigParameters.prefix+instance+ConfigParameters.u_outputPath;
-				String u_initFile = ConfigParameters.prefix+instance+ConfigParameters.u_initFile;
-				String u_dotFilePrefix = ConfigParameters.prefix+instance;
-				String tracepath = ConfigParameters.traces+instance;
-				String obspath = ConfigParameters.prefix+instance+ConfigParameters.observationFile;
+		for(int trainInstance=0; trainInstance<=22; trainInstance++){
+			if(trainInstance==0){
+				String domainFile = ConfigParameters.prefix+trainInstance+ConfigParameters.domainFile;
+				String desirableStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.desirableStateFile;
+				String a_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_problemFile;
+				String a_outputPath = ConfigParameters.prefix+trainInstance+ConfigParameters.a_outputPath;
+				String criticalStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.criticalStateFile;
+				String a_initFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_initFile;
+				String a_dotFilePrefix = ConfigParameters.prefix+trainInstance;
+				String u_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.u_problemFile;
+				String u_outputPath = ConfigParameters.prefix+trainInstance+ConfigParameters.u_outputPath;
+				String u_initFile = ConfigParameters.prefix+trainInstance+ConfigParameters.u_initFile;
+				String u_dotFilePrefix = ConfigParameters.prefix+trainInstance;
+				String tracepath = ConfigParameters.traces+trainInstance;
+				String obspath = ConfigParameters.prefix+trainInstance+ConfigParameters.observationFile;
 				Attacker attacker = new Attacker(domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, ConfigParameters.a_dotFile);
 				User user = new User(domainFile, desirableStateFile, u_problemFile, u_outputPath, criticalStateFile, u_initFile, u_dotFilePrefix, ConfigParameters.u_dotFile);
 				Observation obs = setObservations(obspath); //TODO: how to handle noise in trace. what counts as noise?

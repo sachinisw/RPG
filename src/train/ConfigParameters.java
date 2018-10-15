@@ -1,7 +1,7 @@
-package trace;
+package train;
 
 public class ConfigParameters {
-	public final static String mode = "TEST"; //TRAIN
+	public final static String mode = "TRAIN"; //TEST//TRAIN
 	public final static String domain = "BLOCKS";//BLOCKS,EASYIPC,LOGISTICS
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/"; //base path. must be followed by a number 1, 2...
 	public final static String observationFile = "/obs_blocks.txt";

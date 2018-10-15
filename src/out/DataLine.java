@@ -10,7 +10,6 @@ public class DataLine {
 	private int fDistanceToDesirableState;
 	private int fRemainingUndesirableLandmarks;
 	private double fPercentLMIn;
-	private double fPercentLMAdded;
 	public double funcValue;
 	
 	public DataLine(String o, Metrics m){
@@ -22,7 +21,6 @@ public class DataLine {
 		fDistanceToDesirableState = m.getDistanceToDesirable();
 		fRemainingUndesirableLandmarks = m.getRemainingLandmarks();
 		fPercentLMIn = m.getStateContainsLandmark();
-		fPercentLMAdded = m.getStateAddsLandmark();
 	}
 	
 	public void computeObjectiveFunctionValue(){
@@ -32,7 +30,7 @@ public class DataLine {
 	public String toString(){ //for current observation return full string of weighted metrics for all weights
 		return observation + "," + metrics.toString() + "," + funcValue + ","
 			+ fDistanceToCriticalState +","+ fDistanceToDesirableState +","+ fRemainingUndesirableLandmarks + "," + fPercentLMIn +
-			","+ fPercentLMAdded+ ","+ classLabel + "\n";
+			","+ classLabel + "\n";
 	}
 	
 	public String getObservation() {
@@ -88,13 +86,5 @@ public class DataLine {
 
 	public void setfContainsUndersirableLandmark(double fContainsUndersirableLandmark) {
 		this.fPercentLMIn = fContainsUndersirableLandmark;
-	}
-
-	public double isfAddsLandmarks() {
-		return fPercentLMAdded;
-	}
-
-	public void setfAddsLandmarks(double fAddsLandmarks) {
-		this.fPercentLMAdded = fAddsLandmarks;
 	}
 }

@@ -69,8 +69,12 @@ public class Preprocessor {
 			DataFile binnedFile = new DataFile(file.getFilename()); 
 			for (String string : data) { //obs in current file
 				String parts [] = string.split(",");
-				BinnedDataLine bdl = new BinnedDataLine(parts[0], parts[parts.length-1], Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), 
-						Integer.parseInt(parts[parts.length-4]), Integer.parseInt(parts[parts.length-3]), Integer.parseInt(parts[parts.length-2]), Double.parseDouble(parts[4]), minmax[0], minmax[1]);//change indices here if new features are added
+				//README:: change indices here for len-1 if new features are added. Make it (len-x-1)
+				BinnedDataLine bdl = new BinnedDataLine(parts[0], parts[parts.length-1], Double.parseDouble(parts[1]), 
+						Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), 
+						Integer.parseInt(parts[parts.length-5]), Integer.parseInt(parts[parts.length-4]), 
+						Integer.parseInt(parts[parts.length-3]), Double.parseDouble(parts[parts.length-2]), 
+						Double.parseDouble(parts[4]), minmax[0], minmax[1]);
 				bdl.assignToBins(Double.parseDouble(parts[4]));
 				binnedFile.getDataline().add(bdl.toString());
 			}
@@ -85,7 +89,7 @@ public class Preprocessor {
 			ArrayList<String> data = file.getDataline();
 			for (String string : data) { //obs in current file
 				String parts [] = string.split(",");
-				fvals.add(Double.parseDouble(parts[parts.length-5])); //if new feature is added, parts.length-6
+				fvals.add(Double.parseDouble(parts[parts.length-6])); //README:: if new feature is added, parts.length-7
 			}
 		}
 		Collections.sort(fvals);
@@ -103,7 +107,7 @@ public class Preprocessor {
 			for (int i=0; i<bins.length-1; i++) {	//write header for bins
 				header += bins[i] + "<=x<"  + bins[i+1]+",";
 			}
-			writer.write(header.substring(0,header.length()-1)+ ",dToCritical" + ",dToDesirable" + ",remainingLandmarks" +",Label" +"\n"); //lose the trailing comma and add class label header
+			writer.write(header.substring(0,header.length()-1)+ ",dToCritical" + ",dToDesirable" + ",remainingLandmarks" + ",hasLM" +",Label" +"\n"); //lose the trailing comma and add class label header
 			for (int i=0; i<binned.getDataline().size(); i++) {		//write values
 				writer.write(binned.getDataline().get(i)+"\n");
 			}
@@ -123,7 +127,7 @@ public class Preprocessor {
 			for (int i=0; i<bins.length-1; i++) {	//write header for bins
 				header += bins[i] + "<=x<"  + bins[i+1]+",";
 			}
-			writer.write(header.substring(0,header.length()-1)+ ",dToCritical" + ",dToDesirable" + ",remainingLandmarks" +",Label" +"\n"); //lose the trailing comma and add class label header
+			writer.write(header.substring(0,header.length()-1)+ ",dToCritical" + ",dToDesirable" + ",remainingLandmarks" + ",hasLM" +",Label" +"\n"); //lose the trailing comma and add class label header
 			for (DataFile f : binned) {
 				for (int i=0; i<f.getDataline().size(); i++) {		//write values
 					writer.write(f.getDataline().get(i)+"\n");
@@ -199,19 +203,21 @@ public class Preprocessor {
 		return binned;
 	}
 
-	//generate instance specific csv with ob-c-r-d-fo-dc-dd-lm-label only.
+	//generate instance specific csv with ob-c-r-d-fo-dc-dd-lm-haslm-label only.
 	//train the model WITHOUT bin columns. bin columns change from problem to problem. cant use that kind of a model to predict unseen data
+	//README: change indices in values variable when new feature is added.
 	public static void writeInstanceSpecificOutput(ArrayList<ArrayList<DataFile>> df, String out) {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(out, "UTF-8");
-			String header = "ob,c,r,d,fo,dToCritical,dToDesirable,remainingLandmarks,Label" +"\n";
+			String header = "ob,c,r,d,fo,dToCritical,dToDesirable,remainingLandmarks,hasLM,Label" +"\n";
 			writer.write(header);
 			for (ArrayList<DataFile> curinst : df) {
 				for (DataFile file : curinst) {
 					for (int i=0; i<file.getDataline().size(); i++) {		//write values
 						String parts[] = file.getDataline().get(i).split(",");
-						String values = parts[0]+","+parts[1]+","+parts[2]+","+parts[3]+","+parts[4]+","+parts[parts.length-4]+","+parts[parts.length-3]+","+parts[parts.length-2]+","+parts[parts.length-1];
+						String values = parts[0]+","+parts[1]+","+parts[2]+","+parts[3]+","+parts[4]+
+								","+parts[parts.length-5]+","+parts[parts.length-4]+","+parts[parts.length-3]+","+parts[parts.length-2]+","+parts[parts.length-1];
 						writer.write(values+"\n");
 					}
 				}
@@ -220,6 +226,7 @@ public class Preprocessor {
 			e.printStackTrace();
 		} finally{
 			writer.close();
+			LOGGER.log(Level.INFO, "File: " + out  + " CSV written");
 		}
 	}
 
@@ -227,7 +234,7 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 1;
-		int mode = 1; //0-train, 1-test
+		int mode = 1; //0-train, 1-test README: CHANGE HERE FIRST
 		String domain = "BLOCKS"; //"EASYIPC";
 		if(mode==0) {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode");
@@ -257,7 +264,7 @@ public class Preprocessor {
 				}
 				writeInstanceSpecificOutput(inst_full, instout_full);
 				writeInstanceSpecificOutput(inst_lm, instout_lm);
-				break;
+				LOGGER.log(Level.INFO, "Instance: " + instance  + " complete");
 			}
 		}
 		LOGGER.log(Level.INFO, "Preprocessing done");
