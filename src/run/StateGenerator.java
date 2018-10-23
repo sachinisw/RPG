@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -30,15 +32,17 @@ import plan.PlanExtractor;
 import rpg.PlanningGraph;
 
 public class StateGenerator {
+	private static final Logger LOGGER = Logger.getLogger(StateGenerator.class.getName());
 	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
-	public final static String domain = "blocks";//changes stoppable condition.
-	public final static int grid_size = 2; //max coordinate in grid. only applicable for grid domains. TODO: find way to automate the extraction of this value
 	public final static String dotFileExt = ".dot";
 	public final static double initProbability = 1.0;
 	public Agent agent;
+	public String domain;
 	
-	public StateGenerator(Agent a){
+	public StateGenerator(Agent a, String dom){
+		domain = dom;
 		agent = a;
+		LOGGER.log(Level.INFO, "Generating state graphs for domain: "+ domain);
 	}
 	
 	public void writeConsoleOutputtoFile(String outfile, String text){
@@ -215,26 +219,14 @@ public class StateGenerator {
 		return newState;
 	}
 
-	public boolean stoppable(ArrayList<String> state){
-		if(domain.equals("blocks")){
+	public boolean stoppable(ArrayList<String> state){//how to identify leaf nodes
+		if(domain.equalsIgnoreCase("blocks")){
 			return stoppableBlocks(state);
-		}else if(domain.equals("grid")){
-			return stoppableGrid(state);
-		}else if(domain.equals("logistics")){
+		}else if(domain.equalsIgnoreCase("easyipc")){
+			int [] xy = getGridStoppingCoordinate();
+			return stoppableGrid(state, xy[0], xy[1]);
+		}else if(domain.equalsIgnoreCase("logistics")){
 			return stoppableLogistics(state);
-		}else if(domain.equals("pag")){
-			return stoppablePAG(state);
-		}
-		return false;
-	}
-
-	private boolean stoppablePAG(ArrayList<String> state){
-		//stop expanding if state contains"information-leakage" for attacker or "msg-sent safe-email" for user
-		for(int i=0; i<state.size(); i++){
-//			System.out.println(">>> "+state.get(i));
-			if(state.get(i).contains("information-leakage") || (state.get(i).contains("MSG-SENT SAFE-EMAIL"))){
-				return true;
-			}
 		}
 		return false;
 	}
@@ -261,45 +253,38 @@ public class StateGenerator {
 		return false;
 	}
 
-	private boolean stoppableGrid(ArrayList<String> state){ //NOTE: change grid_size value for larger problem instances
-		//stop expanding if state<> indicate that robot is at the top-right edge of the grid (i.e. largest x,y). assumes robot always start at 0,0
+	private int[] getGridStoppingCoordinate() {
+		CriticalState cs = new CriticalState(agent.criticalStateFile);
+		cs.readCriticalState();
+		String cpos="";
+		for (String c : cs.getCriticalState()) {
+			if(c.contains("AT-ROBOT")){
+				cpos = c.substring(c.indexOf("PLACE_"));
+				break;
+			}
+		}
+		int cx = Integer.parseInt(cpos.substring(cpos.indexOf("_")+1,cpos.indexOf("_")+2));
+		int cy = Integer.parseInt(cpos.substring(cpos.length()-2,cpos.length()-1));
+		return new int[] {cx, cy};
+	}
+	
+	private boolean stoppableGrid(ArrayList<String> state, int cx, int cy){ //NOTE: change grid_size value for larger problem instances
+		//generic critical state for grid domains: stop if state<> indicate that robot is at any position in the row designated as critical state cx,cy
 		String curpos = "";
 		for (String string : state) {
 			if(string.contains("AT-ROBOT")){
 				curpos = string.substring(string.indexOf("PLACE_"));
-				//System.out.println(string);
 				break;
 			}
 		}
-		int x = Integer.parseInt(curpos.substring(curpos.indexOf("_")+1,curpos.indexOf("_")+2));
 		int y = Integer.parseInt(curpos.substring(curpos.length()-2,curpos.length()-1));
-		//System.out.println("x="+x+" y="+y);
-		if((x==grid_size) && (y==grid_size)){ //if at right edge or at top edge
-			//System.out.println("!!!!!!!!!!met");
+		if((y==cy)){ //if at critical coordinate stop
 			return true;
 		}
-		//System.out.println("==========not met");
 		return false;
 	}
 	
 	public boolean stoppableLogistics(ArrayList<String> state){ //NOTE: change grid_size value for larger problem instances
-		//stop expanding if state<> indicate that robot is at the top-right edge of the grid (i.e. largest x,y). assumes robot always start at 0,0
-//		String curpos = "";
-//		for (String string : state) {
-//			if(string.contains("AT-ROBOT")){
-//				curpos = string.substring(string.indexOf("PLACE_"));
-//				//System.out.println(string);
-//				break;
-//			}
-//		}
-//		int x = Integer.parseInt(curpos.substring(curpos.indexOf("_")+1,curpos.indexOf("_")+2));
-//		int y = Integer.parseInt(curpos.substring(curpos.length()-2,curpos.length()-1));
-//		//System.out.println("x="+x+" y="+y);
-//		if((x==grid_size) && (y==grid_size)){ //if at right edge or at top edge
-//			//System.out.println("!!!!!!!!!!met");
-//			return true;
-//		}
-		//System.out.println("==========not met");
 		return false;
 	}
 	
@@ -312,16 +297,12 @@ public class StateGenerator {
 		cs.readCriticalState();
 		StateGraph graph = new StateGraph(cs, ds);
 		graph.addVertex(in.getState());
-
 		for(int i=0; i<cons.size(); i++){
 			ArrayList<String> currentState = in.getState();
 			recursiveAddEdge(currentState, cons.get(i), graph, seen);
 		}
 		graph.markVerticesContainingCriticalState(cs);
 		graph.markVerticesContainingDesirableState(ds);
-//		System.out.println("---------------enumerateStates()--------------------");
-//		System.out.println(graph.toString());
-//		System.out.println(graph.printEdges());
 		return graph; //this graph is bidirectional
 	}
 
@@ -382,7 +363,7 @@ public class StateGenerator {
 				bi.add(actions.get(i));
 			}
 		}
-		for(int i=0; i<bi.size(); i++){ //remove any actions that changes the state to anything in seen. (2)
+		for(int i=0; i<bi.size(); i++){ //remove any actions that changes the state to anything in seen (only contains initial state). (2)
 			String cur = bi.get(i);
 			int set = 0;
 			ArrayList<String> adds = con.findStatesAddedByAction(cur);
@@ -417,29 +398,26 @@ public class StateGenerator {
 
 	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen){
 		if(stoppable(currentState)){
-//			System.out.println("STOPPeING AT---------------+"+currentState);
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
-			if(domain.equals("blocks") || domain.equals("grid") || domain.equals("logistics") )//reversible domains. i.e. you can go back to previous state
-				//Treat each path as from root as an independent path. so when cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
-				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing bidirectional connections that are already visited. and any other actions leading to already visited states so far.
-			else if(domain.equals("pag") )//sequential domains
+			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("logistics") )//reversible domains. i.e. you can go back to previous state
+				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
+				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path. 
+			else if(domain.equalsIgnoreCase("pag") )//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
-//			System.out.println("ac->"+actions);System.out.println("cl->"+cleaned);//DEBUG
-			
 			for (String action : cleaned) {
-//				System.out.println("current====="+action); //DEBUG	
-				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph);
+				////README:::: seen [] only has the initial state. if you add newstate, other branches in the graph lose possible actions. The branches in the graph must be independent. children's possible actions must only depend on their immediate parents' state and not on other paths in the tree
+				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph); 
 				recursiveAddEdge(newState, con, graph, seen);
 			}
 		}
 	}
 
 	public void graphToDOT(StateGraph g, int namesuffix, int foldersuffix, boolean writeDOTFile){
-		if(writeDOTFile){
-			GraphDOT dot = new GraphDOT(g); //name format = /home/sachini/BLOCKS/scenarios/2/dot/graph_ag_noreverse_1_4.dot
+		if(writeDOTFile){//name format = /home/sachini/BLOCKS/scenarios/2/dot/graph_ag_noreverse_1_4.dot
+			GraphDOT dot = new GraphDOT(g); 
 			dot.generateDOT(agent.dotFilePrefix+agent.dotFileSuffix+foldersuffix+"_"+namesuffix+dotFileExt);
 		}
 	}

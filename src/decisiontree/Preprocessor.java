@@ -16,11 +16,9 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
-import test.ReducedTraceGenerator;
-
 public class Preprocessor {
 	private String datafilePath;
-	private static final Logger LOGGER = Logger.getLogger(ReducedTraceGenerator.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(Preprocessor.class.getName());
 
 	public Preprocessor(String path){
 		this.datafilePath = path;
@@ -234,8 +232,8 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 1;
-		int mode = 1; //0-train, 1-test README: CHANGE HERE FIRST
-		String domain = "BLOCKS"; //"EASYIPC";
+		int mode = 0; //0-train, 1-test README: CHANGE HERE FIRST
+		String domain = "EASYIPC";//"BLOCKS"; //"EASYIPC";
 		if(mode==0) {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode");
 			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation

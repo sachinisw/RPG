@@ -68,15 +68,13 @@ public class Run {
 				gen.applyUniformProbabilitiesToStates(treeAgent, states.get(i));
 				gen.graphToDOT(treeAgent, i, obFileId, writedot);
 				graphs.add(treeAgent);
-				//				System.out.println(treeAgent.toString());
 			}
-			//			break; //TODO:: REMOVE AFTER DEBUG
 		}
 		return graphs;
 	}
 
-	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, Observation ob, InitialState init, int reverseConfig, int obFileId, boolean writedot, boolean fulltrace){
-		StateGenerator gen = new StateGenerator(agent);
+	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, String dom, Observation ob, InitialState init, int reverseConfig, int obFileId, boolean writedot, boolean fulltrace){
+		StateGenerator gen = new StateGenerator(agent, dom);
 		ArrayList<State> state = null;
 		if(fulltrace) {
 			state = gen.getStatesAfterObservations(ob, init, asTraceGenerator);
@@ -105,14 +103,14 @@ public class Run {
 	}
 
 
-	public static ArrayList<RelaxedPlanningGraph> getRelaxedPlanningGraph(Agent agent){
-		StateGenerator gen = new StateGenerator(agent);
+	public static ArrayList<RelaxedPlanningGraph> getRelaxedPlanningGraph(Agent agent, String dom){
+		StateGenerator gen = new StateGenerator(agent, dom);
 		ArrayList<RelaxedPlanningGraph> rpgs = gen.readRelaxedPlanningGraph();
 		return rpgs;
 	}
 
-	public static ArrayList<ConnectivityGraph> getConnectivityGraph(Agent agent){
-		StateGenerator gen = new StateGenerator(agent);
+	public static ArrayList<ConnectivityGraph> getConnectivityGraph(Agent agent, String dom){
+		StateGenerator gen = new StateGenerator(agent, dom);
 		ArrayList<ConnectivityGraph> cons = gen.readConnectivityGraphs();
 		return cons;
 	}
@@ -166,17 +164,18 @@ public class Run {
 		Attacker attacker = new Attacker(domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
 		User user = new User(domainfile, desirablefile, u_prob, u_out, criticalfile, u_init, u_dotpre, u_dotsuf);
 		ArrayList<String> obFiles = getObservationFiles(obs);
-		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(attacker);
-		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(attacker);
+		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(attacker, domain);
+		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(attacker, domain);
 		//		ArrayList<RelaxedPlanningGraph> u_rpg = getRPGForObservations(user);
 		for (String file : obFiles) {
 			String name[] = file.split("/");
-//						if(Integer.parseInt(name[name.length-1])==0){ //for scenario4 //DEBUG;;;; remove after fixing
+//						if(Integer.parseInt(name[name.length-1])==5){ //for scenario4 //DEBUG;;;; remove after fixing
 //						if(file.contains("0")){ //0 for scenario 1, 20 for scenario2
 			//			if(file.contains("7")){ //for grid
+			LOGGER.log(Level.INFO, "Processing observation file: "+name[name.length-1]);
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
-			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, curobs, attacker.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);//generate graph for attacker and user
-			ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, curobs, user.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);
+			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, domain, curobs, attacker.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);//generate graph for attacker and user
+			ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, domain, curobs, user.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);
 			if(full) {
 				computeMetricsWeighted(domain, curobs, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+".csv", ow);
 				computeMetricsForDecisionTree(domain, curobs, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+".csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
@@ -223,6 +222,7 @@ public class Run {
 			run(domain, domainfile, desirablefile, a_prob, a_dotpre, 
 					a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre, 
 					u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot, true);
+			LOGGER.log(Level.INFO, "Completed trained model for domain:" + domain);
 		}else {
 			LOGGER.log(Level.CONFIG, "Run mode: TESTING");
 			String domain = TestConfigs.domain;
