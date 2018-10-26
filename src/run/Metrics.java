@@ -32,8 +32,8 @@ public class Metrics {
 	}
 	
 	public void computeMetrics(){
-		double [] at = attacker.computeMetric();
-		double [] us = user.computeMetric();
+		double [] at = attacker.computeMetric(); //certainty/timeliness
+		double [] us = user.computeMetric(); //desirability
 		System.arraycopy(at, 0, metrics, 0, at.length);
 		System.arraycopy(us, 0, metrics, metrics.length-1, us.length);
 		DecimalFormat df = new DecimalFormat("#.00"); 

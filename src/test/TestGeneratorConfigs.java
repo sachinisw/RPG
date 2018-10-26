@@ -2,7 +2,7 @@ package test;
 
 public class TestGeneratorConfigs {
 	//TEMPLATES
-	public final static String domain = "BLOCKS";//BLOCKS,EASYIPC,LOGISTICS
+	public final static String domain = "EASYIPC";//BLOCKS,EASYIPC,LOGISTICS
 	public final static String testscenario = "1"; //this is which trained attack scenario it is. e.g. BLOCKS has 4 testable attack scenarios.
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+testscenario+"/inst";
 	public final static String criticalstates = "/cs.txt";
@@ -33,6 +33,6 @@ public class TestGeneratorConfigs {
 	public final static String dotdir = "dot";
 	public final static String obslm = "obslm"; //landmark restricted observations
 	public final static String tempplan = "temp";
-	public final static int testProblemCount = 20;
-	public final static int testInstanceCount = 3;
+	public final static int testProblemCount = 2; //blocks-20, easygrid-2/3/4
+	public final static int testInstanceCount = 1;
 }

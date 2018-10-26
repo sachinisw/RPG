@@ -29,8 +29,8 @@ public class InstanceProblemGenerator {
 			reader = new Scanner (new File(cspath));
 			while(reader.hasNextLine()) {
 				String state = reader.nextLine();
-				if(state.contains("-")) {
-					gs.add(state.substring(0, state.indexOf("-")));
+				if(state.contains("#")) {
+					gs.add(state.substring(0, state.indexOf("#")));
 				}else {
 					gs.add(state);
 				}
@@ -77,10 +77,17 @@ public class InstanceProblemGenerator {
 		TreeSet<String> objects = new TreeSet<String>();
 		ArrayList<String> adata = new ArrayList<>();
 		ArrayList<String> udata = new ArrayList<>();
-		TreeSet<String> cs = extractObjectsFromGoalState(critical);
-		TreeSet<String> ds = extractObjectsFromGoalState(desirable);
-		objects.addAll(cs);
-		objects.addAll(ds);
+		TreeSet<String> cs, ds = null;
+		if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) { //init objects are different from cs & ds
+			cs = extractObjectsFromGoalState(critical);
+			ds = extractObjectsFromGoalState(desirable);
+			objects.addAll(cs);
+			objects.addAll(ds);
+		}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) { //init objects cs, ds are the same
+			cs = extractObjectsFromGoalState(critical);
+			ds = extractObjectsFromGoalState(desirable);
+			objects.addAll(extractObjectsFromInits(inits));
+		}
 		ArrayList<String> prob = readTemplate(problemTemplatepath);
 		ArrayList<String> domout = generateDomain(readTemplate(domainTemplatePath), objects);
 		ArrayList<String> aout = generateProblem(prob, filterInits(inits, objects), critical);
@@ -194,10 +201,9 @@ public class InstanceProblemGenerator {
 		return c;
 	}
 
-	//TODO: Currently applicable for BLOCKS domain only. not applicable if domain inits are the same for user and attacker.
 	public static TreeSet<String> filterInits(TreeSet<String> initsfull, TreeSet<String> objects) {
 		TreeSet<String> filtered = new TreeSet<String>();
-		if(TestGeneratorConfigs.domain.equalsIgnoreCase("blocks")) {
+		if(TestGeneratorConfigs.domain.equalsIgnoreCase("blocks")) { //for domains where user's inits and attacker's inits are different
 			for (String s : initsfull) {
 				String parts[] = s.substring(1,s.length()-1).split(" ");
 				if(parts.length==1) {
@@ -212,119 +218,151 @@ public class InstanceProblemGenerator {
 					}
 				}
 			}
-		}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("easyipc")){
+		}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("easyipc")){//for domains where user's and attacker's inits are the same
 			filtered.addAll(initsfull);
 		}
 
-			return filtered;
-		}
-
-		public static ArrayList<String> generateProblem(ArrayList<String> probTemplate, TreeSet<String> inits, String goal) {
-			ArrayList<String> out = new ArrayList<>();
-			out.addAll(probTemplate);
-			for (int i=0; i<probTemplate.size(); i++) {
-				if(probTemplate.get(i).equals("<INITS>")){
-					if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
-						String init = "";
-						for (String string : inits) {
-							init+= string +"\n";
-						}
-						out.set(i, init);
-					}
-				}else if(probTemplate.get(i).equals("<GOAL_STATE>")) {
-					if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
-						out.set(i, goal.replace(",", ""));
-					}
-				}
-			}
-			return out;
-		}
-
-		public static ArrayList<String> generateDomain(ArrayList<String> Template, TreeSet<String> objects) {
-			for (int i=0; i<Template.size(); i++) {
-				if(Template.get(i).equals("<OBJECTS>")){
-					if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
-						String obs = "";
-						for (String string : objects) {
-							obs+= string +" - block" +"\n";
-						}
-						Template.set(i, obs);
-					}
-				}
-			}
-			return Template;
-		}
-
-		public static void writeToFile(ArrayList<String> data, String outputpath, String scenarioid, String filename){
-			PrintWriter writer = null;
-			try{
-				new File(outputpath+scenarioid+"/").mkdirs();
-				writer = new PrintWriter(outputpath+scenarioid+"/"+filename, "UTF-8");
-				for (int i = 0; i < data.size(); i++) {
-					writer.write(data.get(i));
-					writer.println();
-				}
-			}catch (FileNotFoundException | UnsupportedEncodingException  e) {
-				e.printStackTrace();
-			}finally{
-				writer.close();
-			}
-		}
-
-		public static TreeSet<String> extractObjectsFromGoalState(String goal){
-			TreeSet<String> objects = new TreeSet<>();
-			String[] gs = goal.split(",");
-			for (String s : gs) {
-				String[] sparts = s.substring(0,s.length()-1).split(" ");
-				for(int i=1; i<sparts.length; i++) {
-					objects.add(sparts[i]);
-				}
-			}
-			return objects;
-		}
-
-		public static void generateTracesForInstances() {
-			for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
-				String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
-				String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
-				String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
-				String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
-				String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
-				String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
-				ArrayList<String> criticals = readGoals(cspath);
-				ArrayList<String> desirables = readGoals(dspath);
-				TreeSet<String> inits = readInits(initspath);
-				for (int i=0; i<TestGeneratorConfigs.testProblemCount; i++) {
-					generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
-							problemoutput);
-					generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
-					LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance );
-				}
-				LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance );
-				break; //TODO: remove after adding 2nd instane
-			}
-		}
-		
-		//This is called second.
-//		public static void main(String[] args) {
-//			for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
-//				String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
-//				String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
-//				String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
-//				String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
-//				String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
-//				String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
-//				ArrayList<String> criticals = readGoals(cspath);
-//				ArrayList<String> desirables = readGoals(dspath);
-//				TreeSet<String> inits = readInits(initspath);
-//				for (int i=0; i<TestGeneratorConfigs.testProblemCount; i++) {
-//					generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
-//							problemoutput);
-//					generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
-//					LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance );
-//				}
-//				LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance );
-//				break; //TODO: remove after adding 2nd instane
-//			}
-//		}
+		return filtered;
 	}
+
+	public static ArrayList<String> generateProblem(ArrayList<String> probTemplate, TreeSet<String> inits, String goal) {
+		ArrayList<String> out = new ArrayList<>();
+		out.addAll(probTemplate);
+		for (int i=0; i<probTemplate.size(); i++) {
+			if(probTemplate.get(i).equals("<INITS>")){
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS") || 
+						TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+					String init = "";
+					for (String string : inits) {
+						init+= string +"\n";
+					}
+					out.set(i, init);
+				}
+			}else if(probTemplate.get(i).equals("<GOAL_STATE>")) {
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+					out.set(i, goal.replace(",", ""));
+				}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+					out.set(i, goal);
+				}
+			}
+		}
+		return out;
+	}
+
+	public static ArrayList<String> generateDomain(ArrayList<String> Template, TreeSet<String> objects) {
+		for (int i=0; i<Template.size(); i++) {
+			if(Template.get(i).equals("<OBJECTS>")){
+				String obs = "";
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+					for (String string : objects) {
+						obs+= string +" - block" +"\n";
+					}
+				}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")){
+					for (String string : objects) {
+						obs+= string +"\n";
+					}
+				}
+				Template.set(i, obs);
+			}
+		}
+		return Template;
+	}
+
+	public static void writeToFile(ArrayList<String> data, String outputpath, String scenarioid, String filename){
+		PrintWriter writer = null;
+		try{
+			new File(outputpath+scenarioid+"/").mkdirs();
+			writer = new PrintWriter(outputpath+scenarioid+"/"+filename, "UTF-8");
+			for (int i = 0; i < data.size(); i++) {
+				writer.write(data.get(i));
+				writer.println();
+			}
+		}catch (FileNotFoundException | UnsupportedEncodingException  e) {
+			e.printStackTrace();
+		}finally{
+			writer.close();
+		}
+	}
+
+	public static TreeSet<String> extractObjectsFromGoalState(String goal){
+		TreeSet<String> objects = new TreeSet<>();
+		String[] gs = goal.split(",");
+		for (String s : gs) {
+			String[] sparts = s.substring(0,s.length()-1).split(" ");
+			for(int i=1; i<sparts.length; i++) {
+				objects.add(sparts[i]);
+			}
+		}
+		return objects;
+	}
+
+	public static TreeSet<String> extractObjectsFromInits(TreeSet<String> inits){
+		TreeSet<String> objects = new TreeSet<>();
+		if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+			for (String in : inits) { //add places
+				if(in.contains("CONN")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); //its ok to have duplicates here. treeset will remove that
+					objects.add(inparts[1].trim());
+					objects.add(inparts[2].trim());
+				}
+			}
+			for (String in : inits) { //add shapes
+				if(in.contains("LOCK-SHAPE")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[2].trim());
+				}
+			}
+			for (String in : inits) { //add keys
+				if(in.contains("KEY-SHAPE")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[1].trim());
+				}
+			}
+		}
+		return objects;
+	}
+
+	public static void generateTracesForInstances() {
+		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
+			String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
+			String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
+			String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
+			String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
+			String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
+			String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
+			ArrayList<String> criticals = readGoals(cspath);
+			ArrayList<String> desirables = readGoals(dspath);
+			TreeSet<String> inits = readInits(initspath);
+			for (int i=0; i<TestGeneratorConfigs.testProblemCount; i++) {
+				generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
+						problemoutput);
+				generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
+				LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance );
+			}
+			LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance );
+		}
+	}
+
+	//This is called second.
+	//		public static void main(String[] args) {
+	//			for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
+	//				String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
+	//				String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
+	//				String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
+	//				String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
+	//				String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
+	//				String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
+	//				ArrayList<String> criticals = readGoals(cspath);
+	//				ArrayList<String> desirables = readGoals(dspath);
+	//				TreeSet<String> inits = readInits(initspath);
+	//				for (int i=0; i<TestGeneratorConfigs.testProblemCount; i++) {
+	//					generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
+	//							problemoutput);
+	//					generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
+	//					LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance );
+	//				}
+	//				LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance );
+	//				break; //TODO: remove after adding 2nd instane
+	//			}
+	//		}
+}

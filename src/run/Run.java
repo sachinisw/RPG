@@ -141,7 +141,6 @@ public class Run {
 		for (int i=1; i<attackers.size(); i++) {
 			attacker.setState(attackers.get(i)); //add stategraphs to user, attacker objects
 			user.setState(users.get(i));
-			//			System.out.println("current obs===="+ ob.getObservations().get(i-1));
 			Metrics metrics = new Metrics(attacker, user, domain); //compute metrics for user, attacker
 			metrics.computeMetrics();
 			metrics.computeDistanceToCrtical();
@@ -171,10 +170,12 @@ public class Run {
 			String name[] = file.split("/");
 //						if(Integer.parseInt(name[name.length-1])==5){ //for scenario4 //DEBUG;;;; remove after fixing
 //						if(file.contains("0")){ //0 for scenario 1, 20 for scenario2
-			//			if(file.contains("7")){ //for grid
+						if(Integer.parseInt(name[name.length-1])==7){ //for grid
 			LOGGER.log(Level.INFO, "Processing observation file: "+name[name.length-1]);
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
+			LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
 			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, domain, curobs, attacker.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);//generate graph for attacker and user
+			LOGGER.log(Level.INFO, "Generating user state graphs for domain: "+ domain);
 			ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, domain, curobs, user.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);
 			if(full) {
 				computeMetricsWeighted(domain, curobs, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+".csv", ow);
@@ -191,12 +192,12 @@ public class Run {
 				computeMetricsWeighted(domain, cleaned, attacker, user, attackerState, userState, wt_csv+name[name.length-1]+"lm.csv", ow);
 				computeMetricsForDecisionTree(domain, cleaned, attacker, user, attackerState, userState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+"lm.csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
 			}
-//						}
+						}
 		}
 	}
 	
 	public static void main(String[] args) { 
-		int mode = 0; //0=train, 1=test README:: CHANGE HERE FIRST
+		int mode = 0; //0=train, 1=test TODO README:: CHANGE HERE FIRST
 		if(mode==TrainConfigs.runmode) {
 			LOGGER.log(Level.CONFIG, "Run mode: TRAINING");
 			String domain = TrainConfigs.domain;

@@ -267,10 +267,11 @@ public class ReducedTraceGenerator {
 				writeToFile(clmactions, obslmpath, String.valueOf(j));//write trace to file
 			}
 		}
-	}
-
-	public static void main(String[] args) {
-		generateReducedTrace();
 		LOGGER.log(Level.INFO, "Reduced traces generated");
 	}
+
+//	public static void main(String[] args) {
+//		generateReducedTrace();
+//		LOGGER.log(Level.INFO, "Reduced traces generated");
+//	}
 }

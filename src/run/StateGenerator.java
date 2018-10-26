@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
@@ -32,7 +31,7 @@ import plan.PlanExtractor;
 import rpg.PlanningGraph;
 
 public class StateGenerator {
-	private static final Logger LOGGER = Logger.getLogger(StateGenerator.class.getName());
+	public static final Logger LOGGER = Logger.getLogger(StateGenerator.class.getName());
 	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
 	public final static String dotFileExt = ".dot";
 	public final static double initProbability = 1.0;
@@ -42,7 +41,6 @@ public class StateGenerator {
 	public StateGenerator(Agent a, String dom){
 		domain = dom;
 		agent = a;
-		LOGGER.log(Level.INFO, "Generating state graphs for domain: "+ domain);
 	}
 	
 	public void writeConsoleOutputtoFile(String outfile, String text){

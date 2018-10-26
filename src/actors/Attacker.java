@@ -55,18 +55,16 @@ public class Attacker extends Agent{
 		return new double[]{c,r};
 	}
 
-	private double computeCertaintyMetric(){
-		StateVertex attakerRoot = this.attackerState.getRoot();
-		TreeSet<StateVertex> rootNeighbors = this.attackerState.getAdjacencyList().get(attakerRoot);
+	private double computeCertaintyMetric(){ //how many ways from his current state can the actor reach a undesirable state? e.g 4 paths from current state, 1 goes to critical state C=1/4
+		TreeSet<StateVertex> rootNeighbors = attackerState.getAdjacencyList().get(attackerState.getRoot());
 		if(!rootNeighbors.isEmpty()){
-			double neighbors = (double) rootNeighbors.size();
-			return attakerRoot.getStateProbability()/neighbors;
-		}else{
-			return 1.0; //single root. no neighbors
+			return 1.0 / (double)rootNeighbors.size();
+		}else { //only 1 node in graph
+			return 1.0;
 		}
 	}
 
-	private double computeRiskMetric(){	//probability of the node containing the first occurrence of undesirable state in attacker's state graph
+	private double computeRiskMetric(){	//probability of reaching the node containing the first occurrence of undesirable state in attacker's state graph
 		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
 		for (StateVertex stateVertex : visitOrder) {
 			if(stateVertex.containsCriticalState(attackerState.getCritical().getCriticalState())){
@@ -173,13 +171,13 @@ public class Attacker extends Agent{
 				}
 			}
 		}
-//		System.out.println("state==>"+root.getStates()+"lm in state--"+count);
-//		System.out.println("landmarks==>"+verifiedLandmarks.size());
+		//		System.out.println("state==>"+root.getStates()+"lm in state--"+count);
+		//		System.out.println("landmarks==>"+verifiedLandmarks.size());
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
 		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(verifiedLandmarks.size()));
 		return Double.valueOf(format);
 	}
-	
+
 	private boolean listContainsState(ArrayList<String> states, String state){ //state has surrounding paranthesis.
 		for (String s : states) {
 			if(s.equalsIgnoreCase(state)){

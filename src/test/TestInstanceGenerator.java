@@ -53,7 +53,11 @@ public class TestInstanceGenerator {
 			reader = new Scanner (new File(cspath));
 			while(reader.hasNextLine()) {
 				String state = reader.nextLine();
-				cs.add(state.substring(0, state.indexOf("-")));
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("blocks")) {
+					cs.add(state.substring(0, state.indexOf("-")));
+				}else if((TestGeneratorConfigs.domain.equalsIgnoreCase("easyipc"))) {
+					cs.add(state.substring(0, state.indexOf("#")));
+				}
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
@@ -129,17 +133,19 @@ public class TestInstanceGenerator {
 	//generates common templates and full trace set (all actions including) for each test instance {1,2,3}
 	public static void generateProblemsFromTemplate(){ 
 		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
+			LOGGER.log(Level.INFO, "Template generation for test instance "+ instance );
 			String problemFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problem;
 			String criticalStateFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
 			String problemspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problems;
 			ArrayList<String> criticals =  readCriticals(criticalStateFile);
 			generateProblems(criticals, problemFile, problemspath);
 		}
+		LOGGER.log(Level.INFO, "Template generation done" );
 	}
 
-	//README: This is called first. From templates, generate 3 test instances with 20 problems for each instance
-	public static void main(String[] args) { 
-		generateProblemsFromTemplate();
-		LOGGER.log(Level.INFO, "Finished template generation" );
-	}
+	//README: This is called first. From templates, generate 3 test instances with 'testProblemCount' problems
+//	public static void main(String[] args) { 
+//		generateProblemsFromTemplate();
+//		LOGGER.log(Level.INFO, "Finished template generation" );
+//	}
 }
