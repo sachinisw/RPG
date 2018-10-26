@@ -1,10 +1,12 @@
-package trace;
+package train;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import actors.Agent;
 import actors.Attacker;
@@ -23,7 +25,7 @@ import run.StateGenerator;
  *
  */
 public class TraceGenerator {
-
+	private static final Logger LOGGER = Logger.getLogger(TraceGenerator.class.getName());
 	public final static int filterLimit = 80;
 	public final static double selectProbability = 0.80;
 
@@ -52,43 +54,20 @@ public class TraceGenerator {
 		graphs.add(treeAgent);
 //		gen.graphToDOT(graphAgent, 0, 0, true); //TODO: remove after debug
 //		gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
-//		System.out.println(graphAgent);//TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
-	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, Observation ob, InitialState init){
-		StateGenerator gen = new StateGenerator(agent);
+	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, String domain, Observation ob, InitialState init){
+		StateGenerator gen = new StateGenerator(agent, domain);
 		ArrayList<State> state = gen.getStatesAfterObservations(ob, init, true);
 		ArrayList<StateGraph> graphs = process(state, gen); //graph for attacker
 		return graphs;
 	}
 	//generates the trace with flagged observations for the classifier
-	public static ArrayList<ArrayList<String>> generateTrace(StateGraph attacker, StateGraph user){ 
+	public static ArrayList<ArrayList<String>> generateTrace(String dom, StateGraph attacker, StateGraph user){ 
 		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
-		//		ArrayList<ArrayList<StateVertex>> us = user.getAllPathsFromRoot();
 		ArrayList<ArrayList<StateVertex>> at = attacker.getAllPathsFromRoot();
-		ArrayList<ArrayList<StateVertex>> undesirable = attacker.getUndesirablePaths(at,ConfigParameters.domain);
-		//		for(int i=0; i<us.size(); i++){ //adds paths from user domain to trace. these paths are included in attacker domain also. decided it was not needed.
-		//			ArrayList<StateVertex> list = us.get(i);
-		//			ArrayList<String> trc = new ArrayList<String>();
-		//			for(int j=0; j<list.size()-1; j++){
-		//				ArrayList<ActionEdge> actions = user.findEdgeForStateTransition(list.get(j), list.get(j+1));
-		//				for (ActionEdge actionEdge : actions) {
-		//					//trc.add(actionEdge.getAction());
-		//					if(edgeInUndesirablePath(actionEdge, undesirable)){ //find trouble action. causing critical state. must be flagged
-		//						//Y for steps until critical state N for steps after critical state
-		//						if(edgeTriggersCriticalState(actionEdge)){ 
-		//							trc.add("N:"+actionEdge.getAction());
-		//						}else{
-		//							trc.add("Y:"+actionEdge.getAction());
-		//						}
-		//					}else{
-		//						trc.add("N:"+actionEdge.getAction());
-		//					}
-		//				}
-		//			}
-		//			trace.add(trc);
-		//		}
+		ArrayList<ArrayList<StateVertex>> undesirable = attacker.getUndesirablePaths(at, ConfigParameters.domain);
 		for(int i=0; i<at.size(); i++){
 			ArrayList<StateVertex> list = at.get(i);
 			ArrayList<String> trc = new ArrayList<String>();
@@ -97,7 +76,7 @@ public class TraceGenerator {
 				for (ActionEdge actionEdge : actions) {
 					if(edgeInUndesirablePath(actionEdge, undesirable)){ //find trouble action. causing critical state. must be flagged
 						//Y for steps until critical state N for steps after critical state
-						if(edgeTriggersCriticalState(actionEdge, attacker.getCritical().getCriticalState())){ 
+						if(edgeTriggersCriticalState(dom, actionEdge, attacker.getCritical().getCriticalState())){ 
 							trc.add("N:"+actionEdge.getAction());
 						}else{
 							trc.add("Y:"+actionEdge.getAction());
@@ -107,15 +86,9 @@ public class TraceGenerator {
 					}
 				}
 			}
-			System.out.println(trc);
 			trace.add(trc);
 		}
-		System.out.println("*******************************************************");
-		System.out.println(trace);
-		System.out.println("*****************Filtering*****************************");
-//		System.out.println(selectTracesRandomly(trace));
-		return selectTracesRandomly(trace);
-//		return trace;
+		return trace;
 	}
 
 	public static ArrayList<ArrayList<String>> selectTracesRandomly(ArrayList<ArrayList<String>> unfiltered){
@@ -174,9 +147,32 @@ public class TraceGenerator {
 		return false;
 	}
 
-	private static boolean edgeTriggersCriticalState(ActionEdge e, ArrayList<String> criticalstate) {
-		if(e.getTo().containsCriticalState(criticalstate)){
-			return true;
+	private static boolean edgeTriggersCriticalState(String domain, ActionEdge e, ArrayList<String> criticalstate) {
+		if(domain.equalsIgnoreCase("BLOCKS")) {
+			if(e.getTo().containsCriticalState(criticalstate)){//one type of critical state
+				return true;
+			}
+		}else if(domain.equalsIgnoreCase("EASYIPC")) {//one row in the grid is the critical state
+			String curpos = "";
+			String pos = "";
+			for (String s : criticalstate) { //extract critical coordinate from critical state file
+				if(s.contains("AT-ROBOT")) {
+					pos = s.substring(s.indexOf("PLACE_"));
+					break;
+				}
+			}
+			int yf = Integer.parseInt(pos.substring(pos.length()-2,pos.length()-1));
+			ArrayList<String> state = e.getTo().getStates();
+			for (String string : state) {
+				if(string.contains("AT-ROBOT")){
+					curpos = string.substring(string.indexOf("PLACE_"));
+					break;
+				}
+			}
+			int y = Integer.parseInt(curpos.substring(curpos.length()-2,curpos.length()-1));
+			if(y==yf) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -200,32 +196,32 @@ public class TraceGenerator {
 	}
 
 	public static void generateTraceForScenario(){
-		for(int instance=0; instance<=22; instance++){
-			if(instance==0){
-				String domainFile = ConfigParameters.prefix+instance+ConfigParameters.domainFile;
-				String desirableStateFile = ConfigParameters.prefix+instance+ConfigParameters.desirableStateFile;
-				String a_problemFile = ConfigParameters.prefix+instance+ConfigParameters.a_problemFile;
-				String a_outputPath = ConfigParameters.prefix+instance+ConfigParameters.a_outputPath;
-				String criticalStateFile = ConfigParameters.prefix+instance+ConfigParameters.criticalStateFile;
-				String a_initFile = ConfigParameters.prefix+instance+ConfigParameters.a_initFile;
-				String a_dotFilePrefix = ConfigParameters.prefix+instance;
-				String u_problemFile = ConfigParameters.prefix+instance+ConfigParameters.u_problemFile;
-				String u_outputPath = ConfigParameters.prefix+instance+ConfigParameters.u_outputPath;
-				String u_initFile = ConfigParameters.prefix+instance+ConfigParameters.u_initFile;
-				String u_dotFilePrefix = ConfigParameters.prefix+instance;
-				String tracepath = ConfigParameters.traces+instance;
-				String obspath = ConfigParameters.prefix+instance+ConfigParameters.observationFile;
+		for(int trainInstance=0; trainInstance<=22; trainInstance++){
+			if(trainInstance==1){
+				String domainFile = ConfigParameters.prefix+trainInstance+ConfigParameters.domainFile;
+				String desirableStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.desirableStateFile;
+				String a_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_problemFile;
+				String a_outputPath = ConfigParameters.prefix+trainInstance+ConfigParameters.a_outputPath;
+				String criticalStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.criticalStateFile;
+				String a_initFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_initFile;
+				String a_dotFilePrefix = ConfigParameters.prefix+trainInstance;
+				String u_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.u_problemFile;
+				String u_outputPath = ConfigParameters.prefix+trainInstance+ConfigParameters.u_outputPath;
+				String u_initFile = ConfigParameters.prefix+trainInstance+ConfigParameters.u_initFile;
+				String u_dotFilePrefix = ConfigParameters.prefix+trainInstance;
+				String tracepath = ConfigParameters.traces+trainInstance;
+				String obspath = ConfigParameters.prefix+trainInstance+ConfigParameters.observationFile;
+				String domain = ConfigParameters.domain;
 				Attacker attacker = new Attacker(domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, ConfigParameters.a_dotFile);
 				User user = new User(domainFile, desirableStateFile, u_problemFile, u_outputPath, criticalStateFile, u_initFile, u_dotFilePrefix, ConfigParameters.u_dotFile);
 				Observation obs = setObservations(obspath); //TODO: how to handle noise in trace. what counts as noise?
-				System.out.println("Generating Attacker's State Tree");
-				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, obs, attacker.getInitialState());//generate graph for attacker and user
-				System.out.println("Generating User's State Tree");
-				ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, obs, user.getInitialState());
-				System.out.println("Writing traces to files");
-				writeTracesToFile(generateTrace(attackerState.get(0), userState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
-				
-				//make the stoppable condition for grid better.
+				LOGGER.log(Level.INFO, "Generating Attacker's State Tree");
+				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, domain, obs, attacker.getInitialState());//generate graph for attacker and user
+				LOGGER.log(Level.INFO, "Generating User's State Tree");
+				ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, domain, obs, user.getInitialState());
+				LOGGER.log(Level.INFO, "Writing traces to files");
+				writeTracesToFile(generateTrace(domain, attackerState.get(0), userState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
+				LOGGER.log(Level.INFO, "----Traces done---");
 			}
 		}
 	}

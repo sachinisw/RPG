@@ -1,5 +1,6 @@
 package actors;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.TreeSet;
 
@@ -19,6 +20,7 @@ public class Attacker extends Agent{
 	public CriticalState critical;
 	public String initFile;
 	public StateGraph attackerState;
+	public ArrayList<LGGNode> verifiedLandmarks;
 
 	public Attacker(String dom, String des, String pro, String out, String cri, String ini, String dotp, String dots) {
 		super(dom, des, pro, out, cri, dotp, dots);
@@ -53,18 +55,16 @@ public class Attacker extends Agent{
 		return new double[]{c,r};
 	}
 
-	private double computeCertaintyMetric(){
-		StateVertex attakerRoot = this.attackerState.getRoot();
-		TreeSet<StateVertex> rootNeighbors = this.attackerState.getAdjacencyList().get(attakerRoot);
+	private double computeCertaintyMetric(){ //how many ways from his current state can the actor reach a undesirable state? e.g 4 paths from current state, 1 goes to critical state C=1/4
+		TreeSet<StateVertex> rootNeighbors = attackerState.getAdjacencyList().get(attackerState.getRoot());
 		if(!rootNeighbors.isEmpty()){
-			double neighbors = (double) rootNeighbors.size();
-			return attakerRoot.getStateProbability()/neighbors;
-		}else{
-			return 1.0; //single root. no neighbors
+			return 1.0 / (double)rootNeighbors.size();
+		}else { //only 1 node in graph
+			return 1.0;
 		}
 	}
 
-	private double computeRiskMetric(){	//probability of the node containing the first occurrence of undesirable state in attacker's state graph
+	private double computeRiskMetric(){	//probability of reaching the node containing the first occurrence of undesirable state in attacker's state graph
 		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
 		for (StateVertex stateVertex : visitOrder) {
 			if(stateVertex.containsCriticalState(attackerState.getCritical().getCriticalState())){
@@ -98,12 +98,12 @@ public class Attacker extends Agent{
 			int length = 0;
 			for (StateVertex stateVertex : arrayList) {
 				length++;
-				System.out.println("vertex====="+stateVertex + " length->"+length);
+				//				System.out.println("vertex====="+stateVertex + " length->"+length);
 				if(stateVertex.containsCriticalState(critical.getCriticalState())){
 					length-=1;//count edges until first occurrence.
 				}
 			}
-			System.out.println("dist to critical=========="+length);
+			//			System.out.println("dist to critical=========="+length);
 			lens[index++]=length;
 		}
 		if(lens.length>0){
@@ -118,18 +118,24 @@ public class Attacker extends Agent{
 		return -1; //there are no critical paths. 1 node graph
 	}
 
-	//number of remaining undesirable landmarks in the domain
-	public int computeLandmarkMetric(RelaxedPlanningGraph at, ConnectivityGraph con, String lmoutput){
+	//README: Call this method first before metric computation is called.
+	public void setVerifiedLandmarks(RelaxedPlanningGraph at, ConnectivityGraph con, String lmoutput){
 		LandmarkExtractor lm = new LandmarkExtractor(at, con);
 		LGG lgg = lm.extractLandmarks(critical.getCriticalState());
-		ArrayList<LGGNode> verified = lm.verifyLandmarks(lgg, critical.getCriticalState(), getInitialState().getState(),lmoutput);
-		int[] lmcounter = new int[verified.size()];
+		this.verifiedLandmarks = lm.verifyLandmarks(lgg, critical.getCriticalState(), getInitialState().getState(), lmoutput);
+	}
+
+	//number of remaining undesirable landmarks in the domain. 
+	//Finding:: This is not a very telling feature. even if you are making your way down the undesirable path, the graph contains the full set of landmarks in the state space
+	//This is because by following the path that undoes the action you just did you can add back previous states (and landmarks)
+	public int countRemainingLandmarks(){
+		int[] lmcounter = new int[this.verifiedLandmarks.size()];
 		int currentLM = 0;
 		int remainingLm = 0;
 		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());
-//		System.out.println("***************************************** "+visitOrder);
-		for (LGGNode node : verified) {
-//			System.out.println("verified lm=="+node);
+		//		System.out.println("***************************************** "+visitOrder);
+		for (LGGNode node : this.verifiedLandmarks) {
+			//			System.out.println("verified lm=="+node);
 			ArrayList<String> data = node.getValue();
 			for (StateVertex v : visitOrder) {
 				int count = 0;
@@ -139,7 +145,7 @@ public class Attacker extends Agent{
 					}
 				}
 				if(count==data.size()){
-//					System.out.println("v has lm="+v);
+					//					System.out.println("v has lm="+v);
 					lmcounter[currentLM] = 1;
 				}
 			}
@@ -151,6 +157,25 @@ public class Attacker extends Agent{
 			}
 		}
 		return remainingLm;
+	}
+
+	//what percetage of landmarks does the root contain?
+	public double percentOfLandmarksStateContain() {
+		StateVertex root = attackerState.getRoot();
+		int count = 0;
+		for (String st : root.getStates()) {
+			for (LGGNode node : this.verifiedLandmarks) {
+				ArrayList<String> nodestate = node.getValue();
+				if(listContainsState(nodestate, st)) {	
+					count++;
+				}
+			}
+		}
+		//		System.out.println("state==>"+root.getStates()+"lm in state--"+count);
+		//		System.out.println("landmarks==>"+verifiedLandmarks.size());
+		DecimalFormat decimalFormat = new DecimalFormat("##.##");
+		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(verifiedLandmarks.size()));
+		return Double.valueOf(format);
 	}
 
 	private boolean listContainsState(ArrayList<String> states, String state){ //state has surrounding paranthesis.

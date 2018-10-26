@@ -603,7 +603,7 @@ public class StateGraph {
 		}
 		return paths;
 	}
-
+	
 	private boolean canBackTrack(StateVertex current, ArrayList<StateVertex> unprocessed){ //return false, when you find the first node with unvisited children
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		TreeSet<StateVertex> neighbors = adj.get(current);

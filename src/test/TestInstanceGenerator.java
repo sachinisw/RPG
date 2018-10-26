@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.Scanner;
 
 import plan.Plan;
@@ -19,43 +21,9 @@ import test.TestGeneratorConfigs;
  *
  */
 public class TestInstanceGenerator {
-
+	private static final Logger LOGGER = Logger.getLogger(TestInstanceGenerator.class.getName());
 	public final static int filterLimit = 80;
 	public final static double selectProbability = 0.80;
-
-//	//generates the trace with flagged observations to train the classifier
-//	private static ArrayList<ArrayList<String>> generateTrace(StateGraph attacker, StateGraph user){ 
-//		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
-//		ArrayList<ArrayList<StateVertex>> at = attacker.getAllPathsFromRoot();
-//		ArrayList<ArrayList<StateVertex>> undesirable = attacker.getUndesirablePaths(at,ProblemGeneratorConfigs.domain);
-//		for(int i=0; i<at.size(); i++){
-//			ArrayList<StateVertex> list = at.get(i);
-//			ArrayList<String> trc = new ArrayList<String>();
-//			for(int j=0; j<list.size()-1; j++){
-//				ArrayList<ActionEdge> actions = attacker.findEdgeForStateTransition(list.get(j), list.get(j+1));
-//				for (ActionEdge actionEdge : actions) {
-//					if(edgeInUndesirablePath(actionEdge, undesirable)){ //find trouble action. causing critical state. must be flagged
-//						//Y for steps until critical state N for steps after critical state
-//						if(edgeTriggersCriticalState(actionEdge, attacker.getCritical().getCriticalState())){ 
-//							trc.add("N:"+actionEdge.getAction());
-//						}else{
-//							trc.add("Y:"+actionEdge.getAction());
-//						}
-//					}else{
-//						trc.add("N:"+actionEdge.getAction());
-//					}
-//				}
-//			}
-//			System.out.println(trc);
-//			trace.add(trc);
-//		}
-//		System.out.println("*******************************************************");
-//		System.out.println(trace);
-//		System.out.println("*****************Filtering*****************************");
-//		//		System.out.println(selectTracesRandomly(trace));
-//		return selectTracesRandomly(trace);
-//		//		return trace;
-//	}
 
 	private static void writeTracesToFile(HashMap<String, ArrayList<String>> traceset, String tracepath){
 		PrintWriter writer = null;
@@ -85,7 +53,11 @@ public class TestInstanceGenerator {
 			reader = new Scanner (new File(cspath));
 			while(reader.hasNextLine()) {
 				String state = reader.nextLine();
-				cs.add(state.substring(0, state.indexOf("-")));
+				if(TestGeneratorConfigs.domain.equalsIgnoreCase("blocks")) {
+					cs.add(state.substring(0, state.indexOf("-")));
+				}else if((TestGeneratorConfigs.domain.equalsIgnoreCase("easyipc"))) {
+					cs.add(state.substring(0, state.indexOf("#")));
+				}
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
@@ -93,7 +65,7 @@ public class TestInstanceGenerator {
 		}
 		return cs;
 	}
-	
+
 	private static ArrayList<String> readTemplateProblem(String templatepath){
 		ArrayList<String> lines = new ArrayList<String>();
 		Scanner reader;
@@ -108,7 +80,7 @@ public class TestInstanceGenerator {
 		}
 		return lines;
 	}
-	
+
 	private static void generateProblems(ArrayList<String> goalstates, String templatepath, String problemsout) {
 		ArrayList<String> problem = readTemplateProblem(templatepath);
 		ArrayList<ArrayList<String>> problems = new ArrayList<>();
@@ -120,7 +92,7 @@ public class TestInstanceGenerator {
 		}
 		writeProblemsToFiles(problems, problemsout);
 	}
-	
+
 	public static void writeProblemsToFiles(ArrayList<ArrayList<String>> problems, String problemsout){
 		PrintWriter writer = null;
 		for (int i = 0; i < problems.size(); i++) {
@@ -138,7 +110,7 @@ public class TestInstanceGenerator {
 			}
 		}
 	}
-	
+
 	public static void generatePlans(String problemspath, String domainpath, String planspath, String tracepath) {
 		for (int i = 0; i < TestGeneratorConfigs.testProblemCount; i++) {
 			Planner.runFF(1, domainpath, problemspath+"problem_"+i+".pddl", planspath); //just create a plan
@@ -157,26 +129,23 @@ public class TestInstanceGenerator {
 		}
 		writeTracesToFile(traceset, tracepath);
 	}
-	
+
 	//generates common templates and full trace set (all actions including) for each test instance {1,2,3}
-	public static void generateInstancesAndFullTrace(){ 
+	public static void generateProblemsFromTemplate(){ 
 		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
-//			if(instance==1){
-				String domainFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.domainFile;
-				String problemFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problem;
-				String criticalStateFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
-				String tracepath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.traces;
-				String problemspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problems;
-				String planspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.plans;
-				ArrayList<String> criticals =  readCriticals(criticalStateFile);
-				generateProblems(criticals, problemFile, problemspath);
-				generatePlans(problemspath, domainFile, planspath, tracepath);
-//			}
+			LOGGER.log(Level.INFO, "Template generation for test instance "+ instance );
+			String problemFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problem;
+			String criticalStateFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
+			String problemspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problems;
+			ArrayList<String> criticals =  readCriticals(criticalStateFile);
+			generateProblems(criticals, problemFile, problemspath);
 		}
+		LOGGER.log(Level.INFO, "Template generation done" );
 	}
-	
-	//README: This is called first. From templates, generate 3 test instances with 20 problems for each instance
-	public static void main(String[] args) { 
-		generateInstancesAndFullTrace();
-	}
+
+	//README: This is called first. From templates, generate 3 test instances with 'testProblemCount' problems
+//	public static void main(String[] args) { 
+//		generateProblemsFromTemplate();
+//		LOGGER.log(Level.INFO, "Finished template generation" );
+//	}
 }
