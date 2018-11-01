@@ -1,7 +1,7 @@
 package run;
 
 public class TestConfigs {
-	public static final int runmode = 1; //0=train, 1=test
+	public static final int runmode = 1; 
 	public static final int trainedscenario = 1;
 	public static final int instanceCases = 20;
 	public static final boolean writeDOT = false;
@@ -9,7 +9,7 @@ public class TestConfigs {
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public final static String instancedir="inst";
 	public final static String instscenario="/scenarios/";
-	public static String observationFiles = "/obs/";
+	public static String observationFiles = "/obs/";  
 	public static String observationLMFiles = "/obslm/";
 	public static String domainFile = "/domain.pddl";
 	public static String desirableStateFile = "/desirable.txt"; //attacker and user do not need separate files. the state graphs are generated from the observer's point of view

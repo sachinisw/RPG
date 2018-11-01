@@ -12,22 +12,29 @@ import landmark.LGGNode;
 import landmark.LandmarkExtractor;
 import landmark.RelaxedPlanningGraph;
 import run.CriticalState;
+import run.DesirableState;
 import run.InitialState;
 
-public class Attacker extends Agent{
+public class Decider extends Agent{
 
 	public double attackerActionProbability;	
 	public CriticalState critical;
+	public DesirableState desirable;
 	public String initFile;
 	public StateGraph attackerState;
 	public ArrayList<LGGNode> verifiedLandmarks;
 
-	public Attacker(String dom, String des, String pro, String out, String cri, String ini, String dotp, String dots) {
+	public Decider(String dom, String des, String pro, String out, String cri, String ini, String dotp, String dots) {
 		super(dom, des, pro, out, cri, dotp, dots);
 		this.attackerActionProbability = 0.1;
 		this.initFile = ini;
 	}
 
+	public void setDesirableState(){
+		desirable = new DesirableState(this.desirableStateFile);
+		desirable.readStatesFromFile();
+	}
+	
 	public void setUndesirableState(){
 		this.critical = new CriticalState(this.criticalStateFile);
 		this.critical.readCriticalState();
@@ -47,63 +54,77 @@ public class Attacker extends Agent{
 		this.attackerState = g;
 	}
 
-	@Override
-	public double[] computeMetric() {
+	public double[] computeMetrics() {
 		setUndesirableState();
+		setDesirableState();
 		double c = computeCertaintyMetric();
-		double r = computeRiskMetric();
-		return new double[]{c,r};
+		double [] prob = computeProbabilityMetrics();
+		return new double[]{c,prob[0],prob[1]}; 
 	}
 
-	private double computeCertaintyMetric(){ //how many ways from his current state can the actor reach a undesirable state? e.g 4 paths from current state, 1 goes to critical state C=1/4
-		TreeSet<StateVertex> rootNeighbors = attackerState.getAdjacencyList().get(attackerState.getRoot());
+	//1/11/18 disabling this for now. Since the current state(root) is based on my ability to know for sure the current state, there is no uncertainty in the system.
+	private double computeCertaintyMetric(){  
+		StateVertex attakerRoot = this.attackerState.getRoot();
+		TreeSet<StateVertex> rootNeighbors = this.attackerState.getAdjacencyList().get(attakerRoot);
 		if(!rootNeighbors.isEmpty()){
-			return 1.0 / (double)rootNeighbors.size();
-		}else { //only 1 node in graph
-			return 1.0;
+			double neighbors = (double) rootNeighbors.size();
+			return attakerRoot.getStateProbability()/neighbors;
+		}else{
+			return 1.0; //single root. no neighbors
 		}
 	}
 
-	private double computeRiskMetric(){	//probability of reaching the node containing the first occurrence of undesirable state in attacker's state graph
+	//computes risk and desirability together, by BFS on graph once
+	private double [] computeProbabilityMetrics() {
+		double[] m = new double[2]; //[risk, desirability]
 		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
 		for (StateVertex stateVertex : visitOrder) {
-			if(stateVertex.containsCriticalState(attackerState.getCritical().getCriticalState())){
-				return stateVertex.getStateProbability(); //give me the first one. i want the first instance where attack is generated.
+			if(stateVertex.containsState(attackerState.getCritical().getCriticalState())){
+				m[0] = stateVertex.getStateProbability(); //give me the first one. i want the first instance where attack is generated.
+				break;
 			}
 		}
-		return 0.0;
+		for (StateVertex stateVertex : visitOrder) {
+			if(stateVertex.containsState(attackerState.getDesirable().getDesirable())){
+				m[1] = stateVertex.getStateProbability(); //give me the first one. 
+				break;
+			}
+		}
+		return m;
 	}
-
-	//number of steps from root (current state) to undesirable state. If undesirable state occur multiple times, take the min distance
-	public int computeDistanceToCriticalStateFromRoot(String domain){ 
+	
+	public int [] computeDistanceMetrics(String domain) {
+		int d[] = new int[2];
 		ArrayList<ArrayList<StateVertex>> dfsPaths = attackerState.getAllPathsFromRoot();
-		ArrayList<ArrayList<StateVertex>> criticalpaths = new ArrayList<ArrayList<StateVertex>>(); //there could be 1 or more critical paths. take the min.
-		for (ArrayList<StateVertex> path : dfsPaths) {
+		d[0] = getDistanceToStateFromRoot(dfsPaths, critical.getCriticalState());
+		d[1] = getDistanceToStateFromRoot(dfsPaths, desirable.getDesirable());
+		return d;
+	}
+		
+	//number of steps from root (current state) to specified state state. If undesirable state occur multiple times, take the min distance
+	public int getDistanceToStateFromRoot(ArrayList<ArrayList<StateVertex>> alldfs, ArrayList<String> state){ 
+		ArrayList<ArrayList<StateVertex>> necessaryPaths = new ArrayList<ArrayList<StateVertex>>(); //there could be 1 or more critical paths. take the min.
+		for (ArrayList<StateVertex> path : alldfs) {
 			boolean found = false;
 			for (StateVertex stateVertex : path) {
-				if(stateVertex.containsCriticalState(critical.getCriticalState())){
+				if(stateVertex.containsState(state)){
 					found = true;
 				}
 			}
 			if (found){
-				criticalpaths.add(path);
+				necessaryPaths.add(path);
 			}
-			//			if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){ //TODO: see if code above will work for blocks example. if works then we can delete this code
-			//				criticalpaths.add(path);
-			//			}
 		}
-		int lens [] = new int [criticalpaths.size()];
+		int lens [] = new int [necessaryPaths.size()];
 		int index = 0;
-		for (ArrayList<StateVertex> arrayList : criticalpaths) {
+		for (ArrayList<StateVertex> arrayList : necessaryPaths) {
 			int length = 0;
 			for (StateVertex stateVertex : arrayList) {
 				length++;
-				//				System.out.println("vertex====="+stateVertex + " length->"+length);
-				if(stateVertex.containsCriticalState(critical.getCriticalState())){
+				if(stateVertex.containsState(state)){
 					length-=1;//count edges until first occurrence.
 				}
 			}
-			//			System.out.println("dist to critical=========="+length);
 			lens[index++]=length;
 		}
 		if(lens.length>0){
@@ -115,7 +136,7 @@ public class Attacker extends Agent{
 			}
 			return min;
 		}
-		return -1; //there are no critical paths. 1 node graph
+		return 0; //there are no critical paths. 1 node graph
 	}
 
 	//README: Call this method first before metric computation is called.
@@ -133,9 +154,7 @@ public class Attacker extends Agent{
 		int currentLM = 0;
 		int remainingLm = 0;
 		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());
-		//		System.out.println("***************************************** "+visitOrder);
 		for (LGGNode node : this.verifiedLandmarks) {
-			//			System.out.println("verified lm=="+node);
 			ArrayList<String> data = node.getValue();
 			for (StateVertex v : visitOrder) {
 				int count = 0;
@@ -145,7 +164,6 @@ public class Attacker extends Agent{
 					}
 				}
 				if(count==data.size()){
-					//					System.out.println("v has lm="+v);
 					lmcounter[currentLM] = 1;
 				}
 			}
@@ -171,8 +189,6 @@ public class Attacker extends Agent{
 				}
 			}
 		}
-		//		System.out.println("state==>"+root.getStates()+"lm in state--"+count);
-		//		System.out.println("landmarks==>"+verifiedLandmarks.size());
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
 		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(verifiedLandmarks.size()));
 		return Double.valueOf(format);

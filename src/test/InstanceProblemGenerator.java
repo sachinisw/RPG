@@ -315,7 +315,7 @@ public class InstanceProblemGenerator {
 			for (String in : inits) { //add keys
 				if(in.contains("KEY-SHAPE")){
 					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
-					objects.add(inparts[1].trim());
+					objects.add(inparts[1].trim()); 
 				}
 			}
 		}

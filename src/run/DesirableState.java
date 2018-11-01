@@ -18,7 +18,7 @@ public class DesirableState {
 	public void readStatesFromFile(){
 		Scanner reader = null ;
 		try {
-			reader = new Scanner(new File(this.desirableStateFile));
+			reader = new Scanner(new File(this.desirableStateFile)); 
 			while(reader.hasNextLine()){
 				String s = reader.nextLine();
 				if(s.split(":")[0].equalsIgnoreCase("desirable")){

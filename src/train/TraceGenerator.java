@@ -9,8 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import actors.Agent;
-import actors.Attacker;
-import actors.User;
+import actors.Decider;
 import graph.ActionEdge;
 import graph.StateGraph;
 import graph.StateVertex;
@@ -52,8 +51,7 @@ public class TraceGenerator {
 		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)));
 		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
 		graphs.add(treeAgent);
-//		gen.graphToDOT(graphAgent, 0, 0, true); //TODO: remove after debug
-//		gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
+		//		gen.graphToDOT(graphAgent, 0, 0, true); gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
@@ -64,7 +62,7 @@ public class TraceGenerator {
 		return graphs;
 	}
 	//generates the trace with flagged observations for the classifier
-	public static ArrayList<ArrayList<String>> generateTrace(String dom, StateGraph attacker, StateGraph user){ 
+	public static ArrayList<ArrayList<String>> generateTrace(StateGraph attacker){ 
 		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
 		ArrayList<ArrayList<StateVertex>> at = attacker.getAllPathsFromRoot();
 		ArrayList<ArrayList<StateVertex>> undesirable = attacker.getUndesirablePaths(at, ConfigParameters.domain);
@@ -76,7 +74,7 @@ public class TraceGenerator {
 				for (ActionEdge actionEdge : actions) {
 					if(edgeInUndesirablePath(actionEdge, undesirable)){ //find trouble action. causing critical state. must be flagged
 						//Y for steps until critical state N for steps after critical state
-						if(edgeTriggersCriticalState(dom, actionEdge, attacker.getCritical().getCriticalState())){ 
+						if(edgeTriggersCriticalState(actionEdge, attacker.getCritical().getCriticalState())){ 
 							trc.add("N:"+actionEdge.getAction());
 						}else{
 							trc.add("Y:"+actionEdge.getAction());
@@ -114,7 +112,7 @@ public class TraceGenerator {
 		}
 		return trace;
 	}
-	
+
 	private static boolean listContainsAllNo(ArrayList<String> list){
 		int count = 0;
 		for (String string : list) {
@@ -147,32 +145,9 @@ public class TraceGenerator {
 		return false;
 	}
 
-	private static boolean edgeTriggersCriticalState(String domain, ActionEdge e, ArrayList<String> criticalstate) {
-		if(domain.equalsIgnoreCase("BLOCKS")) {
-			if(e.getTo().containsCriticalState(criticalstate)){//one type of critical state
-				return true;
-			}
-		}else if(domain.equalsIgnoreCase("EASYIPC")) {//one row in the grid is the critical state
-			String curpos = "";
-			String pos = "";
-			for (String s : criticalstate) { //extract critical coordinate from critical state file
-				if(s.contains("AT-ROBOT")) {
-					pos = s.substring(s.indexOf("PLACE_"));
-					break;
-				}
-			}
-			int yf = Integer.parseInt(pos.substring(pos.length()-2,pos.length()-1));
-			ArrayList<String> state = e.getTo().getStates();
-			for (String string : state) {
-				if(string.contains("AT-ROBOT")){
-					curpos = string.substring(string.indexOf("PLACE_"));
-					break;
-				}
-			}
-			int y = Integer.parseInt(curpos.substring(curpos.length()-2,curpos.length()-1));
-			if(y==yf) {
-				return true;
-			}
+	private static boolean edgeTriggersCriticalState(ActionEdge e, ArrayList<String> criticalstate) {
+		if(e.getTo().containsState(criticalstate)){//one type of critical state
+			return true;
 		}
 		return false;
 	}
@@ -205,22 +180,15 @@ public class TraceGenerator {
 				String criticalStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.criticalStateFile;
 				String a_initFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_initFile;
 				String a_dotFilePrefix = ConfigParameters.prefix+trainInstance;
-				String u_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.u_problemFile;
-				String u_outputPath = ConfigParameters.prefix+trainInstance+ConfigParameters.u_outputPath;
-				String u_initFile = ConfigParameters.prefix+trainInstance+ConfigParameters.u_initFile;
-				String u_dotFilePrefix = ConfigParameters.prefix+trainInstance;
 				String tracepath = ConfigParameters.traces+trainInstance;
 				String obspath = ConfigParameters.prefix+trainInstance+ConfigParameters.observationFile;
 				String domain = ConfigParameters.domain;
-				Attacker attacker = new Attacker(domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, ConfigParameters.a_dotFile);
-				User user = new User(domainFile, desirableStateFile, u_problemFile, u_outputPath, criticalStateFile, u_initFile, u_dotFilePrefix, ConfigParameters.u_dotFile);
+				Decider decider = new Decider(domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, ConfigParameters.a_dotFile);
 				Observation obs = setObservations(obspath); //TODO: how to handle noise in trace. what counts as noise?
-				LOGGER.log(Level.INFO, "Generating Attacker's State Tree");
-				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(attacker, domain, obs, attacker.getInitialState());//generate graph for attacker and user
-				LOGGER.log(Level.INFO, "Generating User's State Tree");
-				ArrayList<StateGraph> userState = generateStateGraphsForObservations(user, domain, obs, user.getInitialState());
+				LOGGER.log(Level.INFO, "Generating State Tree");
+				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, obs, decider.getInitialState());//generate graph for attacker and user
 				LOGGER.log(Level.INFO, "Writing traces to files");
-				writeTracesToFile(generateTrace(domain, attackerState.get(0), userState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
+				writeTracesToFile(generateTrace(attackerState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
 				LOGGER.log(Level.INFO, "----Traces done---");
 			}
 		}

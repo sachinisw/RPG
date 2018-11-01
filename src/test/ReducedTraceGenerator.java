@@ -213,7 +213,7 @@ public class ReducedTraceGenerator {
 				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath);
 				Planner.runFF(1, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath); 
 				Planner.runFF(2, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
-				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
+				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath); 
 			}
 		}
 	}

@@ -18,7 +18,5 @@ public abstract class Agent {
 		this.criticalStateFile = cri;
 		this.dotFilePrefix = dotp;
 		this.dotFileSuffix = dots;
-	}
-	
-	public abstract double[] computeMetric();
+	}	
 }

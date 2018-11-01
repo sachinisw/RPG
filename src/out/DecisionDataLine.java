@@ -2,7 +2,7 @@ package out;
 
 import run.Metrics;
 
-public class DataLine {
+public class DecisionDataLine {
 	private String observation;
 	private String classLabel;
 	private Metrics metrics;
@@ -12,7 +12,7 @@ public class DataLine {
 	private double fPercentLMIn;
 	public double funcValue;
 	
-	public DataLine(String o, Metrics m){
+	public DecisionDataLine(String o, Metrics m){
 		observation = o.split(":")[1];
 		classLabel = o.split(":")[0];
 		metrics = m;
@@ -20,11 +20,11 @@ public class DataLine {
 		fDistanceToCriticalState = m.getDistanceToCritical();
 		fDistanceToDesirableState = m.getDistanceToDesirable();
 		fRemainingUndesirableLandmarks = m.getRemainingLandmarks();
-		fPercentLMIn = m.getStateContainsLandmark();
+		fPercentLMIn = m.getStateContainsLandmark(); 
 	}
 	
 	public void computeObjectiveFunctionValue(){
-		funcValue = metrics.getMetrics()[0] + metrics.getMetrics()[1] + (1-metrics.getMetrics()[2]);
+		funcValue = metrics.getCRD()[0] + metrics.getCRD()[1] + (1-metrics.getCRD()[2]);
 	}
 	
 	public String toString(){ //for current observation return full string of weighted metrics for all weights

@@ -4,7 +4,7 @@ import java.text.DecimalFormat;
 
 import run.Metrics;
 
-public class OWDataLine {
+public class WeightedDataLine {
 	private String observation;
 	private String classLabel;
 	private Metrics metrics;
@@ -12,9 +12,9 @@ public class OWDataLine {
 	private double[] weightedMetrics;
 	private double funcValue;
 
-	public OWDataLine(String o, Metrics m, WeightGroup gp){ //one data line for 1 weight group.
+	public WeightedDataLine(String o, Metrics m, WeightGroup gp){ //one data line for 1 weight group.
 		observation = o.split(":")[1];
-		classLabel = o.split(":")[0];
+		classLabel = o.split(":")[0]; 
 		metrics = m;
 		group = gp;
 		weightedMetrics = new double [3];
@@ -39,9 +39,9 @@ public class OWDataLine {
 
 	public void computeWeightedMetrics(){
 		DecimalFormat df = new DecimalFormat("#.0000"); 
-		double c = Double.valueOf(df.format(metrics.getMetrics()[0]*group.getcW())); //w*c
-		double r = Double.valueOf(df.format(metrics.getMetrics()[1]*group.getrW())); //w*r
-		double d = Double.valueOf(df.format((1-metrics.getMetrics()[2])*group.getdW()));//w*(1-d)
+		double c = Double.valueOf(df.format(metrics.getCRD()[0]*group.getcW())); //w*c
+		double r = Double.valueOf(df.format(metrics.getCRD()[1]*group.getrW())); //w*r
+		double d = Double.valueOf(df.format((1-metrics.getCRD()[2])*group.getdW()));//w*(1-d)
 		weightedMetrics[0]=c;
 		weightedMetrics[1]=r;
 		weightedMetrics[2]=d;
@@ -61,7 +61,7 @@ public class OWDataLine {
 	}
 
 	public void setFuncValue(double funcValue) {
-		this.funcValue = funcValue;
+		this.funcValue = funcValue; 
 	}
 	
 	public WeightGroup getGroup() {

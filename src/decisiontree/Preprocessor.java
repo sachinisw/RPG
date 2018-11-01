@@ -25,7 +25,7 @@ public class Preprocessor {
 	}
 
 	public ArrayList<String> getDataFiles(){		
-		ArrayList<String> dataFilePaths = new ArrayList<String>();
+		ArrayList<String> dataFilePaths = new ArrayList<String>(); 
 		try {
 			File dir = new File(this.datafilePath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
@@ -232,8 +232,10 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 1;
-		int mode = 0; //0-train, 1-test README: CHANGE HERE FIRST
-		String domain = "EASYIPC";//"BLOCKS"; //"EASYIPC";
+		int mode = 1; //0-train, 1-test TODO: CHANGE HERE FIRST
+		String domain = "BLOCKS";//"BLOCKS"; //"EASYIPC";
+		int testscenarios  = 3;
+		int testCasesPerScenario = 20;
 		if(mode==0) {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode");
 			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
@@ -243,14 +245,14 @@ public class Preprocessor {
 		}else {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode");
 			int trainedscenario = 1;
-			for (int instance = 1; instance < 4; instance++) {
+			for (int instance = 1; instance <= testscenarios; instance++) {
 				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/inst";
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
 				String instout_lm=prefix+String.valueOf(instance)+"/data/instlm.csv";
 				ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
 				ArrayList<ArrayList<DataFile>> inst_lm = new ArrayList<>();
 
-				for(int instcase = 0; instcase<20; instcase++) {
+				for(int instcase = 0; instcase<testCasesPerScenario; instcase++) {
 					String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
 					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
 					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";

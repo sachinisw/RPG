@@ -2,16 +2,14 @@ package run;
 
 import java.text.DecimalFormat;
 
-import actors.Attacker;
-import actors.User;
+import actors.Decider;
 import con.ConnectivityGraph;
 import landmark.RelaxedPlanningGraph;
 
 
 public class Metrics {
-	private Attacker attacker;
-	private User user;
-	private double [] metrics;
+	private Decider decider;
+	private double [] crd;
 	private int distanceToCritical;
 	private int distanceToDesirable;
 	private int lmRemaining;
@@ -19,60 +17,55 @@ public class Metrics {
 	private double statesAddingLM;
 	private String domain;
 	
-	public Metrics(Attacker at, User us, String dom){
-		this.attacker = at;
-		this.user = us;
-		metrics = new double[3];
+	public Metrics(Decider d, String dom){
+		this.decider = d;
+		domain = dom;
+		crd = new double[3];
 		distanceToCritical = 0;
 		distanceToDesirable = 0;
 		lmRemaining = 0;
-		domain = dom;
-		stateContainsLandmark = 0.0;
+		stateContainsLandmark = 0.0; 
 		statesAddingLM = 0.0;
 	}
 	
-	public void computeMetrics(){
-		double [] at = attacker.computeMetric(); //certainty/timeliness
-		double [] us = user.computeMetric(); //desirability
-		System.arraycopy(at, 0, metrics, 0, at.length);
-		System.arraycopy(us, 0, metrics, metrics.length-1, us.length);
+	public void computeCRD(){
+		double [] at = decider.computeMetrics(); //certainty/timeliness/desirability
+		System.arraycopy(at, 0, crd, 0, at.length);
 		DecimalFormat df = new DecimalFormat("#.00"); 
-		for (int i=0; i<metrics.length; i++) {
-			metrics[i] = Double.valueOf(df.format(metrics[i]));
+		for (int i=0; i<crd.length; i++) {
+			crd[i] = Double.valueOf(df.format(crd[i]));
 		}
 	}
 
-	public void computeDistanceToCrtical(){
-		distanceToCritical = attacker.computeDistanceToCriticalStateFromRoot(domain);
-	}
-	
-	public void computeDistanceToDesirable(){
-		distanceToDesirable= user.computeDistanceToDesirableStateFromRoot();
+	public void computeDistanceMetrics() {
+		int d[] = decider.computeDistanceMetrics(domain);
+		distanceToCritical = d[0];
+		distanceToDesirable = d[1];
 	}
 	
 	public void generateAttackerLandmarks(RelaxedPlanningGraph arpg, ConnectivityGraph con, String lmoutput) {
-		attacker.setVerifiedLandmarks(arpg, con, lmoutput);
+		decider.setVerifiedLandmarks(arpg, con, lmoutput);
 	}
 	
 	public void computeAttackLandmarksRemaining(){
-		lmRemaining = attacker.countRemainingLandmarks();
+		lmRemaining = decider.countRemainingLandmarks();
 	}
 	
 	public void percentOfLandmarksInState() {
-		stateContainsLandmark = attacker.percentOfLandmarksStateContain();
+		stateContainsLandmark = decider.percentOfLandmarksStateContain();
 	}
 		
-	public double[] getMetrics() {
-		return metrics;
+	public double[] getCRD() {
+		return crd;
 	}
 
-	public void setMetrics(double[] metrics) {
-		this.metrics = metrics;
+	public void setCRD(double[] metrics) {
+		this.crd = metrics;
 	}
 	
 	public String toString(){
 		String s = "";
-		for (double d : metrics) {
+		for (double d : crd) {
 			s += d+",";
 		}
 		return s.substring(0, s.length()-1);

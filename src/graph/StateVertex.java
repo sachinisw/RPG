@@ -74,14 +74,14 @@ public class StateVertex implements Comparable<StateVertex>{
 		return  s + prob + "\"";
 	}
 
-	/*return true if node's state contains the goal state
+	/*return true if node's state contains the given state, can be used to check if state contains both critical and desirable goal states
 	 * */
-	public boolean containsGoalState(ArrayList<String> goalstate){
+	public boolean containsState(ArrayList<String> astate){
 		ArrayList<String> state = getStates();
-		if(goalstate.isEmpty()){
+		if(astate.isEmpty()){
 			return false;
 		}
-		for (String st : goalstate) {
+		for (String st : astate) {
 			if(!state.contains(st)){
 				return false;
 			}
@@ -89,36 +89,6 @@ public class StateVertex implements Comparable<StateVertex>{
 		return true;
 	}
 
-	/*return true if node's state contains the critical state
-	 * */
-	public boolean containsCriticalState(ArrayList<String> criticalstate){
-		ArrayList<String> state = getStates();
-		if(criticalstate.isEmpty()){
-			return false;
-		}
-		for (String st : criticalstate) {
-			if(!state.contains(st)){
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/*return true if node's state contains the desirable state
-	 * */
-	public boolean containsDesirableState(ArrayList<String> desirablestate){
-		ArrayList<String> state = getStates();
-		if(desirablestate.isEmpty()){
-			return false;
-		}
-		for (String st : desirablestate) {
-			if(!state.contains(st)){
-				return false;
-			}
-		}
-		return true;
-	}
-	
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}

@@ -20,7 +20,7 @@ public class Planner {
 	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
 
 	public static String executeShellCommand(String command){
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(); 
 		try {
 			Process p = Runtime.getRuntime().exec(command);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));

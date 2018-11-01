@@ -557,7 +557,7 @@ public class StateGraph {
 		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
 		while(itr.hasNext()){
 			StateVertex v = itr.next().getValue();
-			if(v.containsCriticalState(critical.getCriticalState())){
+			if(v.containsState(critical.getCriticalState())){
 				v.setContainsCriticalState(true);
 			}
 		}
@@ -567,7 +567,7 @@ public class StateGraph {
 		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
 		while(itr.hasNext()){
 			StateVertex v = itr.next().getValue();
-			if(v.containsDesirableState(desirable.getDesirable())){
+			if(v.containsState(desirable.getDesirable())){
 				v.setContainsDesirableState(true);
 			}
 		}
@@ -619,7 +619,7 @@ public class StateGraph {
 		ArrayList<ArrayList<StateVertex>> undesirablePaths = new ArrayList<ArrayList<StateVertex>>();
 		if(domainName.equalsIgnoreCase("blocks")){
 			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For blocks only
-				if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){
+				if(path.get(path.size()-1).containsState(critical.getCriticalState())){
 					undesirablePaths.add(path);
 				}
 			}
@@ -627,7 +627,7 @@ public class StateGraph {
 			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For grid navigation, crical node may occur before reaching leaf nodes.
 				boolean found = false;
 				for (StateVertex stateVertex : path) {
-					if(stateVertex.containsCriticalState(critical.getCriticalState())){
+					if(stateVertex.containsState(critical.getCriticalState())){
 						found = true;
 					}
 				}
@@ -686,7 +686,7 @@ public class StateGraph {
 	}
 
 	public void setVertices(HashMap<String, StateVertex> vertices) {
-		this.vertices = vertices;
+		this.vertices = vertices; 
 	}
 
 	public ArrayList<ActionEdge> getEdges() {
