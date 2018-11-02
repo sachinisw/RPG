@@ -172,7 +172,7 @@ public class TraceGenerator {
 
 	public static void generateTraceForScenario(){
 		for(int trainInstance=0; trainInstance<=22; trainInstance++){
-			if(trainInstance==1){
+			if(trainInstance==6){
 				String domainFile = ConfigParameters.prefix+trainInstance+ConfigParameters.domainFile;
 				String desirableStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.desirableStateFile;
 				String a_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_problemFile;

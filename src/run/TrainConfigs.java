@@ -1,7 +1,7 @@
 package run;
 
 public class TrainConfigs {
-	public static final int scenario = 1;
+	public static final int scenario = 5;
 	public static final int runmode = 0;
 	public static final boolean writeDOT = false;
 	public static final String domain = "BLOCKS"; //EASYIPC, BLOCKS
