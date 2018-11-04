@@ -259,8 +259,23 @@ public class InstanceProblemGenerator {
 					}
 				}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")){
 					for (String string : objects) {
-						obs+= string +"\n";
+						if(string.contains("PLACE_")) {
+							obs+= string +"\n";
+						}
 					}
+					obs+=" - place"+"\n";
+					for (String string : objects) {
+						if(string.contains("KEY")) {
+							obs+= string +"\n";
+						}
+					}
+					obs+=" - key"+"\n";
+					for (String string : objects) {
+						if(string.contains("SHAPE")) {
+							obs+= string +"\n";
+						}
+					}
+					obs+=" - shape"+"\n";
 				}
 				Template.set(i, obs);
 			}

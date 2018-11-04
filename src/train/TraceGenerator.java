@@ -170,9 +170,9 @@ public class TraceGenerator {
 		}
 	}
 
-	public static void generateTraceForScenario(){
+	public static void generateObservationTraceForScenario(){
 		for(int trainInstance=0; trainInstance<=22; trainInstance++){
-			if(trainInstance==6){
+			if(trainInstance==4){
 				String domainFile = ConfigParameters.prefix+trainInstance+ConfigParameters.domainFile;
 				String desirableStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.desirableStateFile;
 				String a_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_problemFile;
@@ -185,7 +185,7 @@ public class TraceGenerator {
 				String domain = ConfigParameters.domain;
 				Decider decider = new Decider(domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, ConfigParameters.a_dotFile);
 				Observation obs = setObservations(obspath); //TODO: how to handle noise in trace. what counts as noise?
-				LOGGER.log(Level.INFO, "Generating State Tree");
+				LOGGER.log(Level.INFO, "Generating State Tree for ["+ ConfigParameters.domain +"] instance-> "+trainInstance);
 				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, obs, decider.getInitialState());//generate graph for attacker and user
 				LOGGER.log(Level.INFO, "Writing traces to files");
 				writeTracesToFile(generateTrace(attackerState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
@@ -195,6 +195,6 @@ public class TraceGenerator {
 	}
 
 	public static void main(String[] args) { 
-		generateTraceForScenario();
+		generateObservationTraceForScenario();
 	}
 }

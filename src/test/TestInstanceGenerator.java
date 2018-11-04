@@ -132,7 +132,7 @@ public class TestInstanceGenerator {
 
 	//generates common templates and full trace set (all actions including) for each test instance {1,2,3}
 	public static void generateProblemsFromTemplate(){ 
-		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
+		for(int instance=2; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
 			LOGGER.log(Level.INFO, "Template generation for test instance "+ instance );
 			String problemFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problem;
 			String criticalStateFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;

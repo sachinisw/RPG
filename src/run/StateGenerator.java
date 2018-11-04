@@ -217,12 +217,11 @@ public class StateGenerator {
 		return newState;
 	}
 
-	public boolean stoppable(ArrayList<String> state){//how to identify leaf nodes
-		if(domain.equalsIgnoreCase("blocks")){
+	public boolean stoppable(ArrayList<String> state, int x, int y){//how to identify leaf nodes
+		if(domain.equalsIgnoreCase("blocks")){//x y not applicable. put -1, -1 where called
 			return stoppableBlocks(state);
 		}else if(domain.equalsIgnoreCase("easyipc")){
-			int [] xy = getGridStoppingCoordinate();
-			return stoppableGrid(state, xy[0], xy[1]);
+			return stoppableGrid(state, x, y); //desirable state position, always top-right
 		}else if(domain.equalsIgnoreCase("logistics")){
 			return stoppableLogistics(state);
 		}
@@ -250,33 +249,21 @@ public class StateGenerator {
 		}
 		return false;
 	}
-
-	private int[] getGridStoppingCoordinate() {
-		CriticalState cs = new CriticalState(agent.criticalStateFile);
-		cs.readCriticalState();
-		String cpos="";
-		for (String c : cs.getCriticalState()) {
-			if(c.contains("AT-ROBOT")){
-				cpos = c.substring(c.indexOf("PLACE_"));
-				break;
-			}
-		}
-		int cx = Integer.parseInt(cpos.substring(cpos.indexOf("_")+1,cpos.indexOf("_")+2));
-		int cy = Integer.parseInt(cpos.substring(cpos.length()-2,cpos.length()-1));
-		return new int[] {cx, cy};
-	}
 	
-	private boolean stoppableGrid(ArrayList<String> state, int cx, int cy){ //NOTE: change grid_size value for larger problem instances
-		//generic critical state for grid domains: stop if state<> indicate that robot is at any position in the row designated as critical state cx,cy
+	//generic stopping condition for grid domains: robot wants to go to top-right corner. enumerate all possible paths to get to top-right
+	//1-critical spot in the grid, which will be on some possible paths
+	private boolean stoppableGrid(ArrayList<String> state, int x, int y){ //NOTE: change grid_size value for larger problem instances
 		String curpos = "";
 		for (String string : state) {
 			if(string.contains("AT-ROBOT")){
-				curpos = string.substring(string.indexOf("PLACE_"));
+				String temp = string.substring(1, string.length()-1);
+				curpos = temp.substring(temp.indexOf("PLACE_"));
 				break;
 			}
 		}
-		int y = Integer.parseInt(curpos.substring(curpos.length()-2,curpos.length()-1));
-		if((y==cy)){ //if at critical coordinate stop
+		int yr = Integer.parseInt(curpos.substring(curpos.length()-1,curpos.length()));
+		int xr = Integer.parseInt(curpos.substring(curpos.length()-3,curpos.length()-2));
+		if((yr==y && xr==x)){ //if top-right corner stop
 			return true;
 		}
 		return false;
@@ -297,13 +284,32 @@ public class StateGenerator {
 		graph.addVertex(in.getState());
 		for(int i=0; i<cons.size(); i++){
 			ArrayList<String> currentState = in.getState();
-			recursiveAddEdge(currentState, cons.get(i), graph, seen);
+			if(domain.equalsIgnoreCase("blocks")) {
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1);
+			}else if(domain.equalsIgnoreCase("easyipc")) {
+				int [] xy = getGridEdge(ds.getDesirable());
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1]);
+			}
 		}
 		graph.markVerticesContainingCriticalState(cs);
 		graph.markVerticesContainingDesirableState(ds);
 		return graph; //this graph is bidirectional
 	}
 
+	private int [] getGridEdge(ArrayList<String> state) {
+		String pos = "";
+		for (String s : state) {
+			if(s.contains("KEY_")) {
+				pos = s;
+				break;
+			}
+		}
+		String cord = pos.substring(pos.indexOf("PLACE_"));
+		int ya = Integer.parseInt(cord.substring(cord.length()-2,cord.length()-1));
+		int xa = Integer.parseInt(cord.substring(cord.length()-4,cord.length()-3));
+		return new int[] {xa, ya};
+	}
+	
 	public ArrayList<State> getStatesAfterObservations(Observation ob, State in, boolean tracegenerator){//README:: true if running trace generator, false otherwise
 		ArrayList<State> stateseq = new ArrayList<State>();
 		ArrayList<String> obs = ob.getObservations();
@@ -394,8 +400,8 @@ public class StateGenerator {
 		return cleaned;
 	}
 
-	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen){
-		if(stoppable(currentState)){
+	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen, int x, int y){
+		if(stoppable(currentState, x, y)){
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
@@ -408,7 +414,7 @@ public class StateGenerator {
 			for (String action : cleaned) {
 				////README:::: seen [] only has the initial state. if you add newstate, other branches in the graph lose possible actions. The branches in the graph must be independent. children's possible actions must only depend on their immediate parents' state and not on other paths in the tree
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph); 
-				recursiveAddEdge(newState, con, graph, seen);
+				recursiveAddEdge(newState, con, graph, seen, x, y);
 			}
 		}
 	}
