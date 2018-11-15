@@ -233,7 +233,7 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 1;
 		int mode = 1; //0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "EASYIPC";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "BLOCKS";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 1;
 		int casePerInstance = 20;
 		if(mode==0) {

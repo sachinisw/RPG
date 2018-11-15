@@ -78,12 +78,13 @@ public class InstanceProblemGenerator {
 		ArrayList<String> adata = new ArrayList<>();
 		ArrayList<String> udata = new ArrayList<>();
 		TreeSet<String> cs, ds = null;
-		if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) { //init objects are different from cs & ds
+		if(HarnessConfigs.domain.equalsIgnoreCase("BLOCKS")) { //init objects are different from cs & ds
 			cs = extractObjectsFromGoalState(critical);
 			ds = extractObjectsFromGoalState(desirable);
 			objects.addAll(cs);
 			objects.addAll(ds);
-		}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) { //init objects cs, ds are the same
+		}else if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC") || 
+				HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) { //init objects cs, ds are the same
 			cs = extractObjectsFromGoalState(critical);
 			ds = extractObjectsFromGoalState(desirable);
 			objects.addAll(extractObjectsFromInits(inits));
@@ -92,22 +93,22 @@ public class InstanceProblemGenerator {
 		ArrayList<String> domout = generateDomain(readTemplate(domainTemplatePath), objects);
 		ArrayList<String> aout = generateProblem(prob, filterInits(inits, objects), critical);
 		ArrayList<String> uout = generateProblem(prob, filterInits(inits, ds), desirable); //TODO: i am doing only one deception scenario. to keep it simple. For that scenario inits must be filtered for the user
-		writeToFile(domout, outputpath, String.valueOf(id), TestGeneratorConfigs.domfilename); //write domain
-		writeToFile(aout, outputpath, String.valueOf(id), TestGeneratorConfigs.aprobfilename); //write problem_a.pddl
-		writeToFile(uout, outputpath, String.valueOf(id), TestGeneratorConfigs.uprobfilename); //write problem_u.pddl
+		writeToFile(domout, outputpath, String.valueOf(id), HarnessConfigs.domfilename); //write domain
+		writeToFile(aout, outputpath, String.valueOf(id), HarnessConfigs.aprobfilename); //write problem_a.pddl
+		writeToFile(uout, outputpath, String.valueOf(id), HarnessConfigs.uprobfilename); //write problem_u.pddl
 		adata.addAll(filterInits(inits, objects));
 		udata.addAll(filterInits(inits, ds));
-		writeToFile(adata, outputpath, String.valueOf(id), TestGeneratorConfigs.ainit); //write inits_a
-		writeToFile(udata, outputpath, String.valueOf(id), TestGeneratorConfigs.uinit); //write inits_u
-		writeToFile(getCriticalState(critical), outputpath, String.valueOf(id), TestGeneratorConfigs.critical); //write critical.txt
-		writeToFile(getDesirableState(desirable), outputpath, String.valueOf(id), TestGeneratorConfigs.desirable); //write desirable.txt
+		writeToFile(adata, outputpath, String.valueOf(id), HarnessConfigs.ainit); //write inits_a
+		writeToFile(udata, outputpath, String.valueOf(id), HarnessConfigs.uinit); //write inits_u
+		writeToFile(getCriticalState(critical), outputpath, String.valueOf(id), HarnessConfigs.critical); //write critical.txt
+		writeToFile(getDesirableState(desirable), outputpath, String.valueOf(id), HarnessConfigs.desirable); //write desirable.txt
 		createDirectories(outputpath, String.valueOf(id)); //create directories to store output files
 	}			
 
 	public static void generateObservationTraceForTestInstance(String pathprefix, String scid) {
-		String domainpath = pathprefix+scid+TestGeneratorConfigs.domainFile;
-		String problempath= pathprefix+scid+"/"+TestGeneratorConfigs.aprobfilename;
-		String planoutputpath=pathprefix+scid+"/"+TestGeneratorConfigs.tempplan+"/";
+		String domainpath = pathprefix+scid+HarnessConfigs.domainFile;
+		String problempath= pathprefix+scid+"/"+HarnessConfigs.aprobfilename;
+		String planoutputpath=pathprefix+scid+"/"+HarnessConfigs.tempplan+"/";
 		Planner.runFF(1, domainpath, problempath, planoutputpath); //just create a plan for the attacker domain
 		Planner.runFF(3, domainpath, problempath, planoutputpath); //and connectivity
 		ArrayList<Plan> plans = Planner.readPlans(planoutputpath);//just 1 plan
@@ -119,10 +120,10 @@ public class InstanceProblemGenerator {
 	}
 
 	public static void addLabelsToTrace(ArrayList<String> trace, String pathprefix, String scid) {
-		String obspath = pathprefix+scid+"/"+TestGeneratorConfigs.obsdir+"/"+scid;
-		String congraphpath = pathprefix+scid+"/"+TestGeneratorConfigs.tempplan+"/"+TestGeneratorConfigs.acon;
-		String cspath = pathprefix+scid+"/"+TestGeneratorConfigs.critical;
-		String initspath = pathprefix+scid+"/"+TestGeneratorConfigs.ainit;
+		String obspath = pathprefix+scid+"/"+HarnessConfigs.obsdir+"/"+scid;
+		String congraphpath = pathprefix+scid+"/"+HarnessConfigs.tempplan+"/"+HarnessConfigs.acon;
+		String cspath = pathprefix+scid+"/"+HarnessConfigs.critical;
+		String initspath = pathprefix+scid+"/"+HarnessConfigs.ainit;
 		ArrayList<String> labeledsteps = new ArrayList<String>();
 		ConnectivityGraph con = new ConnectivityGraph(congraphpath);
 		con.readConGraphOutput(congraphpath);
@@ -174,16 +175,16 @@ public class InstanceProblemGenerator {
 	}
 
 	public static void createDirectories(String outputpath, String scenarioid) {
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.datadir+"/decision/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.datadir+"/inputdecisiontree/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.datadir+"/weighted/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.dotdir+"/full").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.dotdir+"/lm").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.outdir+"/attacker/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.outdir+"/user/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.obsdir+"/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.obslm+"/").mkdirs();
-		new File(outputpath+scenarioid+"/"+TestGeneratorConfigs.tempplan+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.datadir+"/decision/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.datadir+"/inputdecisiontree/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.datadir+"/weighted/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.dotdir+"/full").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.dotdir+"/lm").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.outdir+"/attacker/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.outdir+"/user/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.obsdir+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.obslm+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.tempplan+"/").mkdirs();
 	}
 
 	public static ArrayList<String> getCriticalState(String critical) {
@@ -203,7 +204,7 @@ public class InstanceProblemGenerator {
 
 	public static TreeSet<String> filterInits(TreeSet<String> initsfull, TreeSet<String> objects) {
 		TreeSet<String> filtered = new TreeSet<String>();
-		if(TestGeneratorConfigs.domain.equalsIgnoreCase("blocks")) { //for domains where user's inits and attacker's inits are different
+		if(HarnessConfigs.domain.equalsIgnoreCase("blocks")) { //for domains where user's inits and attacker's inits are different
 			for (String s : initsfull) {
 				String parts[] = s.substring(1,s.length()-1).split(" ");
 				if(parts.length==1) {
@@ -218,7 +219,7 @@ public class InstanceProblemGenerator {
 					}
 				}
 			}
-		}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("easyipc")){//for domains where user's and attacker's inits are the same
+		}else if(HarnessConfigs.domain.equalsIgnoreCase("easyipc")||HarnessConfigs.domain.equalsIgnoreCase("navigator")){//for domains where user's and attacker's inits are the same
 			filtered.addAll(initsfull);
 		}
 
@@ -230,8 +231,9 @@ public class InstanceProblemGenerator {
 		out.addAll(probTemplate);
 		for (int i=0; i<probTemplate.size(); i++) {
 			if(probTemplate.get(i).equals("<INITS>")){
-				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS") || 
-						TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+				if(HarnessConfigs.domain.equalsIgnoreCase("BLOCKS") || 
+						HarnessConfigs.domain.equalsIgnoreCase("EASYIPC") || 
+						HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) {
 					String init = "";
 					for (String string : inits) {
 						init+= string +"\n";
@@ -239,9 +241,9 @@ public class InstanceProblemGenerator {
 					out.set(i, init);
 				}
 			}else if(probTemplate.get(i).equals("<GOAL_STATE>")) {
-				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+				if(HarnessConfigs.domain.equalsIgnoreCase("BLOCKS")) {
 					out.set(i, goal.replace(",", ""));
-				}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+				}else if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC")||(HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR"))) {
 					out.set(i, goal);
 				}
 			}
@@ -253,11 +255,11 @@ public class InstanceProblemGenerator {
 		for (int i=0; i<Template.size(); i++) {
 			if(Template.get(i).equals("<OBJECTS>")){
 				String obs = "";
-				if(TestGeneratorConfigs.domain.equalsIgnoreCase("BLOCKS")) {
+				if(HarnessConfigs.domain.equalsIgnoreCase("BLOCKS")) {
 					for (String string : objects) {
 						obs+= string +" - block" +"\n";
 					}
-				}else if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")){
+				}else if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC")){
 					for (String string : objects) {
 						if(string.contains("PLACE_")) {
 							obs+= string +"\n";
@@ -276,6 +278,13 @@ public class InstanceProblemGenerator {
 						}
 					}
 					obs+=" - shape"+"\n";
+				}else if(HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")){
+					for (String string : objects) {
+						if(string.contains("PLACE_")) {
+							obs+= string +"\n";
+						}
+					}
+					obs+=" - place"+"\n";
 				}
 				Template.set(i, obs);
 			}
@@ -313,7 +322,7 @@ public class InstanceProblemGenerator {
 
 	public static TreeSet<String> extractObjectsFromInits(TreeSet<String> inits){
 		TreeSet<String> objects = new TreeSet<>();
-		if(TestGeneratorConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+		if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC")) {
 			for (String in : inits) { //add places
 				if(in.contains("CONN")){
 					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); //its ok to have duplicates here. treeset will remove that
@@ -333,51 +342,38 @@ public class InstanceProblemGenerator {
 					objects.add(inparts[1].trim()); 
 				}
 			}
+		}else if(HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) {
+			for (String in : inits) { //add places
+				if(in.contains("CONNECTED")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" ");
+					objects.add(inparts[1].trim());
+					objects.add(inparts[2].trim());
+				}
+			}
 		}
 		return objects;
 	}
 
-	public static void generateTracesForInstances() {
-		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
-			String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
-			String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
-			String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
-			String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
-			String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
-			String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
+	public static void generateTracesForInstances(int start) {
+		for(int instance=start; instance<=HarnessConfigs.testInstanceCount; instance++){
+			String domainTemplate = HarnessConfigs.prefix+instance+HarnessConfigs.template_domain;
+			String problemTemplate = HarnessConfigs.prefix+instance+HarnessConfigs.template_problemgen;
+			String cspath = HarnessConfigs.prefix+instance+HarnessConfigs.criticalStateFile;
+			String dspath = HarnessConfigs.prefix+instance+HarnessConfigs.desirablestates;
+			String problemoutput = HarnessConfigs.prefix+instance+HarnessConfigs.problemgen_output; //add problem id (i)
+			String initspath = HarnessConfigs.prefix+instance+HarnessConfigs.initFile;
 			ArrayList<String> criticals = readGoals(cspath);
 			ArrayList<String> desirables = readGoals(dspath);
 			TreeSet<String> inits = readInits(initspath);
-			for (int i=0; i<TestGeneratorConfigs.testProblemCount; i++) {
+			for (int i=0; i<HarnessConfigs.testProblemCount; i++) {
 				generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
 						problemoutput);
 				generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
-				LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance );
+				LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance + " for scenario ["+ HarnessConfigs.testscenario+"]");
 			}
-			LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance );
+			LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance + " for scenario ["+ HarnessConfigs.testscenario+"]");
 		}
 	}
 
 	//This is called second.
-	//		public static void main(String[] args) {
-	//			for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
-	//				String domainTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_domain;
-	//				String problemTemplate = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problemgen;
-	//				String cspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
-	//				String dspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.desirablestates;
-	//				String problemoutput = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problemgen_output; //add problem id (i)
-	//				String initspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.initFile;
-	//				ArrayList<String> criticals = readGoals(cspath);
-	//				ArrayList<String> desirables = readGoals(dspath);
-	//				TreeSet<String> inits = readInits(initspath);
-	//				for (int i=0; i<TestGeneratorConfigs.testProblemCount; i++) {
-	//					generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
-	//							problemoutput);
-	//					generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
-	//					LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance );
-	//				}
-	//				LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance );
-	//				break; //TODO: remove after adding 2nd instane
-	//			}
-	//		}
 }

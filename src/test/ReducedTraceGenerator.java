@@ -140,12 +140,6 @@ public class ReducedTraceGenerator {
 				}
 			}
 		}
-		//		System.out.println("done");
-		//		Iterator<Entry<String, ArrayList<String>>> it = causes.entrySet().iterator();
-		//		while(it.hasNext()) {
-		//			Entry<String, ArrayList<String>> e = it.next();
-		//			System.out.println(e.getKey()+"---"+e.getValue());
-		//		}
 		return causes;
 	}
 
@@ -199,34 +193,34 @@ public class ReducedTraceGenerator {
 		return null;
 	}
 
-	public static void generateRPGandConnectvity() {
+	public static void generateRPGandConnectvity(int start) {
 		//FORMAT: /home/sachini/domains/BLOCKS/scenarios/TEST1/inst1/scenarios/0/outs/attacker
-		for(int i=1; i<=TestGeneratorConfigs.testInstanceCount; i++) { 
-			String pathprefix = TestGeneratorConfigs.prefix+String.valueOf(i)+TestGeneratorConfigs.problemgen_output;
-			for (int j = 0; j < TestGeneratorConfigs.testProblemCount; j++) { //attacker
-				String aplanspath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/";
-				String uplanspath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/user/";
-				String domainpath = pathprefix+String.valueOf(j)+TestGeneratorConfigs.domainFile;
+		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
+			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
+			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //attacker
+				String aplanspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/";
+				String uplanspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/user/";
+				String domainpath = pathprefix+String.valueOf(j)+HarnessConfigs.domainFile;
 				String problemspath = pathprefix+String.valueOf(j)+"/";
-				Planner.runFF(1, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath); 
-				Planner.runFF(2, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath);
-				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath);
-				Planner.runFF(1, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath); 
-				Planner.runFF(2, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
-				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath); 
+				Planner.runFF(1, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath); 
+				Planner.runFF(2, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath);
+				Planner.runFF(3, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath);
+				Planner.runFF(1, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath); 
+				Planner.runFF(2, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath);
+				Planner.runFF(3, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath); 
 			}
 		}
 	}
 
-	public static void generateLandmarks() {
-		for(int i=1; i<=TestGeneratorConfigs.testInstanceCount; i++) { 
-			String pathprefix = TestGeneratorConfigs.prefix+String.valueOf(i)+TestGeneratorConfigs.problemgen_output;
-			for (int j = 0; j < TestGeneratorConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
-				String rpgpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.arpg;
-				String conpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.acon;
-				String csfile = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.critical;
-				String initfile = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.ainit;
-				String lmoutpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.lmFile;
+	public static void generateLandmarks(int start) {
+		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
+			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
+			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
+				String rpgpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.arpg;
+				String conpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.acon;
+				String csfile = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.critical;
+				String initfile = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.ainit;
+				String lmoutpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.lmFile;
 				ArrayList<String> criticals = readCriticals(csfile);
 				ArrayList<String> inits = readInits(initfile);
 				RelaxedPlanningGraphGenerator rpggen = new RelaxedPlanningGraphGenerator();
@@ -250,16 +244,16 @@ public class ReducedTraceGenerator {
 		}
 	}
 
-	public static void generateReducedTrace() {
-		generateRPGandConnectvity(); 		//generate rpg and cons
-		generateLandmarks(); //generate landmarks and write output to lmfile
-		for(int i=1; i<=TestGeneratorConfigs.testInstanceCount; i++) { 
-			String pathprefix = TestGeneratorConfigs.prefix+String.valueOf(i)+TestGeneratorConfigs.problemgen_output;
-			for (int j = 0; j < TestGeneratorConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
-				String lmoutpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.lmFile;
-				String conpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.acon;
-				String obspath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.obsdir+"/"+String.valueOf(j); //take this as the root plan
-				String obslmpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.obslm;
+	public static void generateReducedTrace(int start) {
+		generateRPGandConnectvity(start); 		//generate rpg and cons
+		generateLandmarks(start); //generate landmarks and write output to lmfile
+		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
+			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
+			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
+				String lmoutpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.lmFile;
+				String conpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.acon;
+				String obspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obsdir+"/"+String.valueOf(j); //take this as the root plan
+				String obslmpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm;
 				ArrayList<String> lmlines  = readLMData(lmoutpath);
 				ArrayList<ArrayList<String>> lms = extractLM(lmlines);
 				HashMap<String, ArrayList<String>> criticallm= extractLMBeforeUndesirableState(lms);
@@ -269,9 +263,4 @@ public class ReducedTraceGenerator {
 		}
 		LOGGER.log(Level.INFO, "Reduced traces generated");
 	}
-
-//	public static void main(String[] args) {
-//		generateReducedTrace();
-//		LOGGER.log(Level.INFO, "Reduced traces generated");
-//	}
 }
