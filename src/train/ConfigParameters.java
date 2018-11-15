@@ -2,7 +2,7 @@ package train;
 
 public class ConfigParameters {
 	public final static String mode = "TRAIN"; //TEST//TRAIN
-	public final static String domain = "EASYIPC";//BLOCKS,EASYIPC,LOGISTICS
+	public final static String domain = "EASYIPC";//BLOCKS,EASYIPC,NAVIGATOR
 	public final static String observationFile = "/obs_ezipc.txt";
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/"; //base path. must be followed by a number 1, 2...
 	public final static String domainFile = "/domain.pddl";

@@ -624,7 +624,19 @@ public class StateGraph {
 				}
 			}
 		}else if(domainName.equalsIgnoreCase("EASYIPC")){
-			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For grid navigation, crical node may occur before reaching leaf nodes.
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For grid navigation, critical node may occur before reaching leaf nodes.
+				boolean found = false;
+				for (StateVertex stateVertex : path) {
+					if(stateVertex.containsState(critical.getCriticalState())){
+						found = true;
+					}
+				}
+				if(found){
+					undesirablePaths.add(path);
+				}
+			}
+		}else if(domainName.equalsIgnoreCase("NAVIGATOR")){
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For navigator, critical node may occur before reaching leaf nodes.
 				boolean found = false;
 				for (StateVertex stateVertex : path) {
 					if(stateVertex.containsState(critical.getCriticalState())){

@@ -51,7 +51,7 @@ public class TraceGenerator {
 		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)));
 		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
 		graphs.add(treeAgent);
-		//		gen.graphToDOT(graphAgent, 0, 0, true); gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
+//				gen.graphToDOT(graphAgent, 0, 0, true); gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
@@ -172,7 +172,7 @@ public class TraceGenerator {
 
 	public static void generateObservationTraceForScenario(){
 		for(int trainInstance=0; trainInstance<=22; trainInstance++){
-			if(trainInstance==4){
+			if(trainInstance==0){
 				String domainFile = ConfigParameters.prefix+trainInstance+ConfigParameters.domainFile;
 				String desirableStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.desirableStateFile;
 				String a_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_problemFile;

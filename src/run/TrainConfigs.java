@@ -1,10 +1,10 @@
 package run;
 
 public class TrainConfigs {
-	public static final int scenario = 5;
+	public static final int scenario = 1;
 	public static final int runmode = 0;
 	public static final boolean writeDOT = false;
-	public static final String domain = "BLOCKS"; //EASYIPC, BLOCKS
+	public static final String domain = "EASYIPC"; //NAVIGATOR, EASYIPC, BLOCKS
 	public static String observationFiles = "/home/sachini/domains/"+domain +"/scenarios/"+scenario+"/obs/";
 	public static String domainFile = "/home/sachini/domains/"+domain +"/scenarios/"+scenario+"/domain.pddl";
 	public static String desirableStateFile = "/home/sachini/domains/"+domain +"/scenarios/"+scenario+"/desirable.txt"; //attacker and user do not need separate files. the state graphs are generated from the observer's point of view

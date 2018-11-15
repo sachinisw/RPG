@@ -3,9 +3,10 @@ package run;
 public class TestConfigs {
 	public static final int runmode = 1; 
 	public static final int trainedscenario = 1;
+	public static final int instances = 1;
 	public static final int instanceCases = 20;
 	public static final boolean writeDOT = false;
-	public static final String domain = "BLOCKS"; //EASYIPC /home/sachini/domains/BLOCKS
+	public static final String domain = "EASYIPC"; //EASYIPC //BLOCKS //NAVIGATOR
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public final static String instancedir="inst";
 	public final static String instscenario="/scenarios/";

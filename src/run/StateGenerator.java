@@ -224,6 +224,8 @@ public class StateGenerator {
 			return stoppableGrid(state, x, y); //desirable state position, always top-right
 		}else if(domain.equalsIgnoreCase("logistics")){
 			return stoppableLogistics(state);
+		}else if(domain.equalsIgnoreCase("navigator")){  //desirable state position, always top-right
+			return stoppableNavigator(state,x,y);
 		}
 		return false;
 	}
@@ -269,6 +271,35 @@ public class StateGenerator {
 		return false;
 	}
 	
+	private boolean stoppableNavigator(ArrayList<String> state, int x, int y){ //NOTE: change grid_size value for larger problem instances
+		String curpos = "";
+		for (String string : state) {
+			if(string.contains("AT")){
+				String temp = string.substring(1, string.length()-1);
+				curpos = temp.substring(temp.indexOf("PLACE_"));
+				break;
+			}
+		}
+		int[] ar = getCoordinatesFromPlaceString(curpos);
+		if((ar[1]==y && ar[0]==x)){ //if top-right corner stop
+			return true;
+		}
+		return false;
+	}
+	
+	private int[] getCoordinatesFromPlaceString(String s) { //needs a string like PLACE_5_10, place_4_8
+		int z=0;
+		int [] xy = new int [2];
+		for (int i = 0; i < s.length(); i++) {
+			if(s.charAt(i)=='_') {
+				xy[z++]=i;
+			}
+		}
+		int xx = Integer.parseInt(s.substring(xy[0]+1,xy[1]));
+		int yy = Integer.parseInt(s.substring(xy[1]+1,s.length()));
+		return new int[] {xx,yy};
+	}
+	
 	public boolean stoppableLogistics(ArrayList<String> state){ //NOTE: change grid_size value for larger problem instances
 		return false;
 	}
@@ -289,6 +320,9 @@ public class StateGenerator {
 			}else if(domain.equalsIgnoreCase("easyipc")) {
 				int [] xy = getGridEdge(ds.getDesirable());
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1]);
+			}else if(domain.equalsIgnoreCase("navigator")) {
+				int [] xy = getNavigatorEdge(ds.getDesirable());
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1]);
 			}
 		}
 		graph.markVerticesContainingCriticalState(cs);
@@ -299,7 +333,8 @@ public class StateGenerator {
 	private int [] getGridEdge(ArrayList<String> state) {
 		String pos = "";
 		for (String s : state) {
-			if(s.contains("KEY_")) {
+			//if(s.contains("KEY_")) {
+			if(s.contains("AT-ROBOT")) {
 				pos = s;
 				break;
 			}
@@ -308,6 +343,18 @@ public class StateGenerator {
 		int ya = Integer.parseInt(cord.substring(cord.length()-2,cord.length()-1));
 		int xa = Integer.parseInt(cord.substring(cord.length()-4,cord.length()-3));
 		return new int[] {xa, ya};
+	}
+	
+	private int [] getNavigatorEdge(ArrayList<String> state) {
+		String pos = "";
+		for (String s : state) {
+			if(s.contains("AT")) {
+				pos = s;
+				break;
+			}
+		}
+		int xy [] = getCoordinatesFromPlaceString(pos.substring(1, pos.length()-1));
+		return new int[] {xy[0], xy[1]};
 	}
 	
 	public ArrayList<State> getStatesAfterObservations(Observation ob, State in, boolean tracegenerator){//README:: true if running trace generator, false otherwise
@@ -406,7 +453,8 @@ public class StateGenerator {
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
-			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("logistics") )//reversible domains. i.e. you can go back to previous state
+			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("navigator") 
+					|| domain.equalsIgnoreCase("logistics") )//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path. 
 			else if(domain.equalsIgnoreCase("pag") )//sequential domains

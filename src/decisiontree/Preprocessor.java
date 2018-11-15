@@ -161,7 +161,7 @@ public class Preprocessor {
 		this.datafilePath = datafilePath;
 	}
 
-	public static void runTraining(String inputfilepath, String out, String outFull) {
+	public static void preprocessTrainingData(String inputfilepath, String out, String outFull) {
 		Preprocessor pre = new Preprocessor(inputfilepath);
 		ArrayList<DataFile> dataFile = pre.readDataFiles(pre.getDataFiles());
 		double [] minmax = pre.findObjectiveFunctionValueMinMax(dataFile);
@@ -172,7 +172,7 @@ public class Preprocessor {
 		pre.writeToFileFull(outFull, binned, minmax);//put all in one file.
 	}
 
-	public static ArrayList<DataFile> runTesting(String inputfilepath, String out, String outFull, int testtype) {
+	public static ArrayList<DataFile> preprocessTestingData(String inputfilepath, String out, String outFull, int testtype) {
 		Preprocessor pre = new Preprocessor(inputfilepath);
 		ArrayList<DataFile> dataFile = pre.readDataFiles(pre.getDataFiles());
 		ArrayList<DataFile> cleaned = new ArrayList<DataFile>();
@@ -233,32 +233,31 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 1;
 		int mode = 1; //0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "BLOCKS";//"BLOCKS"; //"EASYIPC";
-		int testscenarios  = 3;
-		int testCasesPerScenario = 20;
+		String domain = "EASYIPC";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int instances  = 1;
+		int casePerInstance = 20;
 		if(mode==0) {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode");
 			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
 			String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
 			String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
-			runTraining(inputfilepath, out, outFull);
+			preprocessTrainingData(inputfilepath, out, outFull);
 		}else {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode");
-			int trainedscenario = 1;
-			for (int instance = 1; instance <= testscenarios; instance++) {
-				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/inst";
+			for (int instance = 1; instance <= instances; instance++) {
+				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
 				String instout_lm=prefix+String.valueOf(instance)+"/data/instlm.csv";
 				ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
 				ArrayList<ArrayList<DataFile>> inst_lm = new ArrayList<>();
 
-				for(int instcase = 0; instcase<testCasesPerScenario; instcase++) {
+				for(int instcase = 0; instcase<casePerInstance; instcase++) {
 					String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
 					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
 					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
 					String outFull_lm = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_lm.csv";
-					ArrayList<DataFile> df = runTesting(inputfilepath, out, outFull, 1);
-					ArrayList<DataFile> dlm = runTesting(inputfilepath, out, outFull_lm, 2);
+					ArrayList<DataFile> df = preprocessTestingData(inputfilepath, out, outFull, 1);
+					ArrayList<DataFile> dlm = preprocessTestingData(inputfilepath, out, outFull_lm, 2);
 					inst_full.add(df);
 					inst_lm.add(dlm);
 				}

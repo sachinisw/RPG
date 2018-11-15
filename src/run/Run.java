@@ -134,8 +134,8 @@ public class Run {
 		results.writeOutput();
 	}
 
-	public static void computeMetricsForDecisionTree(String domain, Observation ob, Decider attacker, /*User user*/ ArrayList<StateGraph> attackers, 
-			/*ArrayList<StateGraph> users,*/ RelaxedPlanningGraph arpg, ConnectivityGraph con, String filename, String lmoutput){
+	public static void computeMetricsForDecisionTree(String domain, Observation ob, Decider attacker, ArrayList<StateGraph> attackers, 
+			RelaxedPlanningGraph arpg, ConnectivityGraph con, String filename, String lmoutput){
 		ArrayList<String> items = new ArrayList<String>();
 		for (int i=1; i<attackers.size(); i++) {
 			attacker.setState(attackers.get(i)); //add stategraphs to user, attacker objects
@@ -168,7 +168,6 @@ public class Run {
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
 			LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
 			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);//generate graph for attacker and user
-			LOGGER.log(Level.INFO, "Generating user state graphs for domain: "+ domain);
 			if(full) {
 				computeMetricsWeighted(domain, curobs, decider, attackerState, wt_csv+name[name.length-1]+".csv", ow);
 				computeMetricsForDecisionTree(domain, curobs, decider, attackerState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+".csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
@@ -189,9 +188,9 @@ public class Run {
 	}
 	
 	public static void main(String[] args) { 
-		int mode = 0; //0=train, 1=test TODO README:: CHANGE HERE FIRST 
+		int mode = 1; //0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST WHEN TRAINING 
 		if(mode==TrainConfigs.runmode) {
-			LOGGER.log(Level.CONFIG, "Run mode: TRAINING");
+			LOGGER.log(Level.INFO, "Run mode: TRAINING");
 			String domain = TrainConfigs.domain;
 			String domainfile = TrainConfigs.domainFile;
 			String desirablefile = TrainConfigs.desirableStateFile;
@@ -217,11 +216,11 @@ public class Run {
 					u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot, true);
 			LOGGER.log(Level.INFO, "Completed trained model for domain:" + domain);
 		}else {
-			LOGGER.log(Level.CONFIG, "Run mode: TESTING");
+			LOGGER.log(Level.INFO, "Run mode: TESTING");
 			String domain = TestConfigs.domain;
-			boolean writedot = TestConfigs.writeDOT;
-			for (int instance=1; instance<=3; instance++) { //3 instances
-				for (int x=0; x<TestConfigs.instanceCases; x++) { //each instance has 20 problems
+			boolean writedot = TestConfigs.writeDOT; //TODO README:: CHANGE instance value HERE FIRST WHEN TESTING 
+			for (int instance=1; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3 instances
+				for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc-each instance has 20 problems
 					String domainfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.domainFile;
 					String desirablefile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.desirableStateFile;
 					String criticalfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.criticalStateFile;
