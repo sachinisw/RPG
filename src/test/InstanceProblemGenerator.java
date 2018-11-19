@@ -84,7 +84,8 @@ public class InstanceProblemGenerator {
 			objects.addAll(cs);
 			objects.addAll(ds);
 		}else if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC") || 
-				HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) { //init objects cs, ds are the same
+				HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR") ||
+				HarnessConfigs.domain.equalsIgnoreCase("FERRY") ) { //init objects cs, ds are the same
 			cs = extractObjectsFromGoalState(critical);
 			ds = extractObjectsFromGoalState(desirable);
 			objects.addAll(extractObjectsFromInits(inits));
@@ -219,7 +220,9 @@ public class InstanceProblemGenerator {
 					}
 				}
 			}
-		}else if(HarnessConfigs.domain.equalsIgnoreCase("easyipc")||HarnessConfigs.domain.equalsIgnoreCase("navigator")){//for domains where user's and attacker's inits are the same
+		}else if(HarnessConfigs.domain.equalsIgnoreCase("easyipc")||
+				HarnessConfigs.domain.equalsIgnoreCase("navigator") || 
+				HarnessConfigs.domain.equalsIgnoreCase("ferry") ){//for domains where user's and attacker's inits are the same
 			filtered.addAll(initsfull);
 		}
 
@@ -233,7 +236,8 @@ public class InstanceProblemGenerator {
 			if(probTemplate.get(i).equals("<INITS>")){
 				if(HarnessConfigs.domain.equalsIgnoreCase("BLOCKS") || 
 						HarnessConfigs.domain.equalsIgnoreCase("EASYIPC") || 
-						HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) {
+						HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR") ||
+						HarnessConfigs.domain.equalsIgnoreCase("FERRY") ){
 					String init = "";
 					for (String string : inits) {
 						init+= string +"\n";
@@ -243,7 +247,9 @@ public class InstanceProblemGenerator {
 			}else if(probTemplate.get(i).equals("<GOAL_STATE>")) {
 				if(HarnessConfigs.domain.equalsIgnoreCase("BLOCKS")) {
 					out.set(i, goal.replace(",", ""));
-				}else if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC")||(HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR"))) {
+				}else if(HarnessConfigs.domain.equalsIgnoreCase("EASYIPC")||
+						(HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) ||
+						HarnessConfigs.domain.equalsIgnoreCase("FERRY") ) {
 					out.set(i, goal);
 				}
 			}
@@ -285,6 +291,19 @@ public class InstanceProblemGenerator {
 						}
 					}
 					obs+=" - place"+"\n";
+				}else if(HarnessConfigs.domain.equalsIgnoreCase("FERRY")){
+					for (String string : objects) {
+						if(string.contains("C")) {
+							obs+= string +"\n";
+						}
+					}
+					obs+=" - car"+"\n";
+					for (String string : objects) {
+						if(string.contains("L")) {
+							obs+= string +"\n";
+						}
+					}
+					obs+=" - location"+"\n";
 				}
 				Template.set(i, obs);
 			}
@@ -345,6 +364,21 @@ public class InstanceProblemGenerator {
 		}else if(HarnessConfigs.domain.equalsIgnoreCase("NAVIGATOR")) {
 			for (String in : inits) { //add places
 				if(in.contains("CONNECTED")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" ");
+					objects.add(inparts[1].trim());
+					objects.add(inparts[2].trim());
+				}
+			}
+		}else if(HarnessConfigs.domain.equalsIgnoreCase("FERRY")) {
+			for (String in : inits) { //add locations
+				if(in.contains("NOT-EQ")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" ");
+					objects.add(inparts[1].trim());
+					objects.add(inparts[2].trim());
+				}
+			}
+			for (String in : inits) { //add cars
+				if(in.contains("AT") && !in.contains("AT-FERRY")){
 					String[] inparts = in.trim().substring(1,in.length()-1).split(" ");
 					objects.add(inparts[1].trim());
 					objects.add(inparts[2].trim());

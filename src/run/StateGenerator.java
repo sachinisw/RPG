@@ -9,10 +9,14 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
@@ -37,12 +41,12 @@ public class StateGenerator {
 	public final static double initProbability = 1.0;
 	public Agent agent;
 	public String domain;
-	
+
 	public StateGenerator(Agent a, String dom){
 		domain = dom;
 		agent = a;
 	}
-	
+
 	public void writeConsoleOutputtoFile(String outfile, String text){
 		PrintWriter writer = null;
 		try {
@@ -174,7 +178,7 @@ public class StateGenerator {
 		}
 		return relaxedpgs;
 	}
-	
+
 	public ArrayList<ConnectivityGraph> readConnectivityGraphs(){
 		ArrayList<String> conGraphFiles = getConnectivityFiles();
 		ArrayList<ConnectivityGraph> connectivities = new ArrayList<ConnectivityGraph>();
@@ -217,13 +221,13 @@ public class StateGenerator {
 		return newState;
 	}
 
-	public boolean stoppable(ArrayList<String> state, int x, int y){//how to identify leaf nodes
+	public boolean stoppable(ArrayList<String> state, int x, int y, HashMap<String, String> desirableloc){//how to identify leaf nodes
 		if(domain.equalsIgnoreCase("blocks")){//x y not applicable. put -1, -1 where called
 			return stoppableBlocks(state);
 		}else if(domain.equalsIgnoreCase("easyipc")){
 			return stoppableGrid(state, x, y); //desirable state position, always top-right
-		}else if(domain.equalsIgnoreCase("logistics")){
-			return stoppableLogistics(state);
+		}else if(domain.equalsIgnoreCase("ferry")){
+			return stoppableFerry(state, desirableloc);
 		}else if(domain.equalsIgnoreCase("navigator")){  //desirable state position, always top-right
 			return stoppableNavigator(state,x,y);
 		}
@@ -251,7 +255,7 @@ public class StateGenerator {
 		}
 		return false;
 	}
-	
+
 	//generic stopping condition for grid domains: robot wants to go to top-right corner. enumerate all possible paths to get to top-right
 	//1-critical spot in the grid, which will be on some possible paths
 	private boolean stoppableGrid(ArrayList<String> state, int x, int y){ //NOTE: change grid_size value for larger problem instances
@@ -270,7 +274,7 @@ public class StateGenerator {
 		}
 		return false;
 	}
-	
+
 	private boolean stoppableNavigator(ArrayList<String> state, int x, int y){ //NOTE: change grid_size value for larger problem instances
 		String curpos = "";
 		for (String string : state) {
@@ -286,7 +290,7 @@ public class StateGenerator {
 		}
 		return false;
 	}
-	
+
 	private int[] getCoordinatesFromPlaceString(String s) { //needs a string like PLACE_5_10, place_4_8
 		int z=0;
 		int [] xy = new int [2];
@@ -299,11 +303,32 @@ public class StateGenerator {
 		int yy = Integer.parseInt(s.substring(xy[1]+1,s.length()));
 		return new int[] {xx,yy};
 	}
-	
-	public boolean stoppableLogistics(ArrayList<String> state){ //NOTE: change grid_size value for larger problem instances
-		return false;
+
+	//general rule for identifying leaf nodes. 
+	//if all (or specific) cars are in desirable places. not on ship and ship at desirable place
+	public boolean stoppableFerry(ArrayList<String> state, HashMap<String, String> userwantloc){
+		//find (at C* L*) predicates. compare if for all C, L value has changed to desirable locations
+		HashMap<String,String> carpos = new HashMap<String, String>(); 
+		for (String st : state) {//two ways of finding current object's location, object is directly at loc
+			if(st.contains("AT") && !st.contains("AT-FERRY")) {
+				String parts [] = st.substring(1,st.length()-1).split(" ");
+				String c = parts[1]; String l=parts[2];
+				carpos.put(c,l);
+
+			}
+		}
+		Iterator<Map.Entry<String, String>> itrcarpos = carpos.entrySet().iterator();
+		while(itrcarpos.hasNext()){
+			Entry<String, String> e = itrcarpos.next();
+			String carposloc = e.getValue();
+			String userloc = userwantloc.get(e.getKey());
+			if(!carposloc.equalsIgnoreCase(userloc)) {
+				return false;
+			}
+		}
+		return true;
 	}
-	
+
 	public StateGraph enumerateStates(State in, ArrayList<State> seen){ //draw a state transition graph starting with state 'in'
 		runPlanner();
 		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();		
@@ -316,13 +341,16 @@ public class StateGenerator {
 		for(int i=0; i<cons.size(); i++){
 			ArrayList<String> currentState = in.getState();
 			if(domain.equalsIgnoreCase("blocks")) {
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, null);
 			}else if(domain.equalsIgnoreCase("easyipc")) {
 				int [] xy = getGridEdge(ds.getDesirable());
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1]);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], null);
 			}else if(domain.equalsIgnoreCase("navigator")) {
 				int [] xy = getNavigatorEdge(ds.getDesirable());
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1]);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], null);
+			}else if(domain.equalsIgnoreCase("ferry")) {
+				HashMap<String, String> des = getDesirableLocationsFerry(ds.getDesirable());
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, des);
 			}
 		}
 		graph.markVerticesContainingCriticalState(cs);
@@ -330,10 +358,21 @@ public class StateGenerator {
 		return graph; //this graph is bidirectional
 	}
 
+	private HashMap<String, String> getDesirableLocationsFerry(ArrayList<String> des) {
+		HashMap<String, String> desloc = new HashMap<>();
+		for (String st : des) {
+			if(st.contains("AT") && !st.contains("AT-FERRY")) {
+				String parts [] = st.substring(1,st.length()-1).split(" ");
+				String c = parts[1]; String l=parts[2];
+				desloc.put(c,l);
+			}
+		}
+		return desloc;
+	}
+
 	private int [] getGridEdge(ArrayList<String> state) {
 		String pos = "";
 		for (String s : state) {
-			//if(s.contains("KEY_")) {
 			if(s.contains("AT-ROBOT")) {
 				pos = s;
 				break;
@@ -344,7 +383,7 @@ public class StateGenerator {
 		int xa = Integer.parseInt(cord.substring(cord.length()-4,cord.length()-3));
 		return new int[] {xa, ya};
 	}
-	
+
 	private int [] getNavigatorEdge(ArrayList<String> state) {
 		String pos = "";
 		for (String s : state) {
@@ -356,7 +395,7 @@ public class StateGenerator {
 		int xy [] = getCoordinatesFromPlaceString(pos.substring(1, pos.length()-1));
 		return new int[] {xy[0], xy[1]};
 	}
-	
+
 	public ArrayList<State> getStatesAfterObservations(Observation ob, State in, boolean tracegenerator){//README:: true if running trace generator, false otherwise
 		ArrayList<State> stateseq = new ArrayList<State>();
 		ArrayList<String> obs = ob.getObservations();
@@ -406,7 +445,7 @@ public class StateGenerator {
 	}
 
 	public ArrayList<String> cleanActions(ArrayList<String> actions, ArrayList<String> currentState, StateGraph graph, 
-		ArrayList<State> seen, ConnectivityGraph con){
+			ArrayList<State> seen, ConnectivityGraph con){
 		ArrayList<String> bi  = new ArrayList<String>();
 		ArrayList<String> cleaned  = new ArrayList<String>();
 		for(int i=0; i<actions.size(); i++){ //remove if the action undoes the immediately previous state (reverting). if not for this, infinite loop (1)
@@ -447,14 +486,15 @@ public class StateGenerator {
 		return cleaned;
 	}
 
-	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen, int x, int y){
-		if(stoppable(currentState, x, y)){
+	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen, 
+			int x, int y, HashMap<String, String> deslocs){
+		if(stoppable(currentState, x, y, deslocs)){
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
 			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("navigator") 
-					|| domain.equalsIgnoreCase("logistics") )//reversible domains. i.e. you can go back to previous state
+					|| domain.equalsIgnoreCase("ferry") )//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path. 
 			else if(domain.equalsIgnoreCase("pag") )//sequential domains
@@ -462,7 +502,7 @@ public class StateGenerator {
 			for (String action : cleaned) {
 				////README:::: seen [] only has the initial state. if you add newstate, other branches in the graph lose possible actions. The branches in the graph must be independent. children's possible actions must only depend on their immediate parents' state and not on other paths in the tree
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph); 
-				recursiveAddEdge(newState, con, graph, seen, x, y);
+				recursiveAddEdge(newState, con, graph, seen, x, y, deslocs);
 			}
 		}
 	}

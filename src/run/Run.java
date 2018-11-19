@@ -163,7 +163,7 @@ public class Run {
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
 		for (String file : obFiles) {
 			String name[] = file.split("/");
-//						if(Integer.parseInt(name[name.length-1])==0){ //DEBUG;;;; remove after fixing
+//						if(Integer.parseInt(name[name.length-1])==70){ //DEBUG;;;; remove after fixing
 			LOGGER.log(Level.INFO, "Processing observation file: "+name[name.length-1]);
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
 			LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
@@ -216,11 +216,11 @@ public class Run {
 					u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot, true);
 			LOGGER.log(Level.INFO, "Completed trained model for domain:" + domain);
 		}else {
-			LOGGER.log(Level.INFO, "Run mode: TESTING");
 			String domain = TestConfigs.domain;
-			boolean writedot = TestConfigs.writeDOT; //TODO README:: CHANGE instance value HERE FIRST WHEN TESTING 
-			for (int instance=1; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3 instances
-				for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc-each instance has 20 problems
+			LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
+			boolean writedot = TestConfigs.writeDOT; //TODO README:: CHANGE instance number HERE FIRST WHEN TESTING 
+			for (int instance=3; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+				for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 					String domainfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.domainFile;
 					String desirablefile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.desirableStateFile;
 					String criticalfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.criticalStateFile;

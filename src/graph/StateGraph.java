@@ -647,10 +647,22 @@ public class StateGraph {
 					undesirablePaths.add(path);
 				}
 			}
+		}else if(domainName.equalsIgnoreCase("FERRY")) {
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For ferry, check AT only to find location of cars
+				boolean found = false;
+				for (StateVertex stateVertex : path) {
+					if(stateVertex.containsState(critical.getCriticalState())){
+						found = true;
+					}
+				}
+				if(found){
+					undesirablePaths.add(path);
+				}
+			}
 		}
 		return undesirablePaths;
 	}
-
+	
 	public ArrayList<StateVertex> findAncestors(StateVertex v){
 		ArrayList<StateVertex> ancestors = new ArrayList<>();
 		StateVertex current = v;

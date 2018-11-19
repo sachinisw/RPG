@@ -1,4 +1,4 @@
-package train;
+package trace;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -50,8 +50,7 @@ public class TraceGenerator {
 		StateGraph graphAgent = gen.enumerateStates(states.get(0), statesSeen);
 		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)));
 		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
-		graphs.add(treeAgent);
-//				gen.graphToDOT(graphAgent, 0, 0, true); gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
+		graphs.add(treeAgent);//gen.graphToDOT(graphAgent, 0, 0, true); gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
@@ -154,6 +153,7 @@ public class TraceGenerator {
 
 	public static void writeTracesToFile(ArrayList<ArrayList<String>> traceset, String tracepath){
 		PrintWriter writer = null;
+		LOGGER.log(Level.INFO, "number of traces"+ traceset.size());
 		for (int i = 0; i < traceset.size(); i++) {
 			ArrayList<String> tr = traceset.get(i);
 			try{
@@ -172,7 +172,7 @@ public class TraceGenerator {
 
 	public static void generateObservationTraceForScenario(){
 		for(int trainInstance=0; trainInstance<=22; trainInstance++){
-			if(trainInstance==0){
+			if(trainInstance==1){
 				String domainFile = ConfigParameters.prefix+trainInstance+ConfigParameters.domainFile;
 				String desirableStateFile = ConfigParameters.prefix+trainInstance+ConfigParameters.desirableStateFile;
 				String a_problemFile = ConfigParameters.prefix+trainInstance+ConfigParameters.a_problemFile;
