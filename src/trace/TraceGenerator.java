@@ -50,7 +50,7 @@ public class TraceGenerator {
 		StateGraph graphAgent = gen.enumerateStates(states.get(0), statesSeen);
 		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)));
 		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
-		graphs.add(treeAgent);//gen.graphToDOT(graphAgent, 0, 0, true); gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
+		graphs.add(treeAgent);//gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
