@@ -25,7 +25,6 @@ public class LandmarkExtractor {
 	}
 
 	public LGG extractLandmarks(ArrayList<String> goalpredicates){
-//				System.out.println("extracting landmarks.............");
 		ArrayList<String> lmCandidates = new ArrayList<String>();//C
 		lmCandidates.addAll(goalpredicates);
 		LGG lgg = new LGG();
@@ -86,7 +85,6 @@ public class LandmarkExtractor {
 
 	//from initial state, see if using actions that does not add a landmark can get you to reach the goal
 	public ArrayList<LGGNode> verifyLandmarks(LGG lgg, ArrayList<String> goalpredicates, ArrayList<String> init, String lmoutputfilepath){
-//																System.out.println("UNVERIFIED   ??????????? \n"+lgg);
 		ArrayList<LGGNode> vlm = new ArrayList<LGGNode>();
 		ArrayList<LGGNode> lmCandidates = new ArrayList<LGGNode>();
 		Iterator<LGGNode> itr = lgg.getAdjacencyList().keySet().iterator();

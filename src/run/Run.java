@@ -54,7 +54,7 @@ public class Run {
 		return cp;
 	}
 
-	public static ArrayList<StateGraph> process(ArrayList<State> states, StateGenerator gen, int config, int obFileId, boolean writedot){
+	public static ArrayList<StateGraph> process(String domain, ArrayList<State> states, StateGenerator gen, int config, int obFileId, boolean writedot){
 		ArrayList<StateGraph> graphs = new ArrayList<>();
 		for (int i=0; i<states.size(); i++) {
 			ArrayList<State> statesSeen = copyStates(states, i);
@@ -63,7 +63,7 @@ public class Run {
 				gen.graphToDOT(graphAgent,i, obFileId, writedot);
 			}else{
 				System.out.println(states.get(i)+"=======================================================================round"+i);
-				StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(i)));
+				StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(i)), domain);
 				gen.applyUniformProbabilitiesToStates(treeAgent, states.get(i));
 				gen.graphToDOT(treeAgent, i, obFileId, writedot);
 				graphs.add(treeAgent);
@@ -77,7 +77,7 @@ public class Run {
 		ArrayList<State> state = null;
 		if(fulltrace) {
 			state = gen.getStatesAfterObservations(ob, init, asTraceGenerator);
-			ArrayList<StateGraph> graphs = process(state, gen, reverseConfig, obFileId, writedot); //graph for attacker
+			ArrayList<StateGraph> graphs = process(dom, state, gen, reverseConfig, obFileId, writedot); //graph for attacker
 			return graphs;
 		}else {
 			ArrayList<String> cleaned = new ArrayList<String>();
@@ -96,7 +96,7 @@ public class Run {
 			List<State> l = state.subList(starpos, state.size());
 			ArrayList<State> substates = new ArrayList<State>();
 			substates.addAll(l);
-			ArrayList<StateGraph> graphs = process(substates, gen, reverseConfig, obFileId, writedot);
+			ArrayList<StateGraph> graphs = process(dom, substates, gen, reverseConfig, obFileId, writedot);
 			return graphs;
 		}
 	}
@@ -157,7 +157,7 @@ public class Run {
 			String a_out, String criticalfile, String a_init, String a_dotsuf, String u_prob, String u_out, String u_init, String u_dotpre, 
 			String u_dotsuf, String obs, String wt_csv, String ds_csv, String ow, String lm_out, boolean writedot, boolean full) {
 		int reverseConfig = 1;
-		Decider decider = new Decider(domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
+		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
 		ArrayList<String> obFiles = getObservationFiles(obs);
 		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(decider, domain);
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
@@ -219,7 +219,7 @@ public class Run {
 			String domain = TestConfigs.domain;
 			LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
 			boolean writedot = TestConfigs.writeDOT; //TODO README:: CHANGE instance number HERE FIRST WHEN TESTING 
-			for (int instance=3; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			for (int instance=2; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 				for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 					String domainfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.domainFile;
 					String desirablefile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.desirableStateFile;

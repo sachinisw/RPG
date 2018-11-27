@@ -8,12 +8,14 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 public class GraphDOT {
+	private String domain;
 	private StateGraph graph;
 	private ArrayList<String> dotLines;
 
-	public GraphDOT(StateGraph g){
+	public GraphDOT(StateGraph g, String dom){
 		graph = g;
 		dotLines = new ArrayList<>();
+		domain = dom;
 	}
 
 	public void generateDOT(String filename){
@@ -65,27 +67,51 @@ public class GraphDOT {
 	private String markLeafNodes(){ 
 		String s = "";
 		ArrayList<StateVertex> leaves = graph.getLeafNodes();
-		for (StateVertex stateVertex : leaves) {
-			if(stateVertex.isContainsDesirableState()){
-				s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
-			}else if(stateVertex.isContainsCriticalState()){
-				s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
-			}else{
-				s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
+		if(domain.equalsIgnoreCase("BLOCKS")) { //partial states ok
+			for (StateVertex stateVertex : leaves) {
+				if(stateVertex.isaPartialDesirableState()){
+					s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
+				}else if(stateVertex.isaPartialCriticalState()){
+					s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				}else{
+					s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
+				}
+			}
+		}else {
+			for (StateVertex stateVertex : leaves) {
+				if(stateVertex.isContainsDesirableState()){
+					s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
+				}else if(stateVertex.isContainsCriticalState()){
+					s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				}else{
+					s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
+				}
 			}
 		}
+
 		return s;
 	}
-	
+
 	private String markNonLeafNodes(){ //any desirable/undesirable vertices that are not leaves
 		String s = "";
 		Iterator<Entry<String, StateVertex>> itr = graph.getVertices().entrySet().iterator();
-		while(itr.hasNext()) {
-			StateVertex v = itr.next().getValue();
-			if(v.isContainsDesirableState()){
-				s += v.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
-			}else if(v.isContainsCriticalState()){
-				s+=v.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+		if(domain.equalsIgnoreCase("BLOCKS")) { //partial states ok
+			while(itr.hasNext()) {
+				StateVertex v = itr.next().getValue();
+				if(v.isaPartialDesirableState()){
+					s += v.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
+				}else if(v.isaPartialCriticalState()){
+					s+=v.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				}
+			}
+		}else {
+			while(itr.hasNext()) {
+				StateVertex v = itr.next().getValue();
+				if(v.isContainsDesirableState()){
+					s += v.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
+				}else if(v.isContainsCriticalState()){
+					s+=v.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				}
 			}
 		}
 		return s;
@@ -119,5 +145,13 @@ public class GraphDOT {
 
 	public void setDotLines(ArrayList<String> dotLines) {
 		this.dotLines = dotLines;
+	}
+
+	public String getDomain() {
+		return domain;
+	}
+
+	public void setDomain(String domain) {
+		this.domain = domain;
 	}
 }

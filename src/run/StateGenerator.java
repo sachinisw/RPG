@@ -353,8 +353,8 @@ public class StateGenerator {
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, des);
 			}
 		}
-		graph.markVerticesContainingCriticalState(cs);
-		graph.markVerticesContainingDesirableState(ds);
+		graph.markVerticesContainingCriticalState(cs, domain);
+		graph.markVerticesContainingDesirableState(ds, domain);
 		return graph; //this graph is bidirectional
 	}
 
@@ -509,7 +509,7 @@ public class StateGenerator {
 
 	public void graphToDOT(StateGraph g, int namesuffix, int foldersuffix, boolean writeDOTFile){
 		if(writeDOTFile){//name format = /home/sachini/BLOCKS/scenarios/2/dot/graph_ag_noreverse_1_4.dot
-			GraphDOT dot = new GraphDOT(g); 
+			GraphDOT dot = new GraphDOT(g, agent.domain); 
 			dot.generateDOT(agent.dotFilePrefix+agent.dotFileSuffix+foldersuffix+"_"+namesuffix+dotFileExt);
 		}
 	}
@@ -519,7 +519,7 @@ public class StateGenerator {
 		state.readStatesFromFile();
 		CriticalState cs = new CriticalState(agent.criticalStateFile);
 		cs.readCriticalState();
-		GraphDOT dot = new GraphDOT(g);
+		GraphDOT dot = new GraphDOT(g, agent.domain);
 		dot.generateDOTNoUndo(agent.dotFilePrefix);
 	}
 

@@ -3,6 +3,8 @@ package graph;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Objects;
 import java.util.TreeSet;
 
@@ -12,6 +14,8 @@ public class StateVertex implements Comparable<StateVertex>{
 	private double stateProbability;
 	private boolean aCriticalState;
 	private boolean aDesirableState;
+	private boolean aPartialCriticalState; //for blocks
+	private boolean aPartialDesirableState; //for blocks
 
 	public StateVertex(){
 		states = new ArrayList<>();
@@ -19,6 +23,8 @@ public class StateVertex implements Comparable<StateVertex>{
 		stateProbability = 0.0;
 		this.aCriticalState = false;
 		this.aDesirableState = false;
+		aPartialCriticalState = false;
+		aPartialDesirableState = false;
 	}
 
 	public boolean isEqual(StateVertex anotherVertex){
@@ -89,6 +95,92 @@ public class StateVertex implements Comparable<StateVertex>{
 		return true;
 	}
 
+	//used in blocks domain, check if astate[] partially contains required[] 
+	//e.g. attacker goal (SOY) user wants (JOY) with blocks JOYS. partial state matching will make SJOY, JSOY, SOJY  all valid
+	public boolean containsPartialStateBlockWords(ArrayList<String> requiredword){
+		return matchPartialBlocks(this.getStates(), requiredword);
+	}
+
+	//go to a node check what word it spells. node must contain 1 vertical stack.
+	//remove hidden block and see if the word can still be spelled. if yes, then partial state match.
+	private static LinkedList<String> getSpelledWord(ArrayList<String> state) {
+		LinkedList<String> order = new LinkedList<>();
+		int ontablecount = 0;
+		for (String st : state) {		//check if 1 column vertical stack. count on table blocks must be 1.
+			if(st.contains("ONTABLE")) {
+				ontablecount++;
+			}
+		}
+		if(ontablecount==2) {
+			return null;
+		}else {
+			for (String string : state) {
+				String parts[] = string.substring(1,string.length()-1).split(" ");
+				if(parts[0].equalsIgnoreCase("ON")) {
+					if(!order.contains(parts[1]) && !order.contains(parts[2])) {
+						order.add(parts[1]);
+						order.add(parts[2]);
+					}else if(order.contains(parts[1]) && !order.contains(parts[2])) {
+						int i = order.indexOf(parts[1]);
+						order.add(i+1, parts[2]);
+					}else if(!order.contains(parts[1]) && order.contains(parts[2])) {
+						int i = order.indexOf(parts[2]);
+						if(i>0) {
+							order.add(i-1, parts[1]);
+						}else {
+							order.add(0, parts[1]);
+						}
+					}else if(order.contains(parts[1])&& order.contains(parts[2])) {
+						int i = order.indexOf(parts[1]);
+						order.add(i+1,parts[2]);
+						int old = 0;
+						for (int j=0; j<order.size(); j++) {
+							if(order.get(j).equalsIgnoreCase(parts[2])) {
+								old = j;
+								break;
+							}
+						}
+						String next = order.get(old+1);
+						order.remove(old);
+						order.add(i+1, next);
+						order.remove(next);
+					}
+				}
+			}
+			return order;
+		}
+	}
+
+	private boolean matchPartialBlocks(ArrayList<String> state, ArrayList<String> requiredword) {
+		LinkedList<String> curorder = getSpelledWord(state);
+		LinkedList<String> attackers = getSpelledWord(requiredword);
+		if(curorder != null && attackers != null) {
+			Iterator<String> iter = curorder.iterator();
+			while(iter.hasNext()){
+				String l = iter.next();
+				if(!attackers.contains(l)) {
+					iter.remove();
+				}
+			}
+			if(curorder.size()>attackers.size()) {
+				for (int i=0; i<curorder.size(); i++) {
+					if(!curorder.get(i).equalsIgnoreCase(attackers.get(i))) {
+						return false;
+					}
+				}
+				return true;
+			}else if(curorder.size()==attackers.size()) {
+				for(int i=0; i<curorder.size(); i++) {
+					if(!curorder.get(i).equalsIgnoreCase(attackers.get(i))) {
+						return false;
+					}
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}
@@ -123,5 +215,21 @@ public class StateVertex implements Comparable<StateVertex>{
 
 	public void setContainsDesirableState(boolean containsDesirableState) {
 		this.aDesirableState = containsDesirableState;
+	}
+
+	public boolean isaPartialCriticalState() {
+		return aPartialCriticalState;
+	}
+
+	public void setaPartialCriticalState(boolean aPartialCriticalState) {
+		this.aPartialCriticalState = aPartialCriticalState;
+	}
+
+	public boolean isaPartialDesirableState() {
+		return aPartialDesirableState;
+	}
+
+	public void setaPartialDesirableState(boolean aPartialDesirableState) {
+		this.aPartialDesirableState = aPartialDesirableState;
 	}
 }

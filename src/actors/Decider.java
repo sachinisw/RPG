@@ -24,8 +24,8 @@ public class Decider extends Agent{
 	public StateGraph attackerState;
 	public ArrayList<LGGNode> verifiedLandmarks;
 
-	public Decider(String dom, String des, String pro, String out, String cri, String ini, String dotp, String dots) {
-		super(dom, des, pro, out, cri, dotp, dots);
+	public Decider(String dom, String domfile, String des, String pro, String out, String cri, String ini, String dotp, String dots) {
+		super(dom, domfile, des, pro, out, cri, dotp, dots);
 		this.attackerActionProbability = 0.1;
 		this.initFile = ini;
 	}
@@ -34,7 +34,7 @@ public class Decider extends Agent{
 		desirable = new DesirableState(this.desirableStateFile);
 		desirable.readStatesFromFile();
 	}
-	
+
 	public void setUndesirableState(){
 		this.critical = new CriticalState(this.criticalStateFile);
 		this.critical.readCriticalState();
@@ -74,33 +74,113 @@ public class Decider extends Agent{
 		}
 	}
 
-	//computes risk and desirability together, by BFS on graph once
-	private double [] computeProbabilityMetrics() {
-		double[] m = new double[2]; //[risk, desirability]
-		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
-		for (StateVertex stateVertex : visitOrder) {
-			if(stateVertex.containsState(attackerState.getCritical().getCriticalState())){
-				m[0] = stateVertex.getStateProbability(); //give me the first one. i want the first instance where attack is generated.
-				break;
+	private double[] computeRiskDesirabilityForBlockWords() {
+		ArrayList<ArrayList<StateVertex>> pathsmatchingcritical = new ArrayList<>();
+		ArrayList<ArrayList<StateVertex>> pathsmatchingdesirable = new ArrayList<>();
+		double maxr = 0.0, maxd = 0.0;
+		ArrayList<ArrayList<StateVertex>> allpathsfromroot = attackerState.getAllPathsFromRoot();
+		for (ArrayList<StateVertex> path : allpathsfromroot) {
+			StateVertex leaf = path.get(path.size()-1);
+			if(leaf.containsPartialStateBlockWords(attackerState.getCritical().getCriticalState())){
+				pathsmatchingcritical.add(path);
+			}else if(leaf.containsPartialStateBlockWords(attackerState.getDesirable().getDesirable())){
+				pathsmatchingdesirable.add(path);
+			}
+		}//now has all paths that end with fully or partially match the critical state and desirable state
+		for (ArrayList<StateVertex> path : pathsmatchingcritical) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
+			for (StateVertex node : path) {
+				if(node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalState())) {
+					if(node.getStateProbability()>maxr) {
+						maxr = node.getStateProbability();
+					}
+				}
 			}
 		}
-		for (StateVertex stateVertex : visitOrder) {
-			if(stateVertex.containsState(attackerState.getDesirable().getDesirable())){
-				m[1] = stateVertex.getStateProbability(); //give me the first one. 
-				break;
+		for (ArrayList<StateVertex> path : pathsmatchingdesirable) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
+			for (StateVertex node : path) {
+				if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirable())) {
+					if(node.getStateProbability()>maxd) {
+						maxd = node.getStateProbability();
+					}
+				}
+			}
+		}
+		return new double [] {maxr, maxd};
+	}
+	//computes risk and desirability together
+	private double [] computeProbabilityMetrics() {
+		double[] m = new double[2]; //[risk, desirability]
+		if(domain.equalsIgnoreCase("BLOCKS")){ //needs full and partial state matches
+			m = computeRiskDesirabilityForBlockWords();
+		}else { //by BFS on graph once
+			ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
+			for (StateVertex stateVertex : visitOrder) {
+				if(stateVertex.containsState(attackerState.getCritical().getCriticalState())){
+					m[0] = stateVertex.getStateProbability(); //give me the first one. Doing BFS the first occurrence gives the highest probability for risk. i want the first instance where attack is generated.
+					break;
+				}
+			}
+			for (StateVertex stateVertex : visitOrder) {
+				if(stateVertex.containsState(attackerState.getDesirable().getDesirable())){
+					m[1] = stateVertex.getStateProbability(); //give me the first one. This node has the highest probability for desirabilitys
+					break;
+				}
 			}
 		}
 		return m;
 	}
-	
+
 	public int [] computeDistanceMetrics(String domain) {
 		int d[] = new int[2];
 		ArrayList<ArrayList<StateVertex>> dfsPaths = attackerState.getAllPathsFromRoot();
-		d[0] = getDistanceToStateFromRoot(dfsPaths, critical.getCriticalState());
-		d[1] = getDistanceToStateFromRoot(dfsPaths, desirable.getDesirable());
+		if(domain.equalsIgnoreCase("BLOCKS")) { //allows state to be matched partially
+			d[0] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, critical.getCriticalState());
+			d[1] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, desirable.getDesirable());
+		}else {
+			d[0] = getDistanceToStateFromRoot(dfsPaths, critical.getCriticalState());
+			d[1] = getDistanceToStateFromRoot(dfsPaths, desirable.getDesirable());
+		}
 		return d;
 	}
-		
+	
+	public int getDistanceToStateFromRootWithPartialMatches(ArrayList<ArrayList<StateVertex>> alldfs, ArrayList<String> state){ 
+		ArrayList<ArrayList<StateVertex>> necessaryPaths = new ArrayList<ArrayList<StateVertex>>(); 
+		//there could be 1 or more critical paths. take the min. i.e. the earliest the critical state can happen
+		for (ArrayList<StateVertex> path : alldfs) {
+			boolean found = false;
+			for (StateVertex stateVertex : path) {
+				if(stateVertex.containsPartialStateBlockWords(state)){
+					found = true;
+				}
+			}
+			if (found){
+				necessaryPaths.add(path);
+			}
+		}
+		int lens [] = new int [necessaryPaths.size()];
+		int index = 0;
+		for (ArrayList<StateVertex> arrayList : necessaryPaths) {
+			int length = 0;
+			for (StateVertex stateVertex : arrayList) {
+				length++;
+				if(stateVertex.containsPartialStateBlockWords(state)){
+					length-=1;//count edges until first occurrence.
+				}
+			}
+			lens[index++]=length;
+		}
+		if(lens.length>0){
+			int min = lens[0];
+			for (int x=1; x<lens.length; x++) {
+				if(min>lens[x]){
+					min=lens[x];
+				}
+			}
+			return min;
+		}
+		return 0; //there are no critical paths. 1 node graph
+	}
+
 	//number of steps from root (current state) to specified state state. If undesirable state occur multiple times, take the min distance
 	public int getDistanceToStateFromRoot(ArrayList<ArrayList<StateVertex>> alldfs, ArrayList<String> state){ 
 		ArrayList<ArrayList<StateVertex>> necessaryPaths = new ArrayList<ArrayList<StateVertex>>(); //there could be 1 or more critical paths. take the min.
