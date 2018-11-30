@@ -35,7 +35,7 @@ public class DesirableState {
 		}
 	}
 
-	public ArrayList<String> getDesirable() {
+	public ArrayList<String> getDesirableStatePredicates() {
 		return desirable;
 	}
 

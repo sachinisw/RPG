@@ -343,13 +343,13 @@ public class StateGenerator {
 			if(domain.equalsIgnoreCase("blocks")) {
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, null);
 			}else if(domain.equalsIgnoreCase("easyipc")) {
-				int [] xy = getGridEdge(ds.getDesirable());
+				int [] xy = getGridEdge(ds.getDesirableStatePredicates());
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], null);
 			}else if(domain.equalsIgnoreCase("navigator")) {
-				int [] xy = getNavigatorEdge(ds.getDesirable());
+				int [] xy = getNavigatorEdge(ds.getDesirableStatePredicates());
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], null);
 			}else if(domain.equalsIgnoreCase("ferry")) {
-				HashMap<String, String> des = getDesirableLocationsFerry(ds.getDesirable());
+				HashMap<String, String> des = getDesirableLocationsFerry(ds.getDesirableStatePredicates());
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, des);
 			}
 		}

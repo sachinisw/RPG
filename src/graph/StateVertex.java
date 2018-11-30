@@ -3,7 +3,7 @@ package graph;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.TreeSet;
@@ -102,81 +102,78 @@ public class StateVertex implements Comparable<StateVertex>{
 	}
 
 	//go to a node check what word it spells. node must contain 1 vertical stack.
-	//remove hidden block and see if the word can still be spelled. if yes, then partial state match.
-	private static LinkedList<String> getSpelledWord(ArrayList<String> state) {
+	private static LinkedList<String> getSpelledWord(ArrayList<String> state){
 		LinkedList<String> order = new LinkedList<>();
-		int ontablecount = 0;
-		for (String st : state) {		//check if 1 column vertical stack. count on table blocks must be 1.
-			if(st.contains("ONTABLE")) {
-				ontablecount++;
-			}
-		}
-		if(ontablecount==2) {
-			return null;
-		}else {
-			for (String string : state) {
-				String parts[] = string.substring(1,string.length()-1).split(" ");
-				if(parts[0].equalsIgnoreCase("ON")) {
-					if(!order.contains(parts[1]) && !order.contains(parts[2])) {
-						order.add(parts[1]);
-						order.add(parts[2]);
-					}else if(order.contains(parts[1]) && !order.contains(parts[2])) {
-						int i = order.indexOf(parts[1]);
-						order.add(i+1, parts[2]);
-					}else if(!order.contains(parts[1]) && order.contains(parts[2])) {
-						int i = order.indexOf(parts[2]);
-						if(i>0) {
-							order.add(i-1, parts[1]);
-						}else {
-							order.add(0, parts[1]);
+		ArrayList<String> copystate = new ArrayList<String>();
+		copystate.addAll(state);
+		Collections.sort(copystate);
+		for (String string : copystate) {
+			String parts[] = string.substring(1,string.length()-1).split(" ");
+			if(parts[0].equalsIgnoreCase("ON")) {
+				if(!order.contains(parts[1]) && !order.contains(parts[2])) {
+					order.add(parts[1]);
+					order.add(parts[2]);
+					order.add("@"); //this separator indicates that when the next two new blocks come they are on a different stack
+				}else if(order.contains(parts[1]) && !order.contains(parts[2])) {
+					int i = order.indexOf(parts[1]);
+					order.add(i+1, parts[2]);
+				}else if(!order.contains(parts[1]) && order.contains(parts[2])) {
+					int i = order.indexOf(parts[2]);
+					if(i>0) {
+						order.add(i-1, parts[1]);
+					}else {
+						order.add(0, parts[1]);
+					}
+				}else if(order.contains(parts[1])&& order.contains(parts[2])) {
+					int i = order.indexOf(parts[1]);
+					order.add(i+1,parts[2]);
+					int old = 0;
+					for (int j=0; j<order.size(); j++) {
+						if(order.get(j).equalsIgnoreCase(parts[2])) {
+							old = j;
+							break;
 						}
-					}else if(order.contains(parts[1])&& order.contains(parts[2])) {
-						int i = order.indexOf(parts[1]);
-						order.add(i+1,parts[2]);
-						int old = 0;
-						for (int j=0; j<order.size(); j++) {
-							if(order.get(j).equalsIgnoreCase(parts[2])) {
-								old = j;
-								break;
-							}
-						}
-						String next = order.get(old+1);
-						order.remove(old);
-						order.add(i+1, next);
-						order.remove(next);
+					}
+					String next = order.get(old+1);
+					order.remove(old);
+					order.add(i+1, next);
+					order.remove(next);
+					if(order.getFirst().equalsIgnoreCase("@")) {
+						order.removeFirst();
 					}
 				}
 			}
-			return order;
 		}
+		return order;
 	}
 
-	private boolean matchPartialBlocks(ArrayList<String> state, ArrayList<String> requiredword) {
-		LinkedList<String> curorder = getSpelledWord(state);
-		LinkedList<String> attackers = getSpelledWord(requiredword);
-		if(curorder != null && attackers != null) {
-			Iterator<String> iter = curorder.iterator();
-			while(iter.hasNext()){
-				String l = iter.next();
-				if(!attackers.contains(l)) {
-					iter.remove();
+	//check if cur spells req partially. may need to remove blocks to see if the req word can still be spelled.
+	//req. could be desirable or critical words
+	private boolean matchPartialBlocks(ArrayList<String> curstate, ArrayList<String> requiredword) {
+		LinkedList<String> cur = getSpelledWord(curstate);
+		LinkedList<String> req = getSpelledWord(requiredword);
+		String curword = "", reqword = "";
+		for (String s : req) {
+			reqword+=s;
+		}
+		for (String s : cur) {
+			curword+=s;
+		}
+		if(!curword.isEmpty()) {
+			curword = curword.substring(0, curword.length()-1);
+		}
+		reqword = reqword.substring(0,reqword.length()-1);
+		if(curword.length()>reqword.length() && !curword.contains("@")) {
+			StringBuilder sb = new StringBuilder(curword);
+			for(int i=0; i<curword.length(); i++) {
+				String letter = String.valueOf(curword.charAt(i));
+				if(!reqword.contains(letter)) {
+					sb.deleteCharAt(i);
 				}
 			}
-			if(curorder.size()>attackers.size()) {
-				for (int i=0; i<curorder.size(); i++) {
-					if(!curorder.get(i).equalsIgnoreCase(attackers.get(i))) {
-						return false;
-					}
-				}
-				return true;
-			}else if(curorder.size()==attackers.size()) {
-				for(int i=0; i<curorder.size(); i++) {
-					if(!curorder.get(i).equalsIgnoreCase(attackers.get(i))) {
-						return false;
-					}
-				}
-				return true;
-			}
+			return sb.toString().contains(reqword);
+		}else if(curword.length()==reqword.length()) {
+			return curword.equalsIgnoreCase(reqword);
 		}
 		return false;
 	}

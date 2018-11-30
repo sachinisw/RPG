@@ -81,15 +81,15 @@ public class Decider extends Agent{
 		ArrayList<ArrayList<StateVertex>> allpathsfromroot = attackerState.getAllPathsFromRoot();
 		for (ArrayList<StateVertex> path : allpathsfromroot) {
 			StateVertex leaf = path.get(path.size()-1);
-			if(leaf.containsPartialStateBlockWords(attackerState.getCritical().getCriticalState())){
+			if(leaf.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates())){
 				pathsmatchingcritical.add(path);
-			}else if(leaf.containsPartialStateBlockWords(attackerState.getDesirable().getDesirable())){
+			}else if(leaf.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates())){
 				pathsmatchingdesirable.add(path);
 			}
 		}//now has all paths that end with fully or partially match the critical state and desirable state
 		for (ArrayList<StateVertex> path : pathsmatchingcritical) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
 			for (StateVertex node : path) {
-				if(node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalState())) {
+				if(node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates())) {
 					if(node.getStateProbability()>maxr) {
 						maxr = node.getStateProbability();
 					}
@@ -98,7 +98,7 @@ public class Decider extends Agent{
 		}
 		for (ArrayList<StateVertex> path : pathsmatchingdesirable) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
 			for (StateVertex node : path) {
-				if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirable())) {
+				if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates())) {
 					if(node.getStateProbability()>maxd) {
 						maxd = node.getStateProbability();
 					}
@@ -115,13 +115,13 @@ public class Decider extends Agent{
 		}else { //by BFS on graph once
 			ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
 			for (StateVertex stateVertex : visitOrder) {
-				if(stateVertex.containsState(attackerState.getCritical().getCriticalState())){
+				if(stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
 					m[0] = stateVertex.getStateProbability(); //give me the first one. Doing BFS the first occurrence gives the highest probability for risk. i want the first instance where attack is generated.
 					break;
 				}
 			}
 			for (StateVertex stateVertex : visitOrder) {
-				if(stateVertex.containsState(attackerState.getDesirable().getDesirable())){
+				if(stateVertex.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
 					m[1] = stateVertex.getStateProbability(); //give me the first one. This node has the highest probability for desirabilitys
 					break;
 				}
@@ -134,11 +134,11 @@ public class Decider extends Agent{
 		int d[] = new int[2];
 		ArrayList<ArrayList<StateVertex>> dfsPaths = attackerState.getAllPathsFromRoot();
 		if(domain.equalsIgnoreCase("BLOCKS")) { //allows state to be matched partially
-			d[0] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, critical.getCriticalState());
-			d[1] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, desirable.getDesirable());
+			d[0] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, critical.getCriticalStatePredicates());
+			d[1] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, desirable.getDesirableStatePredicates());
 		}else {
-			d[0] = getDistanceToStateFromRoot(dfsPaths, critical.getCriticalState());
-			d[1] = getDistanceToStateFromRoot(dfsPaths, desirable.getDesirable());
+			d[0] = getDistanceToStateFromRoot(dfsPaths, critical.getCriticalStatePredicates());
+			d[1] = getDistanceToStateFromRoot(dfsPaths, desirable.getDesirableStatePredicates());
 		}
 		return d;
 	}
@@ -222,8 +222,8 @@ public class Decider extends Agent{
 	//README: Call this method first before metric computation is called.
 	public void setVerifiedLandmarks(RelaxedPlanningGraph at, ConnectivityGraph con, String lmoutput){
 		LandmarkExtractor lm = new LandmarkExtractor(at, con);
-		LGG lgg = lm.extractLandmarks(critical.getCriticalState());
-		this.verifiedLandmarks = lm.verifyLandmarks(lgg, critical.getCriticalState(), getInitialState().getState(), lmoutput);
+		LGG lgg = lm.extractLandmarks(critical.getCriticalStatePredicates());
+		this.verifiedLandmarks = lm.verifyLandmarks(lgg, critical.getCriticalStatePredicates(), getInitialState().getState(), lmoutput);
 	}
 
 	//number of remaining undesirable landmarks in the domain. 

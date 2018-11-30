@@ -1,6 +1,6 @@
-package trace;
+package train;
 
-public class ConfigParameters {
+public class SampleConfigParameters {
 	public final static String mode = "TRAIN"; //TEST//TRAIN
 	public final static String domain = "BLOCKS";//BLOCKS,EASYIPC,NAVIGATOR,FERRY
 	public final static String observationFile = "/obs_blocks.txt";

@@ -102,7 +102,6 @@ public class StateGraph {
 				}else{
 					edges.add(new ActionEdge(action, from, to, false));
 				}
-
 			}
 		}
 	}
@@ -255,16 +254,6 @@ public class StateGraph {
 		for (StateVertex v : vertices.values()) {
 			System.out.println(getVertexEccentricity(v));
 		}
-	}
-
-	//vertex connectivity of a graph g is the smallest number of vertices whose deletion from g disconnects g.
-	public void vertexConnctivity(){
-
-	}
-
-	//The edge connectivity of a graph g is the smallest number of edges whose deletion from g disconnects g.
-	public int getEdgeConnectivity(){
-		return 0;
 	}
 
 	//the number of in-edges for each vertex
@@ -558,14 +547,14 @@ public class StateGraph {
 		if(domain.equalsIgnoreCase("BLOCKS")) {
 			while(itr.hasNext()){
 				StateVertex v = itr.next().getValue();
-				if(v.containsPartialStateBlockWords(critical.getCriticalState())){
+				if(v.containsPartialStateBlockWords(critical.getCriticalStatePredicates())){
 					v.setaPartialCriticalState(true);
 				}
 			}
 		}else {
 			while(itr.hasNext()){
 				StateVertex v = itr.next().getValue();
-				if(v.containsState(critical.getCriticalState())){
+				if(v.containsState(critical.getCriticalStatePredicates())){
 					v.setContainsCriticalState(true);
 				}
 			}
@@ -577,14 +566,14 @@ public class StateGraph {
 		if(domain.equalsIgnoreCase("BLOCKS")) {
 			while(itr.hasNext()){
 				StateVertex v = itr.next().getValue();
-				if(v.containsPartialStateBlockWords(desirable.getDesirable())){
+				if(v.containsPartialStateBlockWords(desirable.getDesirableStatePredicates())){
 					v.setaPartialDesirableState(true);
 				}
 			}
 		}else {
 			while(itr.hasNext()){
 				StateVertex v = itr.next().getValue();
-				if(v.containsState(desirable.getDesirable())){
+				if(v.containsState(desirable.getDesirableStatePredicates())){
 					v.setContainsDesirableState(true);
 				}
 			}
@@ -595,33 +584,21 @@ public class StateGraph {
 	 * Collect all paths the user will likely follow to build the desirable state. 
 	 * Some of these paths will trigger the undesirable state.
 	 */
-	public ArrayList<ArrayList<StateVertex>> getProbablePaths(ArrayList<String> desirablestate, String domain){
-		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+	public ArrayList<ArrayList<StateVertex>> getLikelyPathsForUser(ArrayList<String> desirablestate, String domain){
 		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
-		Stack<StateVertex> stack = new Stack<StateVertex>();
-		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
-		ArrayList<StateVertex> base = new ArrayList<>();
-		stack.push(getRoot());
-		while(!stack.isEmpty()){
-			StateVertex current = stack.pop();
-			visited.add(current);
-			base.add(current);
-			TreeSet<StateVertex> neighbors = adj.get(current);
-			for (StateVertex stateVertex : neighbors) {
-				stack.add(stateVertex);
-			}
-			if(isVertexInSpecifiedList(current, getLeavesWithRequiredDesirableStates(desirablestate, domain))){ //found a leaf. now compute the path from root. (base  must have all nodes in path)
-				ArrayList<StateVertex> path = new ArrayList<>();
-				path.addAll(base);
-				int index = path.size()-1;
-				ArrayList<StateVertex> copy = new ArrayList<>();
-				copy.addAll(stack);
-				while(canBackTrack(path.get(index), copy) && index>0){
-					base.remove(path.get(index));
-					index--;
+		ArrayList<StateVertex> desirableLeaves = getLeavesWithRequiredDesirableStates(desirablestate, domain);
+		ArrayList<ArrayList<StateVertex>> allpaths = getAllPathsFromRoot();
+		for (ArrayList<StateVertex> path : allpaths) {
+			StateVertex lastnode = path.get(path.size()-1);
+			boolean found = false;
+			for (StateVertex desirableNode : desirableLeaves) {
+				if(lastnode.containsState(desirableNode.getStates())) {
+					found = true;
 				}
+			}
+			if(found) {
 				paths.add(path);
-			}	
+			}
 		}
 		return paths;
 	}
@@ -694,7 +671,7 @@ public class StateGraph {
 			for (ArrayList<StateVertex> path : allpathsfromroot) { //find any node in the path that contains the critical state. E.g. critical = BAD. BARD and BRAD will equally qualify
 				boolean found = false;
 				for (StateVertex stateVertex : path) {
-					if(stateVertex.containsPartialStateBlockWords((critical.getCriticalState()))){
+					if(stateVertex.containsPartialStateBlockWords((critical.getCriticalStatePredicates()))){
 						found = true;
 					}
 				}
@@ -708,7 +685,7 @@ public class StateGraph {
 			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For navigator, critical node may occur before reaching leaf nodes.
 				boolean found = false;
 				for (StateVertex stateVertex : path) {
-					if(stateVertex.containsState(critical.getCriticalState())){
+					if(stateVertex.containsState(critical.getCriticalStatePredicates())){
 						found = true;
 					}
 				}
