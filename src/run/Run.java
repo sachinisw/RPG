@@ -188,29 +188,29 @@ public class Run {
 	}
 	
 	public static void main(String[] args) { 
-		int mode = 1; //0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST WHEN TRAINING 
-		if(mode==TrainConfigs.runmode) {
+		int mode = 0; //-1=sample train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST WHEN TRAINING 
+		if(mode==TrainSampleConfigs.runmode) {
 			LOGGER.log(Level.INFO, "Run mode: TRAINING");
 			String domain = TrainConfigs.domain;
 			String domainfile = TrainConfigs.domainFile;
-			String desirablefile = TrainConfigs.desirableStateFile;
-			String criticalfile = TrainConfigs.criticalStateFile;
+			String desirablefile = TrainConfigs.dstates;
+			String criticalfile = TrainConfigs.cstates;
 			String a_prob = TrainConfigs.a_problemFile;
-			String a_out = TrainConfigs.a_outputPath;
-			String a_init = TrainConfigs.a_initFile;
-			String a_dotpre = TrainConfigs.a_dotFilePrefix;
-			String a_dotsuf = TrainConfigs.a_dotFileSuffix;
-			String u_prob = TrainConfigs.u_problemFile;
-			String u_out = TrainConfigs.u_outputPath;
-			String u_init = TrainConfigs.u_initFile;
-			String u_dotpre = TrainConfigs.u_dotFilePrefix;
-			String u_dotsuf = TrainConfigs.u_dotFileSuffix;
-			String wt_csv = TrainConfigs.weightedCSV;
-			String ds_csv = TrainConfigs.decisionCSV;
-			String ow = TrainConfigs.owFile;
-			String lm_out = TrainConfigs.lmoutputFile;
-			String obs = TrainConfigs.observationFiles;
-			boolean writedot = TrainConfigs.writeDOT;
+			String a_out = TrainSampleConfigs.a_outputPath;
+			String a_init = TrainSampleConfigs.a_initFile;
+			String a_dotpre = TrainSampleConfigs.a_dotFilePrefix;
+			String a_dotsuf = TrainSampleConfigs.a_dotFileSuffix;
+			String u_prob = TrainSampleConfigs.u_problemFile;
+			String u_out = TrainSampleConfigs.u_outputPath;
+			String u_init = TrainSampleConfigs.u_initFile;
+			String u_dotpre = TrainSampleConfigs.u_dotFilePrefix;
+			String u_dotsuf = TrainSampleConfigs.u_dotFileSuffix;
+			String wt_csv = TrainSampleConfigs.weightedCSV;
+			String ds_csv = TrainSampleConfigs.decisionCSV;
+			String ow = TrainSampleConfigs.owFile;
+			String lm_out = TrainSampleConfigs.lmoutputFile;
+			String obs = TrainSampleConfigs.observationFiles;
+			boolean writedot = TrainSampleConfigs.writeDOT;
 			run(domain, domainfile, desirablefile, a_prob, a_dotpre, 
 					a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre, 
 					u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot, true);

@@ -98,7 +98,7 @@ public class PlanningProblemGenerator {
 				objects.add(sparts[i]);
 			}
 		}
-		if(TrainDataConfigs.domain.equalsIgnoreCase("blocks")) {
+		if(TraceConfigs.domain.equalsIgnoreCase("blocks")) {
 			for (String t : t_init) {
 				for (String o : objects) {
 					if(t.contains(" ")) {
@@ -120,7 +120,7 @@ public class PlanningProblemGenerator {
 	public static String extractDomainObjectsFromGoalState(String cstate, String dstate) {
 		TreeSet<String> objects = new TreeSet<>();
 		String ob = "";
-		if(TrainDataConfigs.domain.equalsIgnoreCase("blocks")) {
+		if(TraceConfigs.domain.equalsIgnoreCase("blocks")) {
 			String ctemp[] = cstate.split(",");
 			for (String s : ctemp) {
 				String cparts [] = s.substring(1,s.length()-1).split(" ");
@@ -253,33 +253,34 @@ public class PlanningProblemGenerator {
 	}
 
 	public static void createDirectories(int cases) {
-		String outputpath = TrainDataConfigs.prefix+TrainDataConfigs.cases;
+		String outputpath = TraceConfigs.prefix+TraceConfigs.cases;
 		for (int caseid=0; caseid<cases; caseid++){
-			new File(outputpath+caseid+"/"+TrainDataConfigs.datadir+"/decision/").mkdirs();
-			new File(outputpath+caseid+"/"+TrainDataConfigs.datadir+"/inputdecisiontree/").mkdirs();
-			new File(outputpath+caseid+"/"+TrainDataConfigs.datadir+"/weighted/").mkdirs();
-			new File(outputpath+caseid+"/"+TrainDataConfigs.dot+"/full").mkdirs();
-			new File(outputpath+caseid+"/"+TrainDataConfigs.out+"/attacker/").mkdirs();
-			new File(outputpath+caseid+"/"+TrainDataConfigs.out+"/user/").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.datadir+"/decision/").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.datadir+"/inputdecisiontree/").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.datadir+"/weighted/").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.dot+"/full").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.out+"/attacker/").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.out+"/user/").mkdirs();
+			new File(outputpath+caseid+"/"+TraceConfigs.obs).mkdirs();
 		}
 	}
 
 	//generates common templates and full trace set (all actions including) for each test instance {1,2,3}
 	public static void generateProblemsFromTemplate(){
-		String problemtemplate = TrainDataConfigs.prefix+TrainDataConfigs.template_problem;
-		String domaintemplate = TrainDataConfigs.prefix+TrainDataConfigs.template_domain;
-		String inittemplate = TrainDataConfigs.prefix+TrainDataConfigs.template_init;
-		String criticalStateFile = TrainDataConfigs.prefix+TrainDataConfigs.t_CriticalStates;
-		String desirableStateFile = TrainDataConfigs.prefix+TrainDataConfigs.t_DesirableStates;
+		String problemtemplate = TraceConfigs.prefix+TraceConfigs.template_problem;
+		String domaintemplate = TraceConfigs.prefix+TraceConfigs.template_domain;
+		String inittemplate = TraceConfigs.prefix+TraceConfigs.template_init;
+		String criticalStateFile = TraceConfigs.prefix+TraceConfigs.t_CriticalStates;
+		String desirableStateFile = TraceConfigs.prefix+TraceConfigs.t_DesirableStates;
 		ArrayList<String> criticals =  readGoalStates(criticalStateFile);
 		ArrayList<String> desirables = readGoalStates(desirableStateFile);
 		ArrayList<String> t_problem = readTemplate(problemtemplate);
 		ArrayList<String> t_domain = readTemplate(domaintemplate);
 		ArrayList<String> t_init = readTemplate(inittemplate);
-		createDirectories(TrainDataConfigs.trainingcases);
-		for(int c=0; c<TrainDataConfigs.trainingcases; c++){
+		createDirectories(TraceConfigs.trainingcases);
+		for(int c=0; c<TraceConfigs.trainingcases; c++){
 			LOGGER.log(Level.INFO, "Problem generation for training case "+ c );
-			String outprefix = TrainDataConfigs.prefix+TrainDataConfigs.cases+c+"/";
+			String outprefix = TraceConfigs.prefix+TraceConfigs.cases+c+"/";
 			generateTrainCases(c, criticals, desirables, t_problem, t_domain, t_init, outprefix);
 		}
 		LOGGER.log(Level.INFO, "Planning problem generation done" );

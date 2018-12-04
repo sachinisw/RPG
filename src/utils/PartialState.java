@@ -44,16 +44,14 @@ public class PartialState {
 					order.add(i+1, next);
 					order.remove(next);
 				}
-				System.out.println(Arrays.toString(order.toArray()));
 			}
 		}
+		System.out.println("ON LETTERS==== "+Arrays.toString(order.toArray()));
 		return order;
 	}
 	public static boolean matchpartial(ArrayList<String> state, ArrayList<String> attackerword) {
 		LinkedList<String> curorder = getSpelledWord(state);
 		LinkedList<String> attackers = getSpelledWord(attackerword);
-		System.out.println(Arrays.toString(curorder.toArray()));
-		System.out.println(Arrays.toString(attackers.toArray()));
 		Iterator<String> iter = curorder.iterator();
 		while(iter.hasNext()){
 			String l = iter.next();
@@ -71,12 +69,21 @@ public class PartialState {
 
 	public static void main(String[] args) {
 		ArrayList<String> state = new ArrayList<String>();
-		state.add("ON T B");
-		state.add("CLEAR A");
-		state.add("ONTABLE B");
+//		state.add("CLEAR T");
+//		state.add("CLEAR B");
+//		state.add("ONTABLE T");
+//		state.add("ONTABLE D");
+//		state.add("ON B A");
+//		state.add("ON A D");
+//		state.add("HANDEMPTY");
+		state.add("CLEAR D");
+		state.add("CLEAR B");
+		state.add("ONTABLE T");
+		state.add("ONTABLE A");
+		state.add("ON D A");
+		state.add("ON B T");
 		state.add("HANDEMPTY");
-		state.add("ON A D");
-		state.add("ON D T");
+		//(CLEAR T), (CLEAR B), (ONTABLE T), (ONTABLE D), (ON B A), (ON A D), (HANDEMPTY)
 		ArrayList<String> user= new ArrayList<String>();
 		user.add("ON T A");
 		user.add("ON A D");

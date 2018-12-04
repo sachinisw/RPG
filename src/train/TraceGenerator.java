@@ -36,49 +36,51 @@ public class TraceGenerator {
 		return obs;
 	}
 
-	public static ArrayList<State> copyStates(ArrayList<State> state, int count){
-		ArrayList<State> cp = new ArrayList<State>();
-		for(int i=0; i<=count; i++){
-			cp.add(state.get(i));
-		}
-		return cp;
-	}
+//	public static ArrayList<State> copyStates(ArrayList<State> state, int count){
+//		ArrayList<State> cp = new ArrayList<State>();
+//		for(int i=0; i<=count; i++){
+//			cp.add(state.get(i));
+//		}
+//		return cp;
+//	}
 
-	//For this one I only want the initial state graphs for attacker and user.
-	public static ArrayList<StateGraph> process(String domain, ArrayList<State> states, StateGenerator gen){
+	//For this one I only want the initial state graphs for attacker
+	public static ArrayList<StateGraph> process(String domain, InitialState init, StateGenerator gen){
 		ArrayList<StateGraph> graphs = new ArrayList<>();
-		ArrayList<State> statesSeen = copyStates(states, 0);
-		StateGraph graphAgent = gen.enumerateStates(states.get(0), statesSeen);
-		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(0)), domain);
-		gen.applyUniformProbabilitiesToStates(treeAgent, states.get(0));
+//		ArrayList<State> statesSeen = copyStates(states, 0);
+		ArrayList<State> statesSeen = new ArrayList<State>();
+		statesSeen.add(init);
+		StateGraph graphAgent = gen.enumerateStates(init, statesSeen);
+		StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, init), domain);
+		gen.applyUniformProbabilitiesToStates(treeAgent, init);
 		graphs.add(treeAgent);
 		gen.graphToDOT(treeAgent, 1, 1, true); //TODO: remove after debug
 		return graphs; //No DOT files generated for traces
 	}
 
-	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, String domain, Observation ob, InitialState init){
+	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, String domain, InitialState init){
 		StateGenerator gen = new StateGenerator(agent, domain);
-		ArrayList<State> state = gen.getStatesAfterObservations(ob, init, true);
-		ArrayList<StateGraph> graphs = process(domain, state, gen); //graph for attacker
+//		ArrayList<State> state = gen.getStatesAfterObservations(ob, init, true);
+		ArrayList<StateGraph> graphs = process(domain, init, gen); //graph for attacker
 		return graphs;
 	}
 	//generates the trace with flagged observations for the classifier
 	public static ArrayList<ArrayList<String>> generateTrace(StateGraph decider){ 
 		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
-		ArrayList<ArrayList<StateVertex>> likelypaths = decider.getLikelyPathsForUser(decider.getDesirable().getDesirableStatePredicates(), SampleConfigParameters.domain);
-		ArrayList<ArrayList<StateVertex>> undesirable = decider.getUndesirablePaths(likelypaths, SampleConfigParameters.domain);
+		ArrayList<ArrayList<StateVertex>> likelypaths = decider.getLikelyPathsForUser(decider.getDesirable().getDesirableStatePredicates(), SampleConfigs.domain);
+		ArrayList<ArrayList<StateVertex>> undesirable = decider.getUndesirablePaths(likelypaths, SampleConfigs.domain);
 		for(int i=0; i<likelypaths.size(); i++){
 			ArrayList<StateVertex> path = likelypaths.get(i);
 			ArrayList<String> trc = new ArrayList<String>();
-			if(SampleConfigParameters.domain.equalsIgnoreCase("blocks")) { //active attacker e.g. block-words
+			if(SampleConfigs.domain.equalsIgnoreCase("blocks")) { //active attacker e.g. block-words
 				if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates())) {
 					if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates())) { 
 						//this good path will also trigger bad state.
-//						System.out.println("good path with bad state");
+						//						System.out.println("good path with bad state");
 						for(int j=0; j<path.size()-1; j++){
 							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(path.get(j), path.get(j+1));
 							for (ActionEdge actionEdge : actions) {
-//								System.out.println("unsafe action edge="+ actionEdge.toString());
+								//								System.out.println("unsafe action edge="+ actionEdge.toString());
 								if(actionEdge.getTo().containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates()) &&
 										!actionEdge.getTo().containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates())) {
 									trc.add("Y:"+actionEdge.getAction());
@@ -88,11 +90,11 @@ public class TraceGenerator {
 							}
 						}
 					}else {	//this is a safe good path. observations need not be flagged. put N
-//						System.out.println("safe good");
+						//						System.out.println("safe good");
 						for(int j=0; j<path.size()-1; j++){
 							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(path.get(j), path.get(j+1));
 							for (ActionEdge actionEdge : actions) {
-//								System.out.println("safegood--"+actionEdge);
+								//								System.out.println("safegood--"+actionEdge);
 								trc.add("N:"+actionEdge.getAction());
 							}
 						}
@@ -203,38 +205,60 @@ public class TraceGenerator {
 		}
 	}
 
-	public static void generateObservationTraceForScenario(int mode){
-		if(mode==0) { //generating trace for a sample intervention problem. For errors and bug fixing
-			for(int trainInstance=0; trainInstance<=22; trainInstance++){
-				if(trainInstance==0){
-					String domainFile = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.domainFile;
-					String desirableStateFile = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.desirableStateFile;
-					String a_problemFile = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.a_problemFile;
-					String a_outputPath = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.a_outputPath;
-					String criticalStateFile = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.criticalStateFile;
-					String a_initFile = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.a_initFile;
-					String a_dotFilePrefix = SampleConfigParameters.prefix+trainInstance;
-					String tracepath = SampleConfigParameters.traces+trainInstance;
-					String obspath = SampleConfigParameters.prefix+trainInstance+SampleConfigParameters.observationFile;
-					String domain = SampleConfigParameters.domain;
-					Decider decider = new Decider(domain, domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, SampleConfigParameters.a_dotFile);
-					Observation obs = setObservations(obspath); //TODO: how to handle noise in trace. what counts as noise?
-					LOGGER.log(Level.INFO, "Generating State Tree for ["+ SampleConfigParameters.domain +"] instance --> "+trainInstance);
-					ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, obs, decider.getInitialState());//generate graph for attacker and user
-					LOGGER.log(Level.INFO, "Writing traces to files");
-					writeTracesToFile(generateTrace(attackerState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
-					LOGGER.log(Level.INFO, "----Traces done---");
-				}
+	public static void generateSampleObservationTrace(){
+		//generating trace for a sample intervention problem. For errors and bug fixing
+		for(int trainInstance=0; trainInstance<=22; trainInstance++){
+			if(trainInstance==0){
+				String domainFile = SampleConfigs.prefix+trainInstance+SampleConfigs.domainFile;
+				String desirableStateFile = SampleConfigs.prefix+trainInstance+SampleConfigs.desirableStateFile;
+				String a_problemFile = SampleConfigs.prefix+trainInstance+SampleConfigs.a_problemFile;
+				String a_outputPath = SampleConfigs.prefix+trainInstance+SampleConfigs.a_outputPath;
+				String criticalStateFile = SampleConfigs.prefix+trainInstance+SampleConfigs.criticalStateFile;
+				String a_initFile = SampleConfigs.prefix+trainInstance+SampleConfigs.a_initFile;
+				String a_dotFilePrefix = SampleConfigs.prefix+trainInstance;
+				String tracepath = SampleConfigs.traces+trainInstance;
+//				String obspath = SampleConfigs.prefix+trainInstance+SampleConfigs.observationFile;
+				String domain = SampleConfigs.domain;
+				Decider decider = new Decider(domain, domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, SampleConfigs.a_dotFile);
+//				Observation obs = setObservations(obspath);
+				LOGGER.log(Level.INFO, "Generating State Tree for ["+ SampleConfigs.domain +"] instance --> "+trainInstance);
+				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, decider.getInitialState());//generate graph for attacker and user
+				LOGGER.log(Level.INFO, "Writing traces to files");
+				writeTracesToFile(generateTrace(attackerState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
+				LOGGER.log(Level.INFO, "----Traces done---");
 			}
-		}else { //generating observations for actual set of training data.
-			PlanningProblemGenerator.generateProblemsFromTemplate();
 		}
-		
+	}
+
+	public static void generateObservationTrace() { //generating observations for actual set of training data.
+		PlanningProblemGenerator.generateProblemsFromTemplate();
+		for(int currentCase=0; currentCase<TraceConfigs.trainingcases; currentCase++) {
+			String domainFile = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.domainFile;
+			String desirableStateFile = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.desirableStateFile;
+			String a_problemFile = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.a_problemFile;
+			String a_outputPath = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.a_outputPath;
+			String criticalStateFile = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.criticalStateFile;
+			String a_initFile = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.a_initFile;
+			String a_dotFilePrefix = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.dot;
+			String tracepath = TraceConfigs.prefix+TraceConfigs.cases+TraceConfigs.cases+currentCase+TraceConfigs.obs;
+//			String obspath = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.observationFile;
+			String domain = TraceConfigs.domain;
+			Decider decider = new Decider(domain, domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, SampleConfigs.a_dotFile);
+//			Observation obs = setObservations(obspath); //TODO: how to handle noise in trace. what counts as noise?
+			LOGGER.log(Level.INFO, "Generating State Tree for ["+ SampleConfigs.domain +"] instance --> "+TraceConfigs.scenario);
+			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, decider.getInitialState());//generate graph for attacker and user
+			LOGGER.log(Level.INFO, "Writing traces to files");
+			writeTracesToFile(generateTrace(attackerState.get(0)), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
+			LOGGER.log(Level.INFO, "----Traces done---");
+		}
 	}
 
 	public static void main(String[] args) { 
-		int mode=1; //TODO: README edit here first
-		//0-generate obs for sample intervention scenario, 1-generate obs for 20 intervention problems for training
-		generateObservationTraceForScenario(mode);
+		int mode=0; //TODO: README edit here first 		//0-generate obs for sample intervention scenario for debugging, 1-generate obs for 20 intervention problems for training
+		if(mode==0) {
+			generateSampleObservationTrace();
+		}else {
+			generateObservationTrace();
+		}
 	}
 }
