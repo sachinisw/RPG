@@ -609,7 +609,9 @@ public class StateGraph {
 		ArrayList<StateVertex> desirableleaves = new ArrayList<StateVertex>();
 		if(domain.equalsIgnoreCase("blocks")) {
 			for (StateVertex v : vertices.values()) {
+//				System.out.println("checking-----------------"+v);
 				if(adjacencyList.get(v).size()==0 && v.containsPartialStateBlockWords(desirablestate)){
+//					System.out.println("picked>>>>>>>>>>>>>>>"+v);
 					desirableleaves.add(v);
 				}
 			}

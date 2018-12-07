@@ -154,7 +154,7 @@ public class Run {
 	}
 
 	public static void run(String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
-			String a_out, String criticalfile, String a_init, String a_dotsuf, String u_prob, String u_out, String u_init, String u_dotpre, 
+			String a_out, String criticalfile, String a_init, String a_dotsuf, String u_prob, String u_out, String u_init, 
 			String u_dotsuf, String obs, String wt_csv, String ds_csv, String ow, String lm_out, boolean writedot, boolean full) {
 		int reverseConfig = 1;
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
@@ -189,31 +189,49 @@ public class Run {
 	
 	public static void main(String[] args) { 
 		int mode = 0; //-1=sample train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST WHEN TRAINING 
-		if(mode==TrainSampleConfigs.runmode) {
+		if(mode==TrainConfigs.runmode) {
 			LOGGER.log(Level.INFO, "Run mode: TRAINING");
 			String domain = TrainConfigs.domain;
-			String domainfile = TrainConfigs.domainFile;
-			String desirablefile = TrainConfigs.dstates;
-			String criticalfile = TrainConfigs.cstates;
-			String a_prob = TrainConfigs.a_problemFile;
-			String a_out = TrainSampleConfigs.a_outputPath;
-			String a_init = TrainSampleConfigs.a_initFile;
-			String a_dotpre = TrainSampleConfigs.a_dotFilePrefix;
-			String a_dotsuf = TrainSampleConfigs.a_dotFileSuffix;
-			String u_prob = TrainSampleConfigs.u_problemFile;
-			String u_out = TrainSampleConfigs.u_outputPath;
-			String u_init = TrainSampleConfigs.u_initFile;
-			String u_dotpre = TrainSampleConfigs.u_dotFilePrefix;
-			String u_dotsuf = TrainSampleConfigs.u_dotFileSuffix;
-			String wt_csv = TrainSampleConfigs.weightedCSV;
-			String ds_csv = TrainSampleConfigs.decisionCSV;
-			String ow = TrainSampleConfigs.owFile;
-			String lm_out = TrainSampleConfigs.lmoutputFile;
-			String obs = TrainSampleConfigs.observationFiles;
-			boolean writedot = TrainSampleConfigs.writeDOT;
-			run(domain, domainfile, desirablefile, a_prob, a_dotpre, 
-					a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre, 
-					u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot, true);
+			for (int casenum=0; casenum<TrainConfigs.cases; casenum++) {
+				String domainfile = TrainConfigs.root+casenum+TrainConfigs.domainFile;
+				String desirablefile = TrainConfigs.root+casenum+TrainConfigs.dstates;
+				String criticalfile = TrainConfigs.root+casenum+TrainConfigs.cstates;
+				String dotpre = TrainConfigs.root+casenum+TrainConfigs.dotdir;
+				String a_prob = TrainConfigs.root+casenum+TrainConfigs.a_problemFile;
+				String a_out = TrainConfigs.root+casenum+TrainConfigs.outsdir+TrainConfigs.a_output;
+				String a_init = TrainConfigs.root+casenum+TrainConfigs.a_initFile;
+				String a_dotsuf = TrainConfigs.a_dotFileSuffix;
+				String u_prob = TrainConfigs.root+casenum+TrainConfigs.u_problemFile;
+				String u_out = TrainConfigs.root+casenum+TrainConfigs.outsdir+TrainConfigs.u_output;
+				String u_init = TrainConfigs.root+casenum+TrainConfigs.u_initFile;
+				String u_dotsuf = TrainConfigs.u_dotFileSuffix;
+				String wt_csv = TrainConfigs.root+casenum+TrainConfigs.datadir+TrainConfigs.weightedCSV;
+				String ds_csv = TrainConfigs.root+casenum+TrainConfigs.datadir+TrainConfigs.decisionCSV;
+				String ow = TrainConfigs.owFile;
+				String lm_out = TrainConfigs.root+casenum+TrainConfigs.datadir+TrainConfigs.lmoutputFile;
+				String obs = TrainConfigs.root+casenum+TrainConfigs.obsdir;
+				boolean writedot = TrainConfigs.writeDOT;
+				System.out.println(domainfile);
+				System.out.println(desirablefile);
+				System.out.println(a_prob);
+				System.out.println(dotpre);
+				System.out.println(a_out);
+				System.out.println(criticalfile);
+				System.out.println(a_init);
+				System.out.println(a_dotsuf);
+				System.out.println(u_prob);
+				System.out.println(u_out);
+				System.out.println(u_init);
+				System.out.println(u_dotsuf);
+				System.out.println(obs);
+				System.out.println(wt_csv);
+				System.out.println(ds_csv);
+				System.out.println(lm_out);
+				run(domain, domainfile, desirablefile, a_prob, dotpre, 
+						a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, 
+						u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out, writedot, true);
+				break;
+			}
 			LOGGER.log(Level.INFO, "Completed trained model for domain:" + domain);
 		}else {
 			String domain = TestConfigs.domain;
@@ -233,8 +251,8 @@ public class Run {
 					String u_prob = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_problemFile;
 					String u_out = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_outputPath;
 					String u_init = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_initFile;
-					String u_dotpre_full = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_dotFilePrefix;
-					String u_dotpre_lm = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_dotFileLMPrefix;
+//					String u_dotpre_full = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_dotFilePrefix;
+//					String u_dotpre_lm = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.u_dotFileLMPrefix;
 					String u_dotsuf = TestConfigs.u_dotFileSuffix;
 					String wt_csv = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.weightedCSV;
 					String ds_csv = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.decisionCSV;
@@ -244,11 +262,11 @@ public class Run {
 					String obslm = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.observationLMFiles; 
 					String ow = TestConfigs.owFile;
 					run(domain, domainfile, desirablefile, a_prob, a_dotpre_full, 
-							a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre_full, 
+							a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, 
 							u_dotsuf, obs, wt_csv, ds_csv, ow, lm_out_full, writedot, true);
 					LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
 					run(domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
-							a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, u_dotpre_lm, 
+							a_out, criticalfile, a_init, a_dotsuf, u_prob, u_out, u_init, 
 							u_dotsuf, obslm, wt_csv, ds_csv, ow, lm_out_short, writedot, false);
 					LOGGER.log(Level.INFO, "Finished reduced case: "+ x +" for test instance:" +instance );
 				}
