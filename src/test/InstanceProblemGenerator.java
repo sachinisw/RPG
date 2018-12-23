@@ -11,7 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import con.ConnectivityGraph;
-import plan.Plan;
+import train.TraceGenerator;
 
 public class InstanceProblemGenerator {
 	/**
@@ -107,19 +107,27 @@ public class InstanceProblemGenerator {
 	}			
 
 	public static void generateObservationTraceForTestInstance(String pathprefix, String scid) {
-		String domainpath = pathprefix+scid+HarnessConfigs.domainFile;
-		String problempath= pathprefix+scid+"/"+HarnessConfigs.aprobfilename;
-		String planoutputpath=pathprefix+scid+"/"+HarnessConfigs.tempplan+"/";
-		Planner.runFF(1, domainpath, problempath, planoutputpath); //just create a plan for the attacker domain
-		Planner.runFF(3, domainpath, problempath, planoutputpath); //and connectivity
-		ArrayList<Plan> plans = Planner.readPlans(planoutputpath);//just 1 plan
-		ArrayList<String> plansteps = plans.get(0).getPlanSteps();
-		for (int x=0; x<plansteps.size(); x++) {
-			plansteps.set(x, "?:"+plansteps.get(x).substring(plansteps.get(x).indexOf(":")+2,plansteps.get(x).length()));
-		}
-		addLabelsToTrace(plansteps, pathprefix, scid);
+//		String domainpath = pathprefix+scid+HarnessConfigs.domainFile;
+//		String problempath= pathprefix+scid+"/"+HarnessConfigs.aprobfilename;
+//		String planoutputpath=pathprefix+scid+"/"+HarnessConfigs.tempplan+"/";
+//		String domain = pathprefix+scid+HarnessConfigs.domain;
+//		String desirablefile = pathprefix+scid+"/"+HarnessConfigs.desirable;
+//		String a_prob = pathprefix+scid+"/"+HarnessConfigs.aprobfilename;
+//		String a_out = pathprefix+scid+"/"+HarnessConfigs.outdir+"/"+HarnessConfigs.aout+"/";
+//		String criticalfile = pathprefix+scid+"/"+HarnessConfigs.critical;
+//		String a_init = pathprefix+scid+"/"+HarnessConfigs.ainit;
+//		String a_dotpre = pathprefix+scid+"/"+HarnessConfigs.dotdir+"/";
+//		String a_dotsuf = HarnessConfigs.u_dotFileSuffix;
+		//		Planner.runFF(1, domainpath, problempath, planoutputpath); //just create a plan for the attacker domain
+		//		Planner.runFF(3, domainpath, problempath, planoutputpath); //and connectivity
+		//		ArrayList<Plan> plans = Planner.readPlans(planoutputpath);//just 1 plan
+		//		ArrayList<String> plansteps = plans.get(0).getPlanSteps();
+		//		for (int x=0; x<plansteps.size(); x++) {
+		//			plansteps.set(x, "?:"+plansteps.get(x).substring(plansteps.get(x).indexOf(":")+2,plansteps.get(x).length()));
+		//		}
+		//		addLabelsToTrace(plansteps, pathprefix, scid);
 	}
-
+	
 	public static void addLabelsToTrace(ArrayList<String> trace, String pathprefix, String scid) {
 		String obspath = pathprefix+scid+"/"+HarnessConfigs.obsdir+"/"+scid;
 		String congraphpath = pathprefix+scid+"/"+HarnessConfigs.tempplan+"/"+HarnessConfigs.acon;
@@ -399,13 +407,25 @@ public class InstanceProblemGenerator {
 			ArrayList<String> criticals = readGoals(cspath);
 			ArrayList<String> desirables = readGoals(dspath);
 			TreeSet<String> inits = readInits(initspath);
-			for (int i=0; i<HarnessConfigs.testProblemCount; i++) {
+			for (int i=0; i<HarnessConfigs.testProblemCount; i++) { //generate labeled obs traces for the 20 problems using TraceGenerator
+				String domainpath = problemoutput+i+"/"+HarnessConfigs.domfilename;
+				String domain = HarnessConfigs.domain;
+				String desirablefile = problemoutput+i+"/"+HarnessConfigs.desirable;
+				String a_prob = problemoutput+i+"/"+HarnessConfigs.aprobfilename;
+				String a_out = problemoutput+i+"/"+HarnessConfigs.outdir+"/"+HarnessConfigs.aout+"/";
+				String criticalfile = problemoutput+i+"/"+HarnessConfigs.critical;
+				String a_init = problemoutput+i+"/"+HarnessConfigs.ainit;
+				String a_dotpre = problemoutput+i+"/"+HarnessConfigs.dotdir+"/";
+				String a_dotsuf = HarnessConfigs.a_dotFileSuffix;
+				String obsout = problemoutput+i+"/"+HarnessConfigs.obsdir+"/";
 				generateProblemsForTestInstance(i, criticals.get(i), desirables.get(i), inits, domainTemplate, problemTemplate,
 						problemoutput);
-				generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
-				LOGGER.log(Level.INFO, "Finished trace: "+ i +" for test instance:" +instance + " for scenario ["+ HarnessConfigs.testscenario+"]");
+				TraceGenerator.generateTestingObservationTrace(domain, domainpath, desirablefile, a_prob, criticalfile, 
+						a_out, a_init, a_dotpre, a_dotsuf, obsout);
+//				generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
+//				break;
 			}
-			LOGGER.log(Level.INFO, "Finished full trace for test instance:" +instance + " for scenario ["+ HarnessConfigs.testscenario+"]");
+			LOGGER.log(Level.INFO, "Trace generator input files for :" +instance + " for scenario ["+ HarnessConfigs.testscenario+"] done");
 		}
 	}
 

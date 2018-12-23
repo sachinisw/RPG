@@ -2,6 +2,7 @@ package test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -15,7 +16,11 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+
 import landmark.RelaxedPlanningGraphGenerator;
+import plan.Plan;
 
 public class ReducedTraceGenerator {
 	/**
@@ -55,15 +60,37 @@ public class ReducedTraceGenerator {
 		return init;
 	}
 
-	public static ArrayList<String> readRootPlan(String obs) {
-		ArrayList<String> pl = new ArrayList<String>();
+	public static ArrayList<String> getDataFiles(String filedir){		
+		ArrayList<String> dataFilePaths = new ArrayList<String>(); 
+		try {
+			File dir = new File(filedir);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				dataFilePaths.add(fileItem.getCanonicalPath());
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		return dataFilePaths;	
+	}
+	
+	public static ArrayList<Plan> readRootPlans(String obs) {
+		ArrayList<String> files = getDataFiles(obs);
+		ArrayList<Plan> pl = new ArrayList<Plan>();
 		Scanner reader;
 		try {
-			reader = new Scanner (new File(obs));
-			while(reader.hasNextLine()) {
-				pl.add(reader.nextLine());
+			for (String path : files) {
+				ArrayList<String> plansteps = new ArrayList<String>();
+				reader = new Scanner (new File(path));
+				while(reader.hasNextLine()) {
+					plansteps.add(reader.nextLine());
+				}
+				reader.close();
+				Plan p = new Plan(plansteps, path);
+				pl.add(p);
 			}
-			reader.close();
+			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -143,27 +170,33 @@ public class ReducedTraceGenerator {
 		return causes;
 	}
 
-	public static ArrayList<String> actionsAddingCriticalLandmark(HashMap<String, ArrayList<String>> clm, String congraphpath, String planpath){
-		ArrayList<String> actions = new ArrayList<>();
+	public static ArrayList<Plan> actionsAddingCriticalLandmark(HashMap<String, ArrayList<String>> clm, String congraphpath, String planpath){
+		ArrayList<Plan> allplans = new ArrayList<>();
 		ConnectivityGraph con = new ConnectivityGraph(congraphpath);
 		con.readConGraphOutput(congraphpath);
-		ArrayList<String> rootplan = readRootPlan(planpath);
-		int startpoint = 0;
-		for (String step : rootplan) {
-			ArrayList<String> ads = con.findStatesAddedByAction(step.substring(2));
-			startpoint++;
-			if(addContainsCriticalLM(ads, clm)) {
-				break;
+		ArrayList<Plan> rootplans = readRootPlans(planpath);
+		for (Plan plan : rootplans) {
+			ArrayList<String> actions = new ArrayList<>();
+			int startpoint = 0;
+			ArrayList<String> steps = plan.getPlanSteps();
+			for (String step : steps) {
+				ArrayList<String> ads = con.findStatesAddedByAction(step.substring(2));
+				startpoint++;
+				if(addContainsCriticalLM(ads, clm)) {
+					break;
+				}
 			}
-		}
-		for(int i=0; i<rootplan.size(); i++) {
-			if(i<startpoint-1) {
-				actions.add("*"+rootplan.get(i)); //README:: ignore obs with * when generating feature values for reduced trace
-			}else {
-				actions.add(rootplan.get(i));
+			for(int i=0; i<steps.size(); i++) {
+				if(i<startpoint-1) {
+					actions.add("*"+steps.get(i)); //README:: ignore obs with * when generating feature values for reduced trace
+				}else {
+					actions.add(steps.get(i));
+				}
 			}
+			allplans.add(new Plan(actions,plan.getPlanID()));
 		}
-		return actions;
+
+		return allplans;
 	}
 
 	public static boolean addContainsCriticalLM(ArrayList<String> adds, HashMap<String, ArrayList<String>> clm) {
@@ -199,15 +232,15 @@ public class ReducedTraceGenerator {
 			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
 			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //attacker
 				String aplanspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/";
-				String uplanspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/user/";
+//				String uplanspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/user/";
 				String domainpath = pathprefix+String.valueOf(j)+HarnessConfigs.domainFile;
 				String problemspath = pathprefix+String.valueOf(j)+"/";
 				Planner.runFF(1, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath); 
 				Planner.runFF(2, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath);
 				Planner.runFF(3, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath);
-				Planner.runFF(1, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath); 
-				Planner.runFF(2, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath);
-				Planner.runFF(3, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath); 
+//				Planner.runFF(1, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath); 
+//				Planner.runFF(2, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath);
+//				Planner.runFF(3, domainpath, problemspath+HarnessConfigs.uprobfilename, uplanspath); 
 			}
 		}
 	}
@@ -229,36 +262,39 @@ public class ReducedTraceGenerator {
 		}
 	}
 
-	public static void writeToFile(ArrayList<String> data, String outputpath, String filename){
+	public static void writeToFile(ArrayList<Plan> data, String outputpath){
 		PrintWriter writer = null;
 		try{
-			writer = new PrintWriter(outputpath+"/"+filename, "UTF-8");
-			for (int i = 0; i < data.size(); i++) {
-				writer.write(data.get(i));
-				writer.println();
+			for (Plan p : data) {
+				String idparts[] = p.getPlanID().split("/");
+				String fileid = idparts[idparts.length-1];
+				writer = new PrintWriter(outputpath+"/"+fileid, "UTF-8");
+				for (int i = 0; i < p.getPlanSteps().size(); i++) {
+					writer.write(p.getPlanSteps().get(i));
+					writer.println();
+				}
+				writer.close();
 			}
 		}catch (FileNotFoundException | UnsupportedEncodingException  e) {
 			e.printStackTrace();
-		}finally{
-			writer.close();
 		}
 	}
 
 	public static void generateReducedTrace(int start) {
-		generateRPGandConnectvity(start); 		//generate rpg and cons
+		generateRPGandConnectvity(start); 		//generate rpg and cons for attacker domain
 		generateLandmarks(start); //generate landmarks and write output to lmfile
 		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
 			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
 			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
 				String lmoutpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.lmFile;
 				String conpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.acon;
-				String obspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obsdir+"/"+String.valueOf(j); //take this as the root plan
+				String obspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obsdir+"/"; //take this as the root plan
 				String obslmpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm;
 				ArrayList<String> lmlines  = readLMData(lmoutpath);
 				ArrayList<ArrayList<String>> lms = extractLM(lmlines);
 				HashMap<String, ArrayList<String>> criticallm= extractLMBeforeUndesirableState(lms);
-				ArrayList<String> clmactions = actionsAddingCriticalLandmark(criticallm, conpath, obspath);	//after this find the action that first adds this landmark. remove actions before that action from the trace
-				writeToFile(clmactions, obslmpath, String.valueOf(j));//write trace to file
+				ArrayList<Plan> clmactions = actionsAddingCriticalLandmark(criticallm, conpath, obspath);	//after this find the action that first adds this landmark. remove actions before that action from the trace
+				writeToFile(clmactions, obslmpath);//write reduced traces to file. 4 files must be written
 			}
 		}
 		LOGGER.log(Level.INFO, "Reduced traces generated");

@@ -2,6 +2,7 @@ package actors;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.TreeSet;
 
 import con.ConnectivityGraph;
@@ -142,7 +143,7 @@ public class Decider extends Agent{
 		}
 		return d;
 	}
-	
+
 	public int getDistanceToStateFromRootWithPartialMatches(ArrayList<ArrayList<StateVertex>> alldfs, ArrayList<String> state){ 
 		ArrayList<ArrayList<StateVertex>> necessaryPaths = new ArrayList<ArrayList<StateVertex>>(); 
 		//there could be 1 or more critical paths. take the min. i.e. the earliest the critical state can happen
@@ -226,38 +227,51 @@ public class Decider extends Agent{
 		this.verifiedLandmarks = lm.verifyLandmarks(lgg, critical.getCriticalStatePredicates(), getInitialState().getState(), lmoutput);
 	}
 
-	//number of remaining undesirable landmarks in the domain. 
-	//Finding:: This is not a very telling feature. even if you are making your way down the undesirable path, the graph contains the full set of landmarks in the state space
-	//This is because by following the path that undoes the action you just did you can add back previous states (and landmarks)
+	//For each candidate desirable state, extract paths from current state (root)
+	//For each desirable path, compute remaining landmarks that should be achieved to reach the goal. Take the median as the feature value. 
+	//This shows, from remaining paths, which one will easily trigger the undesirable state.
 	public int countRemainingLandmarks(){
-		int[] lmcounter = new int[this.verifiedLandmarks.size()];
-		int currentLM = 0;
-		int remainingLm = 0;
-		ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());
-		for (LGGNode node : this.verifiedLandmarks) {
-			ArrayList<String> data = node.getValue();
-			for (StateVertex v : visitOrder) {
-				int count = 0;
-				for (String item : data) {
-					if(listContainsState(v.getStates(), item)){
-						count++;
+		ArrayList<ArrayList<StateVertex>> likelypaths = attackerState.getLikelyPathsForUser(desirable.getDesirableStatePredicates(), domain);
+		int[] lmrem = new int [likelypaths.size()];
+		for (ArrayList<StateVertex> path : likelypaths) {
+			int currentLM = 0;
+			int remainingLm = 0;
+			int current = 0;
+			int[] lmcounter = new int[this.verifiedLandmarks.size()];
+			for (LGGNode node : this.verifiedLandmarks) {
+				ArrayList<String> data = node.getValue();
+				for (int i=1; i<path.size(); i++) {
+					int count = 0;
+					for (String item : data) {
+						if(listContainsState(path.get(i).getStates(), item)){
+							count++;
+						}
+					}
+					if(count==data.size()){
+						lmcounter[currentLM] = 1;
 					}
 				}
-				if(count==data.size()){
-					lmcounter[currentLM] = 1;
+			}
+
+			currentLM++;
+			for (int item : lmcounter) {
+				if(item==1){
+					remainingLm++;
 				}
 			}
-			currentLM++;
+			lmrem[current++] = remainingLm;
 		}
-		for (int item : lmcounter) {
-			if(item==1){
-				remainingLm++;
-			}
+		int median = 0;
+		Arrays.sort(lmrem);
+		if(lmrem.length%2 == 0) {//even number of elements. sum the two mid points and divide by 2
+			median = (lmrem[lmrem.length/2] + lmrem[lmrem.length/2 - 1])/2;
+		}else { //odd number of elements. return value at mid point
+			median = lmrem[(int)Math.floor(lmrem.length/2)];
 		}
-		return remainingLm;
+		return median;
 	}
 
-	//what percetage of landmarks does the root contain?
+	//what percetage of active landmarks does the root contain?
 	public double percentOfLandmarksStateContain() {
 		StateVertex root = attackerState.getRoot();
 		int count = 0;

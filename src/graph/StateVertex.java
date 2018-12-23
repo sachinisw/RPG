@@ -95,7 +95,8 @@ public class StateVertex implements Comparable<StateVertex>{
 	}
 
 	//used in blocks domain, check if astate[] partially contains required[] 
-	//e.g. attacker goal (SOY) user wants (JOY) with blocks JOYS. partial state matching will make SJOY, JSOY, SOJY  all valid
+	//e.g. attacker goal (SOY) user wants (JOY) with blocks JOYS. partial state matching will make SJOY, JSOY, JOSY, JOYS all candidates. 
+	//Only JSOY will need intervention, attacker succeeds before user finishes spelling JOY
 	public boolean containsPartialStateBlockWords(ArrayList<String> requiredword){
 		return matchPartialBlocks(this.getStates(), requiredword);
 	}
@@ -170,6 +171,22 @@ public class StateVertex implements Comparable<StateVertex>{
 		return false;
 	}
 
+	public boolean isWordConsecutive(ArrayList<String> requiredword) {
+		LinkedList<String> cur = getSpelledWord(this.getStates());
+		LinkedList<String> req = getSpelledWord(requiredword);
+		String curword = "", reqword = "";
+		if(!cur.isEmpty()) {
+			for (String s : req) {
+				reqword+=s;
+			}
+			for (String s : cur) {
+				curword+=s;
+			}
+			return curword.contains(reqword);
+		}
+		return false;
+	}
+	
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}

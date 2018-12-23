@@ -17,17 +17,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 public class Preprocessor {
-	private String datafilePath;
 	private static final Logger LOGGER = Logger.getLogger(Preprocessor.class.getName());
 
-	public Preprocessor(String path){
-		this.datafilePath = path;
-	}
-
-	public ArrayList<String> getDataFiles(){		
+	public ArrayList<String> getDataFiles(String filedir){		
 		ArrayList<String> dataFilePaths = new ArrayList<String>(); 
 		try {
-			File dir = new File(this.datafilePath);
+			File dir = new File(filedir);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
 				dataFilePaths.add(fileItem.getCanonicalPath());
@@ -153,28 +148,61 @@ public class Preprocessor {
 		return bins;
 	}
 
-	public String getDatafilePath() {
-		return datafilePath;
-	}
-
-	public void setDatafilePath(String datafilePath) {
-		this.datafilePath = datafilePath;
-	}
-
-	public static void preprocessTrainingData(String inputfilepath, String out, String outFull) {
-		Preprocessor pre = new Preprocessor(inputfilepath);
-		ArrayList<DataFile> dataFile = pre.readDataFiles(pre.getDataFiles());
-		double [] minmax = pre.findObjectiveFunctionValueMinMax(dataFile);
-		ArrayList<DataFile> binned = pre.preprocess(dataFile);
+	public ArrayList<DataFile> preprocessTrainingData(String datadir, String out, String outFull) {
+		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir));
+		double [] minmax = findObjectiveFunctionValueMinMax(dataFile);
+		ArrayList<DataFile> binned = preprocess(dataFile);
 		for (DataFile outfile : binned) {
-			pre.writeToFile(out, outfile, minmax);
+			writeToFile(out, outfile, minmax);
 		}
-		pre.writeToFileFull(outFull, binned, minmax);//put all in one file.
+		writeToFileFull(outFull, binned, minmax);//put all in one file.
+		return binned;
 	}
 
-	public static ArrayList<DataFile> preprocessTestingData(String inputfilepath, String out, String outFull, int testtype) {
-		Preprocessor pre = new Preprocessor(inputfilepath);
-		ArrayList<DataFile> dataFile = pre.readDataFiles(pre.getDataFiles());
+	//aggeregate data with only ob R D dCri dDes remLM hasLM Label
+	//PICK-UP R	0.33,0.04,0.08,1.29,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,11,0.36,N
+	public void aggregateTrainingData(String inroot, String aggfile, int cases, String outpath) {
+		ArrayList<String> lines = new ArrayList<>();
+		String header = "";
+		PrintWriter writer = null;
+		for(int i=0; i<cases; i++) {
+			String infile = inroot+i+aggfile;
+			try {
+				Scanner scanner = new Scanner (new File(infile));
+				if(i==0) {
+					String s[] = scanner.nextLine().split(",");
+					header = s[0]+","+s[2]+","+s[3]+","+s[s.length-5]+","+s[s.length-4]
+							+","+s[s.length-3]+","+s[s.length-2]+","+s[s.length-1]; //read header once
+				}else {
+					scanner.nextLine();//lose the header
+				}
+				while(scanner.hasNextLine()){
+					String t [] = scanner.nextLine().split(",");
+					String line = t[0]+","+t[2]+","+t[3]+","+t[t.length-5]+","+t[t.length-4]
+									+","+t[t.length-3]+","+t[t.length-2]+","+t[t.length-1];
+					lines.add(line);
+				}
+				scanner.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			writer = new PrintWriter(outpath, "UTF-8");
+			writer.write(header+"\n");
+			for (String l : lines) {
+				writer.write(l);
+				writer.write("\n");
+			}
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} finally{
+			writer.close();
+		}
+	}
+	
+	public ArrayList<DataFile> preprocessTestingData(String datadir, String out, String outFull, int testtype) {
+		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir));
 		ArrayList<DataFile> cleaned = new ArrayList<DataFile>();
 		ArrayList<DataFile> binned = null;
 		if(testtype==1) {//full trace
@@ -192,12 +220,12 @@ public class Preprocessor {
 				}
 			}
 		}
-		double [] minmax = pre.findObjectiveFunctionValueMinMax(cleaned);
-		binned = pre.preprocess(cleaned);
+		double [] minmax = findObjectiveFunctionValueMinMax(cleaned);
+		binned = preprocess(cleaned);
 		for (DataFile outfile : binned) {
-			pre.writeToFile(out, outfile, minmax);
+			writeToFile(out, outfile, minmax);
 		}
-		pre.writeToFileFull(outFull, binned, minmax);//put all in one file.
+		writeToFileFull(outFull, binned, minmax);//put all in one file.
 		return binned;
 	}
 
@@ -231,17 +259,25 @@ public class Preprocessor {
 	//Creates input.csv for the decision tree
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
-		int scenario = 1;
-		int mode = 1; //0-train, 1-test TODO: CHANGE HERE FIRST
+		int scenario = 0, cases = 20;
+		int mode = 0; //0-train, 1-test TODO: CHANGE HERE FIRST
 		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 2;
 		int casePerInstance = 20;
-		if(mode==0) {
-			LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode");
-			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
-			String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
-			String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
-			preprocessTrainingData(inputfilepath, out, outFull);
+		Preprocessor pre = new Preprocessor();
+		if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
+			for(int currentCase=0; currentCase<cases; currentCase++) {
+				LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode: CASE = "+ currentCase);
+				String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
+				String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+				String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
+				pre.preprocessTrainingData(inputfilepath, out, outFull);
+//				break;
+			}
+			String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+			String aggfile = "/data/inputdecisiontree/full.csv";
+			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
+			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode");
 			for (int instance = 2; instance <= instances; instance++) {
@@ -256,8 +292,8 @@ public class Preprocessor {
 					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
 					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
 					String outFull_lm = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_lm.csv";
-					ArrayList<DataFile> df = preprocessTestingData(inputfilepath, out, outFull, 1);
-					ArrayList<DataFile> dlm = preprocessTestingData(inputfilepath, out, outFull_lm, 2);
+					ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1);
+					ArrayList<DataFile> dlm = pre.preprocessTestingData(inputfilepath, out, outFull_lm, 2);
 					inst_full.add(df);
 					inst_lm.add(dlm);
 				}

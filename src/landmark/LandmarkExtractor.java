@@ -31,40 +31,40 @@ public class LandmarkExtractor {
 		lgg.addLGGNode(goalpredicates);
 		while(!lmCandidates.isEmpty()){
 			TreeSet<String> cprime = new TreeSet<String>();
-//						System.err.println("LMCANDIDATES=="+ Arrays.toString(lmCandidates.toArray()));
+															//						System.err.println("LMCANDIDATES=="+ Arrays.toString(lmCandidates.toArray()));
 			for (String lprime : lmCandidates) {
 				int level = RPG.getLevelofEffect(lprime);
-//								System.err.println("---------------------current candidate---->"+ lprime + " level------ "+level);
+															//								System.err.println("---------------------current candidate---->"+ lprime + " level------ "+level);
 				if(level>0){
 					//level-1 doesn't produce proved landmarks. if this condition is ignored then the resulting LGG contains only (greedy) necessary landmarks.
 					//to find greedy necessary, find the action that adds the predicate earliest in the graph. not only from the level before.
 					GraphLevel glevel = RPG.getLevel(level-1); 
 					ArrayList<String> acLevelBefore = glevel.getActionLayer();
-//										System.out.println("actions level before ====  "+ Arrays.toString(acLevelBefore.toArray()));
+															//										System.out.println("actions level before ====  "+ Arrays.toString(acLevelBefore.toArray()));
 					TreeSet<String> A = new TreeSet<String>();
 					for (String ac : acLevelBefore) {
 						ArrayList<String> adds = con.findStatesAddedByAction(ac);
-//												System.out.println("ac="+ac + " adds="+Arrays.toString(adds.toArray()));
+															//												System.out.println("ac="+ac + " adds="+Arrays.toString(adds.toArray()));
 						if(listContainsPredicate(adds, lprime)){ //A{} contains actions from level before that adds current landmark
 							A.add(ac);
 						}
 					}
-//										System.out.println("actions adding landmarks=====  "+ Arrays.toString(A.toArray()));
+															//										System.out.println("actions adding landmarks=====  "+ Arrays.toString(A.toArray()));
 					//extract predicates that are preconditions to all actions in A{}
 					//these are fact landmarks
 					TreeSet<String> factlm = extractCommonPreconditions(A);
 					ArrayList<String> lprimedata = new ArrayList<String>();
 					lprimedata.add(lprime);
-//										System.out.println("common preconds =====  "+ Arrays.toString(factlm.toArray()));
-										achievers.put(Arrays.toString(A.toArray()), Arrays.toString(factlm.toArray()));
+															//										System.out.println("common preconds =====  "+ Arrays.toString(factlm.toArray()));
+					achievers.put(Arrays.toString(A.toArray()), Arrays.toString(factlm.toArray()));
 					for (String fact : factlm) {
-//												System.out.println("factlm = "+ fact);
+															//												System.out.println("factlm = "+ fact);
 						ArrayList<String> data = new ArrayList<String>();
 						data.add(fact);
 						if(lgg.findLGGNode(data) == null){
 							cprime.add(fact);
 							lgg.addLGGNode(data);
-//														System.out.println("before\n"+lgg.toString());
+															//														System.out.println("before\n"+lgg.toString());
 						}
 						LGGNode from = new LGGNode(data);
 						LGGNode to = new LGGNode(lprimedata);
@@ -72,14 +72,14 @@ public class LandmarkExtractor {
 							lgg.addEdge(data, lprimedata);//fact -> lprime edge to lgg
 						}
 						
-//														System.out.println("after\n"+lgg.toString());
+															//														System.out.println("after\n"+lgg.toString());
 					}
 				}
 			}
 			lmCandidates.clear();
 			lmCandidates.addAll(cprime);
 		}
-//				System.out.println("final======   \n"+lgg);
+															//				System.out.println("final======   \n"+lgg);
 		return lgg;
 	}
 
@@ -167,7 +167,6 @@ public class LandmarkExtractor {
 				break; //state doesn't change from now to next. stop building here.
 			}
 		}
-		//		System.out.println(lm + "=======================================================>" + temp_rpg.containsGoal(goals));
 		return temp_rpg.containsGoal(goals); //if false, then goal cant be achieved without lm. lm is a verified landmark
 	}
 

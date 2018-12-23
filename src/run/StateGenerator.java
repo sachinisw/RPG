@@ -230,6 +230,8 @@ public class StateGenerator {
 			return stoppableFerry(state, desirableloc);
 		}else if(domain.equalsIgnoreCase("navigator")){  //desirable state position, always top-right
 			return stoppableNavigator(state,x,y);
+		}if(domain.equalsIgnoreCase("sblocks")){//x y not applicable. put -1, -1 where called
+			return stoppableBlocks(state);
 		}
 		return false;
 	}
@@ -352,6 +354,8 @@ public class StateGenerator {
 			}else if(domain.equalsIgnoreCase("ferry")) {
 				HashMap<String, String> des = getDesirableLocationsFerry(ds.getDesirableStatePredicates());
 				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, des);
+			}else if(domain.equalsIgnoreCase("sblocks")) {
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, null);
 			}
 		}
 		graph.markVerticesContainingCriticalState(cs, domain);
@@ -495,7 +499,7 @@ public class StateGenerator {
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
 			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("navigator") 
-					|| domain.equalsIgnoreCase("ferry") ) {//reversible domains. i.e. you can go back to previous state
+					|| domain.equalsIgnoreCase("ferry") || domain.equalsIgnoreCase("sblocks") ) {//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path.
 			}
