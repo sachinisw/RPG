@@ -65,9 +65,8 @@ public class Preprocessor {
 				//README:: change indices here for len-1 if new features are added. Make it (len-x-1)
 				BinnedDataLine bdl = new BinnedDataLine(parts[0], parts[parts.length-1], Double.parseDouble(parts[1]), 
 						Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), 
-						Integer.parseInt(parts[parts.length-5]), Integer.parseInt(parts[parts.length-4]), 
-						Integer.parseInt(parts[parts.length-3]), Double.parseDouble(parts[parts.length-2]), 
-						Double.parseDouble(parts[4]), minmax[0], minmax[1]);
+						Integer.parseInt(parts[5]), Integer.parseInt(parts[6]), 
+						Double.parseDouble(parts[7]), Double.parseDouble(parts[4]), minmax[0], minmax[1]);
 				bdl.assignToBins(Double.parseDouble(parts[4]));
 				binnedFile.getDataline().add(bdl.toString());
 			}
@@ -120,7 +119,7 @@ public class Preprocessor {
 			for (int i=0; i<bins.length-1; i++) {	//write header for bins
 				header += bins[i] + "<=x<"  + bins[i+1]+",";
 			}
-			writer.write(header.substring(0,header.length()-1)+ ",dToCritical" + ",dToDesirable" + ",remainingLandmarks" + ",hasLM" +",Label" +"\n"); //lose the trailing comma and add class label header
+			writer.write(header.substring(0,header.length()-1)+ ",dToCritical" + ",dToDesirable" + ",hasLM" +",Label" +"\n"); //lose the trailing comma and add class label header
 			for (DataFile f : binned) {
 				for (int i=0; i<f.getDataline().size(); i++) {		//write values
 					writer.write(f.getDataline().get(i)+"\n");
@@ -171,15 +170,15 @@ public class Preprocessor {
 				Scanner scanner = new Scanner (new File(infile));
 				if(i==0) {
 					String s[] = scanner.nextLine().split(",");
-					header = s[0]+","+s[2]+","+s[3]+","+s[s.length-5]+","+s[s.length-4]
-							+","+s[s.length-3]+","+s[s.length-2]+","+s[s.length-1]; //read header once
+					header = s[0]+","+s[2]+","+s[3]+","+s[s.length-4]+","+s[s.length-3]
+							+","+s[s.length-2]+","+s[s.length-1]; //read header once
 				}else {
 					scanner.nextLine();//lose the header
 				}
 				while(scanner.hasNextLine()){
 					String t [] = scanner.nextLine().split(",");
-					String line = t[0]+","+t[2]+","+t[3]+","+t[t.length-5]+","+t[t.length-4]
-									+","+t[t.length-3]+","+t[t.length-2]+","+t[t.length-1];
+					String line = t[0]+","+t[2]+","+t[3]+","+t[t.length-4]+","+t[t.length-3]
+							+","+t[t.length-2]+","+t[t.length-1];
 					lines.add(line);
 				}
 				scanner.close();
@@ -200,7 +199,7 @@ public class Preprocessor {
 			writer.close();
 		}
 	}
-	
+
 	public ArrayList<DataFile> preprocessTestingData(String datadir, String out, String outFull, int testtype) {
 		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir));
 		ArrayList<DataFile> cleaned = new ArrayList<DataFile>();
@@ -236,14 +235,14 @@ public class Preprocessor {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(out, "UTF-8");
-			String header = "ob,c,r,d,fo,dToCritical,dToDesirable,remainingLandmarks,hasLM,Label" +"\n";
+			String header = "ob,c,r,d,fo,dToCritical,dToDesirable,hasLM,Label" +"\n";
 			writer.write(header);
 			for (ArrayList<DataFile> curinst : df) {
 				for (DataFile file : curinst) {
 					for (int i=0; i<file.getDataline().size(); i++) {		//write values
 						String parts[] = file.getDataline().get(i).split(",");
 						String values = parts[0]+","+parts[1]+","+parts[2]+","+parts[3]+","+parts[4]+
-								","+parts[parts.length-5]+","+parts[parts.length-4]+","+parts[parts.length-3]+","+parts[parts.length-2]+","+parts[parts.length-1];
+								","+parts[parts.length-4]+","+parts[parts.length-3]+","+parts[parts.length-2]+","+parts[parts.length-1];
 						writer.write(values+"\n");
 					}
 				}
@@ -260,19 +259,28 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
-		int mode = 0; //0-train, 1-test TODO: CHANGE HERE FIRST
+		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
 		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
-		int instances  = 2;
+		int instances  = 3;
 		int casePerInstance = 20;
 		Preprocessor pre = new Preprocessor();
-		if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
+		if(mode==-1) {
+			LOGGER.log(Level.CONFIG, "Preprocessing for DEBUG mode");
+			String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
+			String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
+			pre.preprocessTrainingData(inputfilepath, out, outFull);
+			String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
+			String aggfile = "/data/inputdecisiontree/full.csv";
+			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/aggregate.csv";
+			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
+		}else if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
 			for(int currentCase=0; currentCase<cases; currentCase++) {
 				LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode: CASE = "+ currentCase);
 				String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
 				String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
 				String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
 				pre.preprocessTrainingData(inputfilepath, out, outFull);
-//				break;
 			}
 			String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
 			String aggfile = "/data/inputdecisiontree/full.csv";
@@ -280,7 +288,7 @@ public class Preprocessor {
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode");
-			for (int instance = 2; instance <= instances; instance++) {
+			for (int instance = 1; instance <= instances; instance++) {
 				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
 				String instout_lm=prefix+String.valueOf(instance)+"/data/instlm.csv";

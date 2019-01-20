@@ -3,7 +3,7 @@ package run;
 public class DebugConfigs {
 	public static final int scenario = 0;
 	public static final int runmode = -1;
-	public static final boolean writeDOT = false;
+	public static final boolean writeDOT = true;
 	public static final String domain = "BLOCKS"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
 	public static final String root = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
 	public static final String obsdir = "/obs/";

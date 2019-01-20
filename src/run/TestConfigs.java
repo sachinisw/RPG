@@ -2,14 +2,14 @@ package run;
 
 public class TestConfigs {
 	public static final int runmode = 1; 
-	public static final int trainedscenario = 1;
+	public static final int trainedscenario = 0;
 	public static final int instances = 2; //which test instance is it?
 	public static final int instanceCases = 20;
 	public static final boolean writeDOT = false;
 	public static final String domain = "BLOCKS"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
-	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
-	public final static String instancedir="inst";
-	public final static String instscenario="/scenarios/";
+	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
+	public static final String instancedir="inst";
+	public static final String instscenario="/scenarios/";
 	public static String observationFiles = "/obs/";  
 	public static String observationLMFiles = "/obslm/";
 	public static String domainFile = "/domain.pddl";

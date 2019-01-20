@@ -547,7 +547,7 @@ public class StateGraph {
 		if(domain.equalsIgnoreCase("BLOCKS")) {
 			while(itr.hasNext()){
 				StateVertex v = itr.next().getValue();
-				if(v.containsPartialStateBlockWords(critical.getCriticalStatePredicates())){
+				if(v.containsPartialStateBlockWords(critical.getCriticalStatePredicates(), true)){
 					v.setaPartialCriticalState(true);
 				}
 			}
@@ -566,7 +566,7 @@ public class StateGraph {
 		if(domain.equalsIgnoreCase("BLOCKS")) {
 			while(itr.hasNext()){
 				StateVertex v = itr.next().getValue();
-				if(v.containsPartialStateBlockWords(desirable.getDesirableStatePredicates())){
+				if(v.containsPartialStateBlockWords(desirable.getDesirableStatePredicates(), false)){
 					v.setaPartialDesirableState(true);
 				}
 			}
@@ -610,7 +610,7 @@ public class StateGraph {
 		if(domain.equalsIgnoreCase("blocks")) {
 			for (StateVertex v : vertices.values()) {
 //				System.out.println("checking-----------------"+v);
-				if(adjacencyList.get(v).size()==0 && v.containsPartialStateBlockWords(desirablestate)){
+				if(adjacencyList.get(v).size()==0 && v.containsPartialStateBlockWords(desirablestate, false)){
 //					System.out.println("picked>>>>>>>>>>>>>>>"+v);
 					desirableleaves.add(v);
 				}
@@ -673,7 +673,7 @@ public class StateGraph {
 			for (ArrayList<StateVertex> path : allpathsfromroot) { //find any node in the path that contains the critical state. E.g. critical = BAD. BARD and BRAD will equally qualify
 				boolean found = false;
 				for (StateVertex stateVertex : path) {
-					if(stateVertex.containsPartialStateBlockWords((critical.getCriticalStatePredicates()))){
+					if(stateVertex.containsPartialStateBlockWords(critical.getCriticalStatePredicates(), true)){
 						found = true;
 					}
 				}

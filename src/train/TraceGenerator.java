@@ -63,13 +63,13 @@ public class TraceGenerator {
 			ArrayList<StateVertex> path = likelypaths.get(i);
 			ArrayList<String> trc = new ArrayList<String>();
 			if(domain.equalsIgnoreCase("blocks")) { //active attacker e.g. block-words
-				if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates())) {
-					if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates())) { 
+				if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates(), false)) {
+					if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates(), true)) { 
 						//this good path will also trigger bad state.
 						for(int j=0; j<path.size()-1; j++){
 							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(path.get(j), path.get(j+1));
 							for (ActionEdge actionEdge : actions) {
-								if(actionEdge.getTo().containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates())) {
+								if(actionEdge.getTo().containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates(), true)) {
 									if(actionEdge.getTo().isWordConsecutive(decider.getCritical().getCriticalStatePredicates())) { 	//and when critical is spelled it's adjacent
 										trc.add("Y:"+actionEdge.getAction());
 									}else {

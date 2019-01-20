@@ -2,7 +2,6 @@ package actors;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.TreeSet;
 
 import con.ConnectivityGraph;
@@ -55,15 +54,21 @@ public class Decider extends Agent{
 		this.attackerState = g;
 	}
 
-	public double[] computeMetrics() {
-		setUndesirableState();
-		setDesirableState();
+	public double[] computeProbabilityFeatures(ArrayList<ArrayList<StateVertex>> dpaths) {
 		double c = computeCertaintyMetric();
-		double [] prob = computeProbabilityMetrics();
+		double [] prob = computeRiskDesirability(dpaths);
 		return new double[]{c,prob[0],prob[1]}; 
 	}
 
-	//1/11/18 disabling this for now. Since the current state(root) is based on my ability to know for sure the current state, there is no uncertainty in the system.
+	public ArrayList<ArrayList<StateVertex>> getPathsLeadingToDesirable(){
+		setUndesirableState();
+		setDesirableState();
+		return attackerState.getLikelyPathsForUser(attackerState.getDesirable().getDesirableStatePredicates(), domain);
+	}
+
+	//1/11/18 disabling this for now. 
+	////Since the current state(root) is based on my ability to know for sure the current state, there is no uncertainty in the system.
+	////we have sort of captured that with the uniform probability distributions for risk and desirability
 	private double computeCertaintyMetric(){  
 		StateVertex attakerRoot = this.attackerState.getRoot();
 		TreeSet<StateVertex> rootNeighbors = this.attackerState.getAdjacencyList().get(attakerRoot);
@@ -75,216 +80,328 @@ public class Decider extends Agent{
 		}
 	}
 
-	private double[] computeRiskDesirabilityForBlockWords() {
+	//computes risk and desirability together
+	private double [] computeRiskDesirability(ArrayList<ArrayList<StateVertex>> dpth) {
+		double[] m = new double[2]; //[risk, desirability]
+		if(domain.equalsIgnoreCase("BLOCKS")){ //needs full and partial state matches
+			m = computeRiskDesirabilityForActiveAttacker(dpth);
+		}else { //by BFS on graph once
+			m = computeRiskDesirabilityForPassiveAttacker(dpth);
+		}
+		return m;
+	}
+
+	private double[] computeRiskDesirabilityForActiveAttacker(ArrayList<ArrayList<StateVertex>> likelypaths) {
 		ArrayList<ArrayList<StateVertex>> pathsmatchingcritical = new ArrayList<>();
-		ArrayList<ArrayList<StateVertex>> pathsmatchingdesirable = new ArrayList<>();
-		double maxr = 0.0, maxd = 0.0;
-		ArrayList<ArrayList<StateVertex>> allpathsfromroot = attackerState.getAllPathsFromRoot();
-		for (ArrayList<StateVertex> path : allpathsfromroot) {
+		for (ArrayList<StateVertex> path : likelypaths) { //separate paths that reach the critical state while getting to desirable state
 			StateVertex leaf = path.get(path.size()-1);
-			if(leaf.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates())){
+			if(leaf.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
 				pathsmatchingcritical.add(path);
-			}else if(leaf.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates())){
-				pathsmatchingdesirable.add(path);
 			}
-		}//now has all paths that end with fully or partially match the critical state and desirable state
+		}
+		double[] maxriskforeachpath = new double[pathsmatchingcritical.size()];
+		int indexR = 0;
 		for (ArrayList<StateVertex> path : pathsmatchingcritical) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
+			double maxr = 0.0;
 			for (StateVertex node : path) {
-				if(node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates())) {
+				if(node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)) {
 					if(node.getStateProbability()>maxr) {
 						maxr = node.getStateProbability();
 					}
 				}
 			}
+			maxriskforeachpath[indexR++]=maxr;
 		}
-		for (ArrayList<StateVertex> path : pathsmatchingdesirable) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
+		double[] maxdesirabilityforeachpath = new double[likelypaths.size()];
+		int indexD = 0;
+		for (ArrayList<StateVertex> path : likelypaths) { //all likelypaths will have desirable state. get the ones that does not have undesirable state
+			double maxd = 0.0;
+//			System.out.println(path);
 			for (StateVertex node : path) {
-				if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates())) {
-					if(node.getStateProbability()>maxd) {
-						maxd = node.getStateProbability();
+				if(!node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)) {
+					maxd=-1.0;
+					if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates(), false)) {
+						if(node.getStateProbability()>maxd) {
+							maxd = node.getStateProbability();
+						}
 					}
 				}
 			}
+			maxdesirabilityforeachpath[indexD++] = maxd;
 		}
-		return new double [] {maxr, maxd};
-	}
-	//computes risk and desirability together
-	private double [] computeProbabilityMetrics() {
-		double[] m = new double[2]; //[risk, desirability]
-		if(domain.equalsIgnoreCase("BLOCKS")){ //needs full and partial state matches
-			m = computeRiskDesirabilityForBlockWords();
-		}else { //by BFS on graph once
-			ArrayList<StateVertex> visitOrder = attackerState.doBFSForStateTree(attackerState.getRoot());	
-			for (StateVertex stateVertex : visitOrder) {
-				if(stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
-					m[0] = stateVertex.getStateProbability(); //give me the first one. Doing BFS the first occurrence gives the highest probability for risk. i want the first instance where attack is generated.
-					break;
-				}
-			}
-			for (StateVertex stateVertex : visitOrder) {
-				if(stateVertex.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
-					m[1] = stateVertex.getStateProbability(); //give me the first one. This node has the highest probability for desirabilitys
-					break;
-				}
+//		System.out.println("Risk arr=  "+ Arrays.toString(maxriskforeachpath));
+//		System.out.println("Desi arr=  "+ Arrays.toString(maxdesirabilityforeachpath));
+		//return sum of probability / size of likelipaths 
+		double sumR = 0.0, sumD = 0.0;
+		for (double d : maxdesirabilityforeachpath) {
+			if(d>0) {
+				sumD += d;
 			}
 		}
-		return m;
+		for (double d : maxriskforeachpath) {
+			sumR += d;
+		}
+		if(sumR==0.0 && sumD==0.0) {
+			return new double [] {0.0, 0.0};
+		}else if(sumR>0.0 && sumD==0.0) {
+			return new double [] {sumR/(double)pathsmatchingcritical.size(), 0.0};
+		}else if(sumR==0.0 && sumD>0.0){
+			return new double [] {0.0, sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+		}else {
+			return new double [] {sumR/(double)pathsmatchingcritical.size(), sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+		}
 	}
 
-	public int [] computeDistanceMetrics(String domain) {
-		int d[] = new int[2];
-		ArrayList<ArrayList<StateVertex>> dfsPaths = attackerState.getAllPathsFromRoot();
-		if(domain.equalsIgnoreCase("BLOCKS")) { //allows state to be matched partially
-			d[0] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, critical.getCriticalStatePredicates());
-			d[1] = getDistanceToStateFromRootWithPartialMatches(dfsPaths, desirable.getDesirableStatePredicates());
+	public double[] computeRiskDesirabilityForPassiveAttacker(ArrayList<ArrayList<StateVertex>> likelypaths) {
+		ArrayList<ArrayList<StateVertex>> pathsmatchingcritical = new ArrayList<>();
+		for (ArrayList<StateVertex> path : likelypaths) { //separate paths that reach the critical state while getting to desirable state 
+			StateVertex leaf = path.get(path.size()-1);
+			if(leaf.containsState(attackerState.getCritical().getCriticalStatePredicates())){
+				pathsmatchingcritical.add(path);
+			}
+		}
+		double[] maxriskforeachpath = new double[pathsmatchingcritical.size()];
+		int indexR = 0;
+		for (ArrayList<StateVertex> path : pathsmatchingcritical) { //in paths triggering critical state, find the node that first goes into critical state. find the max risk across paths.
+			double maxr = 0.0;
+			for (StateVertex node : path) {
+				if(node.containsState(attackerState.getCritical().getCriticalStatePredicates())) {
+					if(node.getStateProbability()>maxr) {
+						maxr = node.getStateProbability();
+					}
+				}
+			}
+			maxriskforeachpath[indexR++]=maxr;
+		}
+		double[] maxdesirabilityforeachpath = new double[likelypaths.size()];
+		int indexD = 0;
+		for (ArrayList<StateVertex> path : likelypaths) { //all likelypaths will have desirable state. Don't count the ones that has undesirable state
+			double maxd = 0.0;
+			for (StateVertex node : path) {
+				if(!node.containsState(attackerState.getCritical().getCriticalStatePredicates())) {
+					maxd=-1.0;
+					if(node.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
+						if(node.getStateProbability()>maxd) {
+							maxd = node.getStateProbability();
+						}
+					}
+				}
+			}
+			maxdesirabilityforeachpath[indexD++] = maxd;
+		}
+		//return the normalized probability (sum of maxr and maxd) / |likelypaths|
+		double sumR = 0.0, sumD = 0.0;
+		for (double d : maxdesirabilityforeachpath) {
+			if(d>0) {
+				sumD += d;
+			}
+		}
+		for (double d : maxriskforeachpath) {
+			sumR += d;
+		}
+		if(sumR==0.0 && sumD==0.0) {
+			return new double [] {0.0, 0.0};
+		}else if(sumR>0.0 && sumD==0.0) {
+			return new double [] {sumR/(double)pathsmatchingcritical.size(), 0.0};
+		}else if(sumR==0.0 && sumD>0.0){
+			return new double [] {0.0, sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
 		}else {
-			d[0] = getDistanceToStateFromRoot(dfsPaths, critical.getCriticalStatePredicates());
-			d[1] = getDistanceToStateFromRoot(dfsPaths, desirable.getDesirableStatePredicates());
+			return new double [] {sumR/(double)pathsmatchingcritical.size(), sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+		}
+	}
+
+	public int [] computeDistanceFeatures(ArrayList<ArrayList<StateVertex>> likelypaths) {
+		int d[] = new int[2]; //[dist to critical, dist to desirable]
+		if(domain.equalsIgnoreCase("BLOCKS")) { //allows state to be matched partially
+			d[0] = getDistanceToCriticalForActiveAttacker(likelypaths);
+			d[1] = getDistanceToDesirableForActiveAttacker(likelypaths);
+		}else {
+			d[0] = getDistanceToDesirableForPassiveAttacker(likelypaths);
+			d[1] = getDistanceToDesirableForPassiveAttacker(likelypaths);
 		}
 		return d;
 	}
 
-	public int getDistanceToStateFromRootWithPartialMatches(ArrayList<ArrayList<StateVertex>> alldfs, ArrayList<String> state){ 
-		ArrayList<ArrayList<StateVertex>> necessaryPaths = new ArrayList<ArrayList<StateVertex>>(); 
-		//there could be 1 or more critical paths. take the min. i.e. the earliest the critical state can happen
-		for (ArrayList<StateVertex> path : alldfs) {
+	//from likelypaths that take the user to desirable state, filter out instances where attacker wins. 
+	//count distance to first occurrence of critical state for each path. return mean
+	public int getDistanceToCriticalForActiveAttacker(ArrayList<ArrayList<StateVertex>> alllikely){ 
+		ArrayList<ArrayList<StateVertex>> criticalpaths = new ArrayList<ArrayList<StateVertex>>(); 
+		int cpathcount = 0;
+		for (ArrayList<StateVertex> path : alllikely) {
 			boolean found = false;
 			for (StateVertex stateVertex : path) {
-				if(stateVertex.containsPartialStateBlockWords(state)){
+				if(stateVertex.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
 					found = true;
 				}
 			}
 			if (found){
-				necessaryPaths.add(path);
+				criticalpaths.add(path);
+				cpathcount++;
 			}
 		}
-		int lens [] = new int [necessaryPaths.size()];
+		int cLen [] = new int [cpathcount]; //there could be multiple paths that has the critical state
 		int index = 0;
-		for (ArrayList<StateVertex> arrayList : necessaryPaths) {
+		for (ArrayList<StateVertex> currentpath : criticalpaths) {
 			int length = 0;
-			for (StateVertex stateVertex : arrayList) {
+			for (StateVertex stateVertex : currentpath) {
 				length++;
-				if(stateVertex.containsPartialStateBlockWords(state)){
-					length-=1;//count edges until first occurrence.
+				if(stateVertex.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
+					length-=1;//count edges until first occurrence of state.
+					break;
 				}
 			}
-			lens[index++]=length;
+			cLen[index++]=length;
 		}
-		if(lens.length>0){
-			int min = lens[0];
-			for (int x=1; x<lens.length; x++) {
-				if(min>lens[x]){
-					min=lens[x];
-				}
+//		System.out.println("disttocri="+Arrays.toString(cLen));
+		if(cpathcount>0){
+			int sum = 0;
+			for (int i : cLen) {
+				sum+=i;
 			}
-			return min;
+			return (int) (Math.ceil((double)sum/(double)cLen.length)); 		//compute the mean distance across lens and return.
 		}
-		return 0; //there are no critical paths. 1 node graph
+		return -1; //there are no critical paths. 1 node graph
 	}
 
-	//number of steps from root (current state) to specified state state. If undesirable state occur multiple times, take the min distance
-	public int getDistanceToStateFromRoot(ArrayList<ArrayList<StateVertex>> alldfs, ArrayList<String> state){ 
-		ArrayList<ArrayList<StateVertex>> necessaryPaths = new ArrayList<ArrayList<StateVertex>>(); //there could be 1 or more critical paths. take the min.
-		for (ArrayList<StateVertex> path : alldfs) {
+	public int getDistanceToDesirableForActiveAttacker(ArrayList<ArrayList<StateVertex>> alllikely){ 
+		ArrayList<ArrayList<StateVertex>> trulydesirablepaths = new ArrayList<ArrayList<StateVertex>>(); 
+		for (ArrayList<StateVertex> path : alllikely) {
 			boolean found = false;
 			for (StateVertex stateVertex : path) {
-				if(stateVertex.containsState(state)){
+				if(!stateVertex.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
+					if(stateVertex.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates(), false)){
+						found = true;
+					}
+				}
+			}
+			if (found){
+				trulydesirablepaths.add(path);
+			}
+		}
+		int dlens [] = new int [trulydesirablepaths.size()]; //there could be multiple paths that has the state
+		int index = 0;
+		for (ArrayList<StateVertex> arrayList : trulydesirablepaths) {
+			int length = 0;
+			for (StateVertex stateVertex : arrayList) {
+				length++;
+				if(stateVertex.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates(), false)){
+					length-=1;//count edges until first occurrence of state.
+					break;
+				}
+			}
+			dlens[index++]=length;
+		}
+//		System.out.println("disttodes="+Arrays.toString(dlens));
+		if(dlens.length>0){
+			int sum = 0;
+			for (int i : dlens) {
+				sum+=i;
+			}
+//			System.out.println(sum+"===="+Math.ceil((double)sum/(double)dlens.length)+" len--"+dlens.length);
+			return (int) (Math.ceil((double)sum/(double)dlens.length)); 		//compute the mean distance across lens and return.
+		}
+		return -1; //there are no critical paths. 1 node graph
+	}
+
+	public int getDistanceToCriticalForPassiveAttacker(ArrayList<ArrayList<StateVertex>> alllikely){ 
+		ArrayList<ArrayList<StateVertex>> criticalpaths = new ArrayList<ArrayList<StateVertex>>(); 
+		int cpathcount = 0;
+		for (ArrayList<StateVertex> path : alllikely) {
+			boolean found = false;
+			for (StateVertex stateVertex : path) {
+				if(stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
 					found = true;
 				}
 			}
 			if (found){
-				necessaryPaths.add(path);
+				criticalpaths.add(path);
+				cpathcount++;
 			}
 		}
-		int lens [] = new int [necessaryPaths.size()];
+		int cLen [] = new int [cpathcount]; //there could be multiple paths that has the critical state
 		int index = 0;
-		for (ArrayList<StateVertex> arrayList : necessaryPaths) {
+		for (ArrayList<StateVertex> currentpath : criticalpaths) {
+			int length = 0;
+			for (StateVertex stateVertex : currentpath) {
+				length++;
+				if(stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
+					length-=1;//count edges until first occurrence of state.
+					break;
+				}
+			}
+			cLen[index++]=length;
+		}
+		if(cpathcount>0){
+			int sum = 0;
+			for (int i : cLen) {
+				sum+=i;
+			}
+			return (int) (Math.ceil((double)sum/(double)cLen.length)); 		//compute the mean distance across lens and return.
+		}
+		return -1; //there are no critical paths. 1 node graph
+	}
+
+	public int getDistanceToDesirableForPassiveAttacker(ArrayList<ArrayList<StateVertex>> alllikely){ 
+		ArrayList<ArrayList<StateVertex>> trulydesirablepaths = new ArrayList<ArrayList<StateVertex>>(); 
+		for (ArrayList<StateVertex> path : alllikely) {
+			boolean found = false;
+			for (StateVertex stateVertex : path) {
+				if(!stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
+					if(stateVertex.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
+						found = true;
+					}
+				}
+			}
+			if (found){
+				trulydesirablepaths.add(path);
+			}
+		}
+		int dlens [] = new int [trulydesirablepaths.size()]; //there could be multiple paths that has the state
+		int index = 0;
+		for (ArrayList<StateVertex> arrayList : trulydesirablepaths) {
 			int length = 0;
 			for (StateVertex stateVertex : arrayList) {
 				length++;
-				if(stateVertex.containsState(state)){
-					length-=1;//count edges until first occurrence.
+				if(stateVertex.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
+					length-=1;//count edges until first occurrence of state.
+					break;
 				}
 			}
-			lens[index++]=length;
+			dlens[index++]=length;
 		}
-		if(lens.length>0){
-			int min = lens[0];
-			for (int x=1; x<lens.length; x++) {
-				if(min>lens[x]){
-					min=lens[x];
-				}
+		if(dlens.length>0){
+			int sum = 0;
+			for (int i : dlens) {
+				sum+=i;
 			}
-			return min;
+			return (int) (Math.ceil((double)sum/(double)dlens.length)); 		//compute the mean distance across lens and return.
 		}
-		return 0; //there are no critical paths. 1 node graph
+		return -1; //there are no critical paths. 1 node graph
 	}
 
 	//README: Call this method first before metric computation is called.
-	public void setVerifiedLandmarks(RelaxedPlanningGraph at, ConnectivityGraph con, String lmoutput){
+	public void generateVerifiedLandmarks(RelaxedPlanningGraph at, ConnectivityGraph con, String lmoutput){
 		LandmarkExtractor lm = new LandmarkExtractor(at, con);
 		LGG lgg = lm.extractLandmarks(critical.getCriticalStatePredicates());
 		this.verifiedLandmarks = lm.verifyLandmarks(lgg, critical.getCriticalStatePredicates(), getInitialState().getState(), lmoutput);
 	}
 
-	//For each candidate desirable state, extract paths from current state (root)
-	//For each desirable path, compute remaining landmarks that should be achieved to reach the goal. Take the median as the feature value. 
-	//This shows, from remaining paths, which one will easily trigger the undesirable state.
-	public int countRemainingLandmarks(){
-		ArrayList<ArrayList<StateVertex>> likelypaths = attackerState.getLikelyPathsForUser(desirable.getDesirableStatePredicates(), domain);
-		int[] lmrem = new int [likelypaths.size()];
-		for (ArrayList<StateVertex> path : likelypaths) {
-			int currentLM = 0;
-			int remainingLm = 0;
-			int current = 0;
-			int[] lmcounter = new int[this.verifiedLandmarks.size()];
-			for (LGGNode node : this.verifiedLandmarks) {
-				ArrayList<String> data = node.getValue();
-				for (int i=1; i<path.size(); i++) {
-					int count = 0;
-					for (String item : data) {
-						if(listContainsState(path.get(i).getStates(), item)){
-							count++;
-						}
-					}
-					if(count==data.size()){
-						lmcounter[currentLM] = 1;
-					}
-				}
-			}
-
-			currentLM++;
-			for (int item : lmcounter) {
-				if(item==1){
-					remainingLm++;
-				}
-			}
-			lmrem[current++] = remainingLm;
-		}
-		int median = 0;
-		Arrays.sort(lmrem);
-		if(lmrem.length%2 == 0) {//even number of elements. sum the two mid points and divide by 2
-			median = (lmrem[lmrem.length/2] + lmrem[lmrem.length/2 - 1])/2;
-		}else { //odd number of elements. return value at mid point
-			median = lmrem[(int)Math.floor(lmrem.length/2)];
-		}
-		return median;
-	}
-
 	//what percetage of active landmarks does the root contain?
-	public double percentOfLandmarksStateContain() {
+	public double computePrecentActiveAttackLm() {
 		StateVertex root = attackerState.getRoot();
 		int count = 0;
 		for (String st : root.getStates()) {
 			for (LGGNode node : this.verifiedLandmarks) {
 				ArrayList<String> nodestate = node.getValue();
 				if(listContainsState(nodestate, st)) {	
+//					System.out.println(nodestate);
 					count++;
 				}
 			}
 		}
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
-		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(verifiedLandmarks.size()));
+//		System.out.println("contains="+count + " total="+root.getStates().size());
+		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(root.getStates().size()));
 		return Double.valueOf(format);
 	}
 

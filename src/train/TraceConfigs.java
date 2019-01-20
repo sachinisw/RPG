@@ -7,7 +7,6 @@ public class TraceConfigs {
 	public final static String desirableStateFile = "/desirable.txt"; //attacker and user do not need separate files for desirable states. this is because the state graphs are generated from the observer's (3rd agent) point of view
 	public final static String criticalStateFile = "/critical.txt";
 	public final static String domainFile = "/domain.pddl";
-//	public final static String observationFile = "/obs_blocks.txt";
 	public final static String a_dotFile = "graph_ad_noreverse_";
 	public final static String u_dotFile = "graph_ag_noreverse_";
 	public final static String u_outputPath = "user/"; //each scenario has it's own output directory for rpg, connectivity plan files.

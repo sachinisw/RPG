@@ -38,5 +38,5 @@ public class HarnessConfigs {
 	public final static String tempplan = "temp";
 	public final static int testProblemCount = 20; //blocks(20), easygrid-3x3(20), navigator (20), ferry(20)
 	public final static int testInstanceCount = 3; //blocks(3), easygrid(3), navigator(3), ferry(3)
-	public final static int testInstanceStart = 1; //usually 0. change to inst number if running for one instance at a time.
+	public final static int testInstanceStart = 2; //usually 0. change to inst number if running for one instance at a time.
 }

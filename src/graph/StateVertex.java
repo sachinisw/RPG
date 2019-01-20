@@ -94,11 +94,11 @@ public class StateVertex implements Comparable<StateVertex>{
 		return true;
 	}
 
-	//used in blocks domain, check if astate[] partially contains required[] 
+	//used in blocks domain, check if astate[] partially contains required[] (desirable or critical)
 	//e.g. attacker goal (SOY) user wants (JOY) with blocks JOYS. partial state matching will make SJOY, JSOY, JOSY, JOYS all candidates. 
 	//Only JSOY will need intervention, attacker succeeds before user finishes spelling JOY
-	public boolean containsPartialStateBlockWords(ArrayList<String> requiredword){
-		return matchPartialBlocks(this.getStates(), requiredword);
+	public boolean containsPartialStateBlockWords(ArrayList<String> requiredword, boolean isCritical){
+		return matchPartialBlocks(this.getStates(), requiredword, isCritical);
 	}
 
 	//go to a node check what word it spells. node must contain 1 vertical stack.
@@ -142,9 +142,9 @@ public class StateVertex implements Comparable<StateVertex>{
 
 	//check if cur spells req partially. may need to remove blocks to see if the req word can still be spelled.
 	//req. could be desirable or critical words
-	private boolean matchPartialBlocks(ArrayList<String> curstate, ArrayList<String> requiredword) {
-		LinkedList<String> cur = getSpelledWord(curstate);
-		LinkedList<String> req = getSpelledWord(requiredword);
+	private boolean matchPartialBlocks(ArrayList<String> curstate, ArrayList<String> requiredword, boolean isCritical) {
+		LinkedList<String> cur = getSpelledWord(curstate);//words are spelled correctly. no need to debug here
+		LinkedList<String> req = getSpelledWord(requiredword);//words are spelled correctly. no need to debug here
 		String curword = "", reqword = "", hidden="";
 		if(!cur.isEmpty()) {
 			for (String s : req) {
@@ -156,17 +156,21 @@ public class StateVertex implements Comparable<StateVertex>{
 			if(curword.equalsIgnoreCase(reqword)) {
 				return true;
 			}
-			StringBuilder sb = new StringBuilder(curword); 	//find invisible letter. remove it. see if remainder spells required word
-			for(int i=0; i<curword.length(); i++) {
-				String letter = String.valueOf(curword.charAt(i));
-				if(!reqword.contains(letter)) {
-					hidden=letter;
+			if(!isCritical) { //if tested whether cur spells desirable state, then you can find hidden block this way.
+				StringBuilder sb = new StringBuilder(curword); 	//find invisible letter. remove it. see if remainder spells required word
+				for(int i=0; i<curword.length(); i++) {
+					String letter = String.valueOf(curword.charAt(i));
+					if(!reqword.contains(letter)) {
+						hidden=letter;
+					}
 				}
+				if(hidden.length()>0) {
+					sb.deleteCharAt(curword.indexOf(hidden));
+				}
+				return sb.toString().equalsIgnoreCase(reqword);
+			}else { //if tested whether cur spells critical state, hidden block is in the critical state. 
+				return curword.contains(reqword);
 			}
-			if(hidden.length()>0) {
-				sb.deleteCharAt(curword.indexOf(hidden));
-			}
-			return sb.toString().equalsIgnoreCase(reqword);
 		}	
 		return false;
 	}
@@ -186,7 +190,7 @@ public class StateVertex implements Comparable<StateVertex>{
 		}
 		return false;
 	}
-	
+
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}

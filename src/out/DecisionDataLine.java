@@ -8,8 +8,7 @@ public class DecisionDataLine {
 	private Metrics metrics;
 	private int fDistanceToCriticalState;
 	private int fDistanceToDesirableState;
-	private int fRemainingUndesirableLandmarks;
-	private double fPercentLMIn;
+	private double fPercentActiveALM;
 	public double funcValue;
 	
 	public DecisionDataLine(String o, Metrics m){
@@ -19,8 +18,7 @@ public class DecisionDataLine {
 		funcValue = 0.0;
 		fDistanceToCriticalState = m.getDistanceToCritical();
 		fDistanceToDesirableState = m.getDistanceToDesirable();
-		fRemainingUndesirableLandmarks = m.getRemainingLandmarks();
-		fPercentLMIn = m.getStateContainsLandmark(); 
+		fPercentActiveALM = m.getStateContainsLandmark(); 
 	}
 	
 	public void computeObjectiveFunctionValue(){
@@ -29,7 +27,7 @@ public class DecisionDataLine {
 	
 	public String toString(){ //for current observation return full string of weighted metrics for all weights
 		return observation + "," + metrics.toString() + "," + funcValue + ","
-			+ fDistanceToCriticalState +","+ fDistanceToDesirableState +","+ fRemainingUndesirableLandmarks + "," + fPercentLMIn +
+			+ fDistanceToCriticalState +","+ fDistanceToDesirableState +","+ fPercentActiveALM +
 			","+ classLabel + "\n";
 	}
 	
@@ -72,19 +70,11 @@ public class DecisionDataLine {
 		this.fDistanceToDesirableState = fDistanceToDesirableState;
 	}
 
-	public int getfRemainingUndesirableLandmarks() {
-		return fRemainingUndesirableLandmarks;
-	}
-
-	public void setfRemainingUndesirableLandmarks(int fRemainingUndesirableLandmarks) {
-		this.fRemainingUndesirableLandmarks = fRemainingUndesirableLandmarks;
-	}
-
 	public double isfContainsUndersirableLandmark() {
-		return fPercentLMIn;
+		return fPercentActiveALM;
 	}
 
 	public void setfContainsUndersirableLandmark(double fContainsUndersirableLandmark) {
-		this.fPercentLMIn = fContainsUndersirableLandmark;
+		this.fPercentActiveALM = fContainsUndersirableLandmark;
 	}
 }
