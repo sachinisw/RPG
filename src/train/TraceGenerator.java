@@ -4,7 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,16 +57,15 @@ public class TraceGenerator {
 	public static ArrayList<ArrayList<String>> generateTrace(StateGraph decider, String domain){ 
 		ArrayList<ArrayList<String>> trace = new ArrayList<ArrayList<String>>();
 		ArrayList<ArrayList<StateVertex>> likelypaths = decider.getLikelyPathsForUser(decider.getDesirable().getDesirableStatePredicates(), domain);
-		ArrayList<ArrayList<StateVertex>> undesirable = decider.getUndesirablePaths(likelypaths, domain);
 		for(int i=0; i<likelypaths.size(); i++){
-			ArrayList<StateVertex> path = likelypaths.get(i);
+			ArrayList<StateVertex> likelipath = likelypaths.get(i);
 			ArrayList<String> trc = new ArrayList<String>();
 			if(domain.equalsIgnoreCase("blocks")) { //active attacker e.g. block-words
-				if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates(), false)) {
-					if(path.get(path.size()-1).containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates(), true)) { 
+				if(likelipath.get(likelipath.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates(), false)) {
+					if(likelipath.get(likelipath.size()-1).containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates(), true)) { 
 						//this good path will also trigger bad state.
-						for(int j=0; j<path.size()-1; j++){
-							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(path.get(j), path.get(j+1));
+						for(int j=0; j<likelipath.size()-1; j++){
+							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(likelipath.get(j), likelipath.get(j+1));
 							for (ActionEdge actionEdge : actions) {
 								if(actionEdge.getTo().containsPartialStateBlockWords(decider.getCritical().getCriticalStatePredicates(), true)) {
 									if(actionEdge.getTo().isWordConsecutive(decider.getCritical().getCriticalStatePredicates())) { 	//and when critical is spelled it's adjacent
@@ -81,26 +79,20 @@ public class TraceGenerator {
 							}
 						}
 					}else {	//this is a safe good path. observations need not be flagged. put N
-						for(int j=0; j<path.size()-1; j++){
-							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(path.get(j), path.get(j+1));
+						for(int j=0; j<likelipath.size()-1; j++){
+							ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(likelipath.get(j), likelipath.get(j+1));
 							for (ActionEdge actionEdge : actions) {
 								trc.add("N:"+actionEdge.getAction());
 							}
 						}
 					}
 				}
-			}else {//passive attacker
-				for(int j=0; j<path.size()-1; j++){
-					ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(path.get(j), path.get(j+1));
-					System.out.println("cur action "+j+Arrays.toString(actions.toArray()));
-					for (ActionEdge actionEdge : actions) { //TODO: README > may need to hand label observations. should be able to do it since we have just a few for blockwords
-						if(edgeInUndesirablePath(actionEdge, undesirable)){  //passive attacker
-							//find trouble action. causing critical state. must be flagged //Y for steps until critical state N for steps after critical state
-							if(edgeTriggersCriticalState(actionEdge, decider.getCritical().getCriticalStatePredicates())){ 
-								trc.add("N:"+actionEdge.getAction());
-							}else{
-								trc.add("Y:"+actionEdge.getAction());
-							}
+			}else {//passive attacker e.g. grid-worlds
+				for(int j=0; j<likelipath.size()-1; j++){
+					ArrayList<ActionEdge> actions = decider.findEdgeForStateTransition(likelipath.get(j), likelipath.get(j+1));
+					for (ActionEdge actionEdge : actions) {
+						if(edgeTriggersCriticalState(actionEdge, decider.getCritical().getCriticalStatePredicates())){ 
+							trc.add("Y:"+actionEdge.getAction());
 						}else{
 							trc.add("N:"+actionEdge.getAction());
 						}
@@ -157,7 +149,7 @@ public class TraceGenerator {
 		return false;
 	}
 
-	private static boolean edgeInUndesirablePath(ActionEdge e, ArrayList<ArrayList<StateVertex>> undesirable){
+	public static boolean edgeInUndesirablePath(ActionEdge e, ArrayList<ArrayList<StateVertex>> undesirable){
 		for (ArrayList<StateVertex> undesirablePath : undesirable) {
 			for (StateVertex undesirableState : undesirablePath) {
 				if(e.getTo().isEqual(undesirableState)){
@@ -196,6 +188,7 @@ public class TraceGenerator {
 
 	public static void generateSampleObservationTrace(){
 		//generating trace for a sample intervention problem. For errors and bug fixing
+		LOGGER.log(Level.INFO, "----Generating Debug Observation Trace---");
 		for(int trainInstance=0; trainInstance<=22; trainInstance++){
 			if(trainInstance==0){
 				String domainFile = SampleConfigs.prefix+trainInstance+SampleConfigs.domainFile;
@@ -218,6 +211,7 @@ public class TraceGenerator {
 	}
 
 	public static void generateTrainingObservationTrace() { //generating observations for actual set of training data.
+		LOGGER.log(Level.INFO, "----Generating Observation Traces For Training---");
 		PlanningProblemGenerator.generateProblemsFromTemplate();
 		for(int currentCase=0; currentCase<TraceConfigs.trainingcases; currentCase++) {
 			String domainFile = TraceConfigs.prefix+TraceConfigs.cases+currentCase+TraceConfigs.domainFile;

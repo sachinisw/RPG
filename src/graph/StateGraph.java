@@ -586,45 +586,48 @@ public class StateGraph {
 	 */
 	public ArrayList<ArrayList<StateVertex>> getLikelyPathsForUser(ArrayList<String> desirablestate, String domain){
 		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
-		ArrayList<StateVertex> desirableLeaves = getLeavesWithRequiredDesirableStates(desirablestate, domain);
+		ArrayList<StateVertex> desirablenodes = getNodesContainingDesirableState(desirablestate, domain);
 		ArrayList<ArrayList<StateVertex>> allpaths = getAllPathsFromRoot();
 		for (ArrayList<StateVertex> path : allpaths) {
-			StateVertex lastnode = path.get(path.size()-1);
-			boolean found = false;
-			for (StateVertex desirableNode : desirableLeaves) {
-				if(lastnode.containsState(desirableNode.getStates())) {
-					found = true;
+			for (StateVertex node : path) {//iterate through nodes in current path. check if current node has the desirable state. if yes. add
+				boolean foundInpath = false;
+				for (StateVertex dnode : desirablenodes) {
+					if(node.containsState(dnode.getStates())) {
+						foundInpath = true;
+						break;
+					}
 				}
-			}
-			if(found) {
-				paths.add(path);
+				if(foundInpath) {
+					paths.add(path);
+					break;
+				}
 			}
 		}
 		return paths;
 	}
-	
-	//return paths that terminate in user's desirable goals. These are the paths the user may likely follow to reach its goal
+
+	//return nodes that will contain user's desirable goals. If paths in the tree contain these nodes, then the user may likely follow that path to reach its goal
 	//while doing that, the user may inadvertently trigger the undesirable state.
-	public ArrayList<StateVertex> getLeavesWithRequiredDesirableStates(ArrayList<String> desirablestate, String domain){
-		ArrayList<StateVertex> desirableleaves = new ArrayList<StateVertex>();
+	//previously I was checking just the leaf nodes. now corrected to check if ANY node in the tree has the desirable state.
+	//This change generates the same traces for blocks. I think it should also be more accurate for grid-worlds.
+	public ArrayList<StateVertex> getNodesContainingDesirableState(ArrayList<String> desirablestate, String domain){
+		ArrayList<StateVertex> desirableNodes = new ArrayList<StateVertex>();
 		if(domain.equalsIgnoreCase("blocks")) {
 			for (StateVertex v : vertices.values()) {
-//				System.out.println("checking-----------------"+v);
-				if(adjacencyList.get(v).size()==0 && v.containsPartialStateBlockWords(desirablestate, false)){
-//					System.out.println("picked>>>>>>>>>>>>>>>"+v);
-					desirableleaves.add(v);
+				if(v.containsPartialStateBlockWords(desirablestate, false)){
+					desirableNodes.add(v);
 				}
 			}
 		}else {
 			for (StateVertex v : vertices.values()) {
-				if(adjacencyList.get(v).size()==0 && v.containsState(desirablestate)){
-					desirableleaves.add(v);
+				if(v.containsState(desirablestate)){
+					desirableNodes.add(v);
 				}
 			}
 		}
-		return desirableleaves;
+		return desirableNodes;
 	}
-	
+
 	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();

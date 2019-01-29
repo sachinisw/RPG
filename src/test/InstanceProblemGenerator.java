@@ -422,10 +422,8 @@ public class InstanceProblemGenerator {
 						problemoutput);
 				TraceGenerator.generateTestingObservationTrace(domain, domainpath, desirablefile, a_prob, criticalfile, 
 						a_out, a_init, a_dotpre, a_dotsuf, obsout);
-//				generateObservationTraceForTestInstance(problemoutput, String.valueOf(i));
-//				break;
 			}
-			LOGGER.log(Level.INFO, "Trace generator input files for :" +instance + " for scenario ["+ HarnessConfigs.testscenario+"] done");
+			LOGGER.log(Level.INFO, "Trace generator input files for instance :" +instance + " for scenario ["+ HarnessConfigs.testscenario+"] done");
 		}
 	}
 	//This is called second.

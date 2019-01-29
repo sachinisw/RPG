@@ -502,10 +502,12 @@ public class StateGenerator {
 					|| domain.equalsIgnoreCase("ferry") || domain.equalsIgnoreCase("sblocks") ) {//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path.
+//				System.out.println("Cleaned actions"+cleaned);
 			}
 			else if(domain.equalsIgnoreCase("pag") )//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
 			for (String action : cleaned) {
+//				System.out.println("current action.."+ action);
 				////README:::: seen [] only has the initial state. if you add newstate, other branches in the graph lose possible actions. The branches in the graph must be independent. children's possible actions must only depend on their immediate parents' state and not on other paths in the tree
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph);
 				recursiveAddEdge(newState, con, graph, seen, x, y, deslocs);

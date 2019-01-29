@@ -68,16 +68,25 @@ public class PlanningProblemGenerator {
 			ArrayList<String> t_init, String outprefix) {
 		TreeSet<String> a_init_t = new TreeSet<String>();
 		ArrayList<String> a_init = new ArrayList<String>();
-		ArrayList<String> a_init_temp = extractInitPredicatesFromTemplate(t_init, cstates.get(currentCase));
-		ArrayList<String> u_init = extractInitPredicatesFromTemplate(t_init, dstates.get(currentCase));
-		a_init_t.addAll(u_init);
-		a_init_t.addAll(a_init_temp); 
-		a_init.addAll(a_init_t);//add both user and attacker inits to attacker problem
+		ArrayList<String> u_init = new ArrayList<String>();
+		TreeSet<String> domainObjects = null;
+		if(TraceConfigs.domain.equalsIgnoreCase("blocks")) { //filter objects based on goal state. not everything in t_init is needed
+			ArrayList<String> a_init_temp = extractInitPredicatesFromTemplate(t_init, cstates.get(currentCase));
+			u_init = extractInitPredicatesFromTemplate(t_init, dstates.get(currentCase));
+			a_init_t.addAll(u_init);
+			a_init_t.addAll(a_init_temp); 
+			a_init.addAll(a_init_t);//add both user and attacker inits to attacker problem
+		}else if(TraceConfigs.domain.equalsIgnoreCase("easyipc") || 
+				TraceConfigs.domain.equalsIgnoreCase("navigator") ) { //attacker and user inits are identical. everything in t_init is needed
+			domainObjects = extractDomainObjectsFromInit(t_init);
+			a_init.addAll(t_init);
+			u_init.addAll(t_init);
+		}
 		ArrayList<String> a_temp_problem = addGoalStateToProblem(currentCase, t_problem, cstates.get(currentCase));//problem_a.pddl
 		ArrayList<String> u_temp_problem = addGoalStateToProblem(currentCase, t_problem, dstates.get(currentCase));//problem_u.pddl
 		ArrayList<String> a_problem = addInitsToProblem(currentCase, a_temp_problem, a_init);
 		ArrayList<String> u_problem = addInitsToProblem(currentCase, u_temp_problem, u_init);
-		ArrayList<String> probDomain = addObjectsToDomain(currentCase, t_domain, cstates.get(currentCase), dstates.get(currentCase));
+		ArrayList<String> probDomain = addObjectsToDomain(currentCase, domainObjects, t_domain, cstates.get(currentCase), dstates.get(currentCase));
 		writeProblemToFile(currentCase, a_problem, outprefix, 0);
 		writeProblemToFile(currentCase, u_problem, outprefix, 1);
 		writeInitToFile(currentCase, a_init, outprefix, 0);
@@ -113,10 +122,14 @@ public class PlanningProblemGenerator {
 				}
 			}
 		}
+		else if(TraceConfigs.domain.equalsIgnoreCase("easyipc") ||
+				TraceConfigs.domain.equalsIgnoreCase("navigator")) { //template inits are equal to train scenario inits
+			init.addAll(t_init);
+		}
 		return init;
 	}
 
-	//TODO: only for blockswords now (active attacker). need to think about other domains with passive attacker.
+	//objects to add to domain.pddl. Blockswords (active attacker).
 	public static String extractDomainObjectsFromGoalState(String cstate, String dstate) {
 		TreeSet<String> objects = new TreeSet<>();
 		String ob = "";
@@ -142,9 +155,67 @@ public class PlanningProblemGenerator {
 		return ob;
 	}
 
-	public static ArrayList<String> addObjectsToDomain(int currentCase, ArrayList<String> t_domain, 
-			String cri, String des){
-		String ob = extractDomainObjectsFromGoalState(cri, des);
+	//TODO: for grid-like domains, objects to add to domain.pddl comes from init template
+	public static TreeSet<String> extractDomainObjectsFromInit(ArrayList<String> inits) {
+		TreeSet<String> objects = new TreeSet<>();
+		if(TraceConfigs.domain.equalsIgnoreCase("EASYIPC")) {
+			for (String in : inits) { //add places
+				if(in.contains("CONN")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); //its ok to have duplicates here. treeset will remove that
+					objects.add(inparts[1].trim());
+					objects.add(inparts[2].trim());
+				}
+			}
+			for (String in : inits) { //add shapes
+				if(in.contains("LOCK-SHAPE")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[2].trim());
+				}
+			}
+			for (String in : inits) { //add keys
+				if(in.contains("KEY-SHAPE")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[1].trim()); 
+				}
+			}
+		}else if(TraceConfigs.domain.equalsIgnoreCase("navigator")) {
+			for (String in : inits) { //add places
+				if(in.contains("PLACE") && in.contains("CONNECTED")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[1].trim()); 
+					objects.add(inparts[2].trim());
+				}
+			}
+		}
+		return objects;
+	}
+	
+	public static ArrayList<String> addObjectsToDomain(int currentCase, TreeSet<String> objs, 
+			ArrayList<String> t_domain, String cri, String des){
+		String ob = "";
+		if(TraceConfigs.domain.equalsIgnoreCase("blocks")) {
+			ob = extractDomainObjectsFromGoalState(cri, des);
+		}else if(TraceConfigs.domain.equalsIgnoreCase("easyipc")) {
+			String places = "", keys="", shapes = "";
+			for (String s : objs) {
+				if(s.contains("PLACE_")) {
+					places+=s+"\n";
+				}else if(s.contains("KEY_")) {
+					keys += s+"\n";
+				}else if(s.contains("SHAPE_")) {
+					shapes += s+"\n";
+				}
+			}
+			ob = places + " - place\n" + keys + " - key\n" + shapes + " - shape\n";
+		}else if(TraceConfigs.domain.equalsIgnoreCase("navigator")) {
+			String places = "";
+			for (String s : objs) {
+				if(s.contains("PLACE_")) {
+					places+=s+"\n";
+				}
+			}
+			ob = places + " - place\n";
+		}
 		ArrayList<String> domupdated = new ArrayList<String>();
 		domupdated.addAll(t_domain);
 		for (int i=0; i<t_domain.size(); i++) {

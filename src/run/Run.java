@@ -59,7 +59,7 @@ public class Run {
 			if(config==0){
 				gen.graphToDOT(graphAgent,i, obFileId, writedot);
 			}else{
-				System.out.println(states.get(i)+"=======================================================================round"+i);
+				System.out.println(states.get(i)+"=======================================================================observation"+i);
 				StateGraph treeAgent = graphAgent.convertToTree(gen.getInitVertex(graphAgent, states.get(i)), domain);
 				gen.applyUniformProbabilitiesToStates(treeAgent, states.get(i));
 				gen.graphToDOT(treeAgent, i, obFileId, writedot);
@@ -148,7 +148,7 @@ public class Run {
 		results.writeOutput();
 	}
 
-	public static void run(String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
+	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
 			String a_out, String criticalfile, String a_init, String a_dotsuf, String obs, 
 			String ds_csv, String lm_out, boolean writedot, boolean full) {
 		int reverseConfig = 1;
@@ -156,9 +156,14 @@ public class Run {
 		ArrayList<String> obFiles = getObservationFiles(obs);
 		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(decider, domain);
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
-		for (String file : obFiles) {
+		int obFileLimit = 1; 
+		for (String file : obFiles) { 
+			if(domain.equalsIgnoreCase("EASYIPC") && mode==1 && obFileLimit>10) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+				break;
+			}
+			obFileLimit++;
 			String name[] = file.split("/");
-//									if(Integer.parseInt(name[name.length-1])==0){ //DEBUG;;;; remove after fixing
+//									if(Integer.parseInt(name[name.length-1])==17){ //DEBUG;;;; remove after fixing
 			LOGGER.log(Level.INFO, "Processing observation file: "+ file);
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
 			LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
@@ -182,7 +187,7 @@ public class Run {
 		}
 	}
 
-	public static void runAsTraining() {
+	public static void runAsTraining(int mode) {
 		LOGGER.log(Level.INFO, "Run mode: TRAINING with "+ TrainConfigs.cases + " cases");
 		String domain = TrainConfigs.domain;
 		for (int casenum=0; casenum<TrainConfigs.cases; casenum++) {
@@ -198,13 +203,13 @@ public class Run {
 			String lm_out = TrainConfigs.root+casenum+TrainConfigs.datadir+TrainConfigs.lmoutputFile;
 			String obs = TrainConfigs.root+casenum+TrainConfigs.obsdir;
 			boolean writedot = TrainConfigs.writeDOT;
-			run(domain, domainfile, desirablefile, a_prob, dotpre, 
+			run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
 					a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, writedot, true);
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
-	public static void runAsDebug() {
+	public static void runAsDebug(int mode) {
 		LOGGER.log(Level.INFO, "Run mode: DEBUG for scenario "+ DebugConfigs.scenario);
 		String domain = DebugConfigs.domain;
 		String domainfile = DebugConfigs.root+DebugConfigs.domainFile;
@@ -219,12 +224,12 @@ public class Run {
 		String lm_out = DebugConfigs.root+DebugConfigs.datadir+DebugConfigs.lmoutputFile;
 		String obs = DebugConfigs.root+DebugConfigs.obsdir;
 		boolean writedot = DebugConfigs.writeDOT;
-		run(domain, domainfile, desirablefile, a_prob, dotpre, 
+		run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
 				a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, writedot, true);
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
-	public static void runAsTesting(int start) {
+	public static void runAsTesting(int mode, int start) {
 		String domain = TestConfigs.domain;
 		boolean writedot = TestConfigs.writeDOT; 
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
@@ -244,10 +249,10 @@ public class Run {
 				String lm_out_short = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputShort;
 				String obs = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.observationFiles;
 				String obslm = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.observationLMFiles; 
-				run(domain, domainfile, desirablefile, a_prob, a_dotpre_full, 
+				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, 
 						a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, writedot, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
-				run(domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
+				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
 						a_out, criticalfile, a_init, a_dotsuf, obslm, ds_csv, lm_out_short, writedot, false);
 				LOGGER.log(Level.INFO, "Finished reduced case: "+ x +" for test instance:" +instance );
 			}
@@ -256,14 +261,14 @@ public class Run {
 	}
 
 	public static void main(String[] args) { 
-		int mode = 2; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigs.runmode){
-			runAsDebug();
+			runAsDebug(mode);
 		}else if(mode==TrainConfigs.runmode) {
-			runAsTraining();
-		}else {
-			int start = 2; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and so on
-			runAsTesting(start);
+			runAsTraining(mode);
+		}else if(mode==TestConfigs.runmode){
+			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
+			runAsTesting(mode,start);
 		}
 	}
 }

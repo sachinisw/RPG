@@ -93,10 +93,19 @@ public class Decider extends Agent{
 
 	private double[] computeRiskDesirabilityForActiveAttacker(ArrayList<ArrayList<StateVertex>> likelypaths) {
 		ArrayList<ArrayList<StateVertex>> pathsmatchingcritical = new ArrayList<>();
+		ArrayList<ArrayList<StateVertex>> onlydesirablepaths = new ArrayList<>();
 		for (ArrayList<StateVertex> path : likelypaths) { //separate paths that reach the critical state while getting to desirable state
-			StateVertex leaf = path.get(path.size()-1);
-			if(leaf.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
+			boolean isCritical = false;
+			for (StateVertex node : path) {
+				if(node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
+					isCritical = true;
+					break;
+				}
+			}
+			if(isCritical) {
 				pathsmatchingcritical.add(path);
+			}else {
+				onlydesirablepaths.add(path);
 			}
 		}
 		double[] maxriskforeachpath = new double[pathsmatchingcritical.size()];
@@ -112,31 +121,23 @@ public class Decider extends Agent{
 			}
 			maxriskforeachpath[indexR++]=maxr;
 		}
-		double[] maxdesirabilityforeachpath = new double[likelypaths.size()];
+		double[] maxdesirabilityforeachpath = new double[onlydesirablepaths.size()];
 		int indexD = 0;
-		for (ArrayList<StateVertex> path : likelypaths) { //all likelypaths will have desirable state. get the ones that does not have undesirable state
+		for (ArrayList<StateVertex> path : onlydesirablepaths) { //all likelypaths will have desirable state. get the ones that does not have undesirable state
 			double maxd = 0.0;
-//			System.out.println(path);
 			for (StateVertex node : path) {
-				if(!node.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)) {
-					maxd=-1.0;
-					if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates(), false)) {
-						if(node.getStateProbability()>maxd) {
-							maxd = node.getStateProbability();
-						}
+				if(node.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates(), false)) {
+					if(node.getStateProbability()>maxd) {
+						maxd = node.getStateProbability();
 					}
 				}
 			}
 			maxdesirabilityforeachpath[indexD++] = maxd;
 		}
-//		System.out.println("Risk arr=  "+ Arrays.toString(maxriskforeachpath));
-//		System.out.println("Desi arr=  "+ Arrays.toString(maxdesirabilityforeachpath));
 		//return sum of probability / size of likelipaths 
 		double sumR = 0.0, sumD = 0.0;
 		for (double d : maxdesirabilityforeachpath) {
-			if(d>0) {
-				sumD += d;
-			}
+			sumD += d;
 		}
 		for (double d : maxriskforeachpath) {
 			sumR += d;
@@ -146,18 +147,27 @@ public class Decider extends Agent{
 		}else if(sumR>0.0 && sumD==0.0) {
 			return new double [] {sumR/(double)pathsmatchingcritical.size(), 0.0};
 		}else if(sumR==0.0 && sumD>0.0){
-			return new double [] {0.0, sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+			return new double [] {0.0, sumD/(double)(onlydesirablepaths.size())};
 		}else {
-			return new double [] {sumR/(double)pathsmatchingcritical.size(), sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+			return new double [] {sumR/(double)pathsmatchingcritical.size(), sumD/(double)(onlydesirablepaths.size())};
 		}
 	}
 
 	public double[] computeRiskDesirabilityForPassiveAttacker(ArrayList<ArrayList<StateVertex>> likelypaths) {
 		ArrayList<ArrayList<StateVertex>> pathsmatchingcritical = new ArrayList<>();
+		ArrayList<ArrayList<StateVertex>> onlydesirablepaths = new ArrayList<>();
 		for (ArrayList<StateVertex> path : likelypaths) { //separate paths that reach the critical state while getting to desirable state 
-			StateVertex leaf = path.get(path.size()-1);
-			if(leaf.containsState(attackerState.getCritical().getCriticalStatePredicates())){
+			boolean isCritical = false;
+			for (StateVertex node : path) {
+				if(node.containsState(attackerState.getCritical().getCriticalStatePredicates())) {
+					isCritical = true;
+					break;
+				}
+			}
+			if(isCritical) {
 				pathsmatchingcritical.add(path);
+			}else {
+				onlydesirablepaths.add(path);
 			}
 		}
 		double[] maxriskforeachpath = new double[pathsmatchingcritical.size()];
@@ -173,17 +183,14 @@ public class Decider extends Agent{
 			}
 			maxriskforeachpath[indexR++]=maxr;
 		}
-		double[] maxdesirabilityforeachpath = new double[likelypaths.size()];
+		double[] maxdesirabilityforeachpath = new double[onlydesirablepaths.size()];
 		int indexD = 0;
-		for (ArrayList<StateVertex> path : likelypaths) { //all likelypaths will have desirable state. Don't count the ones that has undesirable state
+		for (ArrayList<StateVertex> path : onlydesirablepaths) { //all likelypaths will have desirable state. Don't count the ones that has undesirable state
 			double maxd = 0.0;
 			for (StateVertex node : path) {
-				if(!node.containsState(attackerState.getCritical().getCriticalStatePredicates())) {
-					maxd=-1.0;
-					if(node.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
-						if(node.getStateProbability()>maxd) {
-							maxd = node.getStateProbability();
-						}
+				if(node.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
+					if(node.getStateProbability()>maxd) {
+						maxd = node.getStateProbability();
 					}
 				}
 			}
@@ -192,9 +199,7 @@ public class Decider extends Agent{
 		//return the normalized probability (sum of maxr and maxd) / |likelypaths|
 		double sumR = 0.0, sumD = 0.0;
 		for (double d : maxdesirabilityforeachpath) {
-			if(d>0) {
-				sumD += d;
-			}
+			sumD += d;
 		}
 		for (double d : maxriskforeachpath) {
 			sumR += d;
@@ -204,9 +209,9 @@ public class Decider extends Agent{
 		}else if(sumR>0.0 && sumD==0.0) {
 			return new double [] {sumR/(double)pathsmatchingcritical.size(), 0.0};
 		}else if(sumR==0.0 && sumD>0.0){
-			return new double [] {0.0, sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+			return new double [] {0.0, sumD/(double)(onlydesirablepaths.size())};
 		}else {
-			return new double [] {sumR/(double)pathsmatchingcritical.size(), sumD/(double)(likelypaths.size()-pathsmatchingcritical.size())};
+			return new double [] {sumR/(double)pathsmatchingcritical.size(), sumD/(double)(onlydesirablepaths.size())};
 		}
 	}
 
@@ -216,7 +221,7 @@ public class Decider extends Agent{
 			d[0] = getDistanceToCriticalForActiveAttacker(likelypaths);
 			d[1] = getDistanceToDesirableForActiveAttacker(likelypaths);
 		}else {
-			d[0] = getDistanceToDesirableForPassiveAttacker(likelypaths);
+			d[0] = getDistanceToCriticalForPassiveAttacker(likelypaths);
 			d[1] = getDistanceToDesirableForPassiveAttacker(likelypaths);
 		}
 		return d;
@@ -252,7 +257,6 @@ public class Decider extends Agent{
 			}
 			cLen[index++]=length;
 		}
-//		System.out.println("disttocri="+Arrays.toString(cLen));
 		if(cpathcount>0){
 			int sum = 0;
 			for (int i : cLen) {
@@ -268,13 +272,11 @@ public class Decider extends Agent{
 		for (ArrayList<StateVertex> path : alllikely) {
 			boolean found = false;
 			for (StateVertex stateVertex : path) {
-				if(!stateVertex.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
-					if(stateVertex.containsPartialStateBlockWords(attackerState.getDesirable().getDesirableStatePredicates(), false)){
-						found = true;
-					}
+				if(stateVertex.containsPartialStateBlockWords(attackerState.getCritical().getCriticalStatePredicates(), true)){
+					found = true;
 				}
 			}
-			if (found){
+			if (!found){
 				trulydesirablepaths.add(path);
 			}
 		}
@@ -291,13 +293,11 @@ public class Decider extends Agent{
 			}
 			dlens[index++]=length;
 		}
-//		System.out.println("disttodes="+Arrays.toString(dlens));
 		if(dlens.length>0){
 			int sum = 0;
 			for (int i : dlens) {
 				sum+=i;
 			}
-//			System.out.println(sum+"===="+Math.ceil((double)sum/(double)dlens.length)+" len--"+dlens.length);
 			return (int) (Math.ceil((double)sum/(double)dlens.length)); 		//compute the mean distance across lens and return.
 		}
 		return -1; //there are no critical paths. 1 node graph
@@ -346,13 +346,11 @@ public class Decider extends Agent{
 		for (ArrayList<StateVertex> path : alllikely) {
 			boolean found = false;
 			for (StateVertex stateVertex : path) {
-				if(!stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
-					if(stateVertex.containsState(attackerState.getDesirable().getDesirableStatePredicates())){
-						found = true;
-					}
+				if(stateVertex.containsState(attackerState.getCritical().getCriticalStatePredicates())){
+					found = true;
 				}
 			}
-			if (found){
+			if (!found){
 				trulydesirablepaths.add(path);
 			}
 		}
@@ -394,13 +392,13 @@ public class Decider extends Agent{
 			for (LGGNode node : this.verifiedLandmarks) {
 				ArrayList<String> nodestate = node.getValue();
 				if(listContainsState(nodestate, st)) {	
-//					System.out.println(nodestate);
+					//					System.out.println(nodestate);
 					count++;
 				}
 			}
 		}
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
-//		System.out.println("contains="+count + " total="+root.getStates().size());
+		//		System.out.println("contains="+count + " total="+root.getStates().size());
 		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(root.getStates().size()));
 		return Double.valueOf(format);
 	}

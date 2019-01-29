@@ -260,8 +260,8 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
 		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
-		int instances  = 3;
+		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int instances  = 1;
 		int casePerInstance = 20;
 		Preprocessor pre = new Preprocessor();
 		if(mode==-1) {
@@ -286,7 +286,7 @@ public class Preprocessor {
 			String aggfile = "/data/inputdecisiontree/full.csv";
 			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
-		}else {
+		}else if (mode==1){
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode");
 			for (int instance = 1; instance <= instances; instance++) {
 				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";

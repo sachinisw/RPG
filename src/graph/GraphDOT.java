@@ -46,7 +46,7 @@ public class GraphDOT {
 
 	private String getDOTEdges(){
 		String s = "";
-		for (ActionEdge e : graph.getEdges()) {
+		for (ActionEdge e : graph.getEdges()) {	
 			s += e.convertToDOTString();
 			s += "\n";
 		}
@@ -77,10 +77,10 @@ public class GraphDOT {
 					s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
 				}
 			}
-		}else {
+		} else {
 			for (StateVertex stateVertex : leaves) {
 				if(stateVertex.isContainsDesirableState()){
-					s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
+					s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=5];" + "\n";
 				}else if(stateVertex.isContainsCriticalState()){
 					s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
 				}else{
@@ -88,7 +88,6 @@ public class GraphDOT {
 				}
 			}
 		}
-
 		return s;
 	}
 
