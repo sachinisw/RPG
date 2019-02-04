@@ -494,24 +494,30 @@ public class StateGenerator {
 	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen, 
 			int x, int y, HashMap<String, String> deslocs){
 		if(stoppable(currentState, x, y, deslocs)){
+			seen.remove(seen.size()-1);
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
+//			System.out.println("applicable actions======"+actions);
 			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("navigator") 
 					|| domain.equalsIgnoreCase("ferry") || domain.equalsIgnoreCase("sblocks") ) {//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path.
-//				System.out.println("Cleaned actions"+cleaned);
+//				System.out.println("Cleaned actions====="+cleaned);
 			}
 			else if(domain.equalsIgnoreCase("pag") )//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
 			for (String action : cleaned) {
-//				System.out.println("current action.."+ action);
+//				System.out.println("expanding...... "+ action);
 				////README:::: seen [] only has the initial state. if you add newstate, other branches in the graph lose possible actions. The branches in the graph must be independent. children's possible actions must only depend on their immediate parents' state and not on other paths in the tree
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph);
+				State s = new State();
+				s.setState(newState);
+				seen.add(s);
 				recursiveAddEdge(newState, con, graph, seen, x, y, deslocs);
 			}
+			seen.remove(seen.size()-1);
 		}
 	}
 

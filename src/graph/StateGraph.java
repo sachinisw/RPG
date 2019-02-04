@@ -440,12 +440,6 @@ public class StateGraph {
 		tree.setNumVertices(verticesTree.size());
 		tree.markVerticesContainingCriticalState(critical, domain);
 		tree.markVerticesContainingDesirableState(desirable, domain);
-		//				System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
-		//				System.out.println(tree.toString());
-		//				System.out.println("TREE EDGE SET----------------------");
-		//				for (ActionEdge e : edgesTree) {
-		//					System.out.println(e);
-		//				}
 		return tree;
 	}
 

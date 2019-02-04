@@ -426,5 +426,4 @@ public class InstanceProblemGenerator {
 			LOGGER.log(Level.INFO, "Trace generator input files for instance :" +instance + " for scenario ["+ HarnessConfigs.testscenario+"] done");
 		}
 	}
-	//This is called second.
-}
+}//This is called second.

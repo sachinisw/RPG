@@ -158,7 +158,8 @@ public class Run {
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
 		int obFileLimit = 1; 
 		for (String file : obFiles) { 
-			if(domain.equalsIgnoreCase("EASYIPC") && mode==1 && obFileLimit>10) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+			if((domain.equalsIgnoreCase("EASYIPC") && mode==1 && obFileLimit>10) ||
+					(domain.equalsIgnoreCase("NAVIGATOR") && mode==1 && obFileLimit>10) 	) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
 				break;
 			}
 			obFileLimit++;
@@ -261,13 +262,13 @@ public class Run {
 	}
 
 	public static void main(String[] args) { 
-		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigs.runmode){
 			runAsDebug(mode);
 		}else if(mode==TrainConfigs.runmode) {
 			runAsTraining(mode);
 		}else if(mode==TestConfigs.runmode){
-			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
+			int start = 2; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runAsTesting(mode,start);
 		}
 	}
