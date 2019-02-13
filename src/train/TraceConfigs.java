@@ -12,7 +12,7 @@ public class TraceConfigs {
 	public final static String u_outputPath = "user/"; //each scenario has it's own output directory for rpg, connectivity plan files.
 	public final static String lmFile = "verifiedlm.txt";
 	
-	//Crticial and desirable states for template training problem generator
+	//Critical and desirable states for template training problem generator
 	public final static int trainingcases = 20;
 	public final static int scenario = 0; //intervention scenario 0 (BAD/TAD), 1(TEA/EAT), ... for the domain
 	public final static String domain = "NAVIGATOR";//BLOCKS,EASYIPC,NAVIGATOR,FERRY

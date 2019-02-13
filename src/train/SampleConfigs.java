@@ -1,7 +1,6 @@
 package train;
 
 public class SampleConfigs {
-	public final static String mode = "TRAIN"; //TEST//TRAIN
 	public final static String domain = "NAVIGATOR";//BLOCKS,EASYIPC,NAVIGATOR,FERRY
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/"; //base path. must be followed by a number 1, 2...
 	public final static String domainFile = "/domain.pddl";

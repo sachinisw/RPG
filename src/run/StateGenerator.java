@@ -11,12 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
@@ -312,24 +309,19 @@ public class StateGenerator {
 	public boolean stoppableFerry(ArrayList<String> state, HashMap<String, String> userwantloc){
 		//find (at C* L*) predicates. compare if for all C, L value has changed to desirable locations
 		HashMap<String,String> carpos = new HashMap<String, String>(); 
+		int count = 0;
 		for (String st : state) {//two ways of finding current object's location, object is directly at loc
 			if(st.contains("AT") && !st.contains("AT-FERRY")) {
 				String parts [] = st.substring(1,st.length()-1).split(" ");
 				String c = parts[1]; String l=parts[2];
 				carpos.put(c,l);
-
+				count++;
 			}
 		}
-		Iterator<Map.Entry<String, String>> itrcarpos = carpos.entrySet().iterator();
-		while(itrcarpos.hasNext()){
-			Entry<String, String> e = itrcarpos.next();
-			String carposloc = e.getValue();
-			String userloc = userwantloc.get(e.getKey());
-			if(!carposloc.equalsIgnoreCase(userloc)) {
-				return false;
-			}
+		if(carpos.equals(userwantloc) && count==2){
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	public StateGraph enumerateStates(State in, ArrayList<State> seen){ //draw a state transition graph starting with state 'in'

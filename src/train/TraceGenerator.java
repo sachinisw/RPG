@@ -59,6 +59,7 @@ public class TraceGenerator {
 		ArrayList<ArrayList<StateVertex>> likelypaths = decider.getLikelyPathsForUser(decider.getDesirable().getDesirableStatePredicates(), domain);
 		for(int i=0; i<likelypaths.size(); i++){
 			ArrayList<StateVertex> likelipath = likelypaths.get(i);
+//			System.out.println("Current path ==== " + likelipath);
 			ArrayList<String> trc = new ArrayList<String>();
 			if(domain.equalsIgnoreCase("blocks")) { //active attacker e.g. block-words
 				if(likelipath.get(likelipath.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates(), false)) {

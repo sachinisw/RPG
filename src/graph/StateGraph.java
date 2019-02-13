@@ -581,22 +581,7 @@ public class StateGraph {
 	public ArrayList<ArrayList<StateVertex>> getLikelyPathsForUser(ArrayList<String> desirablestate, String domain){
 		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
 		ArrayList<StateVertex> desirablenodes = getNodesContainingDesirableState(desirablestate, domain);
-		ArrayList<ArrayList<StateVertex>> allpaths = getAllPathsFromRoot();
-		for (ArrayList<StateVertex> path : allpaths) {
-			for (StateVertex node : path) {//iterate through nodes in current path. check if current node has the desirable state. if yes. add
-				boolean foundInpath = false;
-				for (StateVertex dnode : desirablenodes) {
-					if(node.containsState(dnode.getStates())) {
-						foundInpath = true;
-						break;
-					}
-				}
-				if(foundInpath) {
-					paths.add(path);
-					break;
-				}
-			}
-		}
+		paths = getAllPathsToDesirableNodes(desirablenodes);
 		return paths;
 	}
 
@@ -622,38 +607,80 @@ public class StateGraph {
 		return desirableNodes;
 	}
 
-	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
-		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+	public ArrayList<ArrayList<StateVertex>> getAllPathsToDesirableNodes(ArrayList<StateVertex> dnodes){
 		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
-		Stack<StateVertex> stack = new Stack<StateVertex>();
-		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
-		ArrayList<StateVertex> base = new ArrayList<>();
-		stack.push(getRoot());
-		while(!stack.isEmpty()){
-			StateVertex current = stack.pop();
-			visited.add(current);
-			base.add(current);
-			TreeSet<StateVertex> neighbors = adj.get(current);
-			for (StateVertex stateVertex : neighbors) {
-				stack.add(stateVertex);
-			}
-			if(isVertexInSpecifiedList(current, getLeafNodes())){ //found a leaf. now compute the path from root. (base  must have all nodes in path)
-				ArrayList<StateVertex> path = new ArrayList<>();
-				path.addAll(base);
-				int index = path.size()-1;
-				ArrayList<StateVertex> copy = new ArrayList<>();
-				copy.addAll(stack);
-				while(canBackTrack(path.get(index), copy) && index>0){
-					base.remove(path.get(index));
-					index--;
-				}
-				paths.add(path);
-			}	
+		ArrayList<StateVertex> currentpath = new ArrayList<>();
+		HashMap<StateVertex, Boolean> visited = new HashMap<StateVertex, Boolean>();
+		visited.put(getRoot(), true);
+		for (StateVertex d : dnodes) {
+			allPathsFromSrcToDest(getRoot(), d, visited, currentpath, paths);
 		}
 		return paths;
 	}
+	
+	private void allPathsFromSrcToDest(StateVertex s, StateVertex d, HashMap<StateVertex, Boolean> visited, ArrayList<StateVertex> currentpath,
+			ArrayList<ArrayList<StateVertex>> paths) {
+		currentpath.add(s);
+		if(s.equals(d)) {
+			paths.add(new ArrayList<>(currentpath));
+		}
+		else {
+			TreeSet<StateVertex> neighbors = getAdjacencyList().get(s);
+			for (StateVertex nbr : neighbors) {
+				allPathsFromSrcToDest(nbr, d, visited, currentpath, paths);
+			}
+		}
+		currentpath.remove(s);
+	}
+	
+//	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
+//		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+//		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
+//		Stack<StateVertex> stack = new Stack<StateVertex>();
+//		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
+//		ArrayList<StateVertex> base = new ArrayList<>();
+//		stack.push(getRoot());
+//		while(!stack.isEmpty()){
+//			StateVertex current = stack.pop();
+//			System.out.println("currently visiting>> "+current.toStringShort());
+//			visited.add(current);
+//			base.add(current);
+//			TreeSet<StateVertex> neighbors = adj.get(current);
+//			stack.addAll(neighbors);
+//			System.out.println("current stack>>>>");
+//			for (StateVertex stateVertex : stack) {
+//				System.out.print(stateVertex.toStringShort()+"|");
+//			}
+//			System.out.println();
+//			System.out.println("current base>>>>");
+//			for (StateVertex stateVertex : base) {
+//				System.out.print(stateVertex.toStringShort()+"|");
+//			}
+//			System.out.println();
+//			if(isVertexInSpecifiedList(current, getLeafNodes())){ //found a leaf. now compute the path from root. (base  must have all nodes in path)
+//				System.out.println("leaf!");
+//				ArrayList<StateVertex> path = new ArrayList<>();
+//				path.addAll(base);
+//				int index = path.size()-1;
+//				ArrayList<StateVertex> stackcopy = new ArrayList<>();
+//				stackcopy.addAll(stack);
+//				while(canBackTrack(path.get(index), stackcopy) && index>0){//remove nodes from base, whose children have been processed completely
+//					base.remove(path.get(index));
+//					index--;
+//				}
+//				System.out.print("path found-------------->");
+//				for (StateVertex stateVertex : path) {
+//					System.out.print(stateVertex.toStringShort()+"|");
+//				}
+//				System.out.println();
+//				paths.add(path);
+//			}
+//		}
+//		return paths;
+//	}
 
-	private boolean canBackTrack(StateVertex current, ArrayList<StateVertex> unprocessed){ //return false, when you find the first node with unvisited children
+	//return false, when you find the first node with unvisited children
+	public boolean canBackTrack(StateVertex current, ArrayList<StateVertex> unprocessed){ 
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		TreeSet<StateVertex> neighbors = adj.get(current);
 		for (StateVertex stateVertex : neighbors) {

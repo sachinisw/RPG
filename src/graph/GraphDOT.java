@@ -69,22 +69,26 @@ public class GraphDOT {
 		ArrayList<StateVertex> leaves = graph.getLeafNodes();
 		if(domain.equalsIgnoreCase("BLOCKS")) { //partial states ok
 			for (StateVertex stateVertex : leaves) {
-				if(stateVertex.isaPartialDesirableState()){
-					s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
-				}else if(stateVertex.isaPartialCriticalState()){
-					s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				if(stateVertex.isaPartialDesirableState() && !stateVertex.isaPartialCriticalState()){ //plain desirable
+					s += stateVertex.convertToDOTString() + " [shape=circle, style=filled, fillcolor=palegreen1, peripheries=3];" + "\n";
+				}else if(!stateVertex.isaPartialDesirableState() && stateVertex.isaPartialCriticalState()) { //plain critical
+					s += stateVertex.convertToDOTString() + " [shape=circle, style=filled, fillcolor=lightpink, peripheries=3];" + "\n";
+				}else if(stateVertex.isaPartialCriticalState() &&  stateVertex.isaPartialDesirableState()){ //critical and desirable both
+					s+=stateVertex.convertToDOTString() + " [shape=circle, style=filled color=red, fillcolor=gold, peripheries=3];"+ "\n";
 				}else{
-					s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
+					s += stateVertex.convertToDOTString() + " [shape=circle, penwidth=3];" + "\n";
 				}
 			}
 		} else {
 			for (StateVertex stateVertex : leaves) {
-				if(stateVertex.isContainsDesirableState()){
-					s += stateVertex.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=5];" + "\n";
-				}else if(stateVertex.isContainsCriticalState()){
-					s+=stateVertex.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				if(stateVertex.isContainsDesirableState() && !stateVertex.isContainsCriticalState()){
+					s += stateVertex.convertToDOTString() + " [shape=circle, style=filled, fillcolor=palegreen1, peripheries=3];" + "\n";
+				}else if(!stateVertex.isContainsDesirableState() && stateVertex.isContainsCriticalState()) { //plain critical
+					s += stateVertex.convertToDOTString() + " [shape=circle, style=filled, fillcolor=lightpink, peripheries=3];" + "\n";
+				}else if(stateVertex.isContainsCriticalState() && stateVertex.isContainsDesirableState()){
+					s+=stateVertex.convertToDOTString() + " [shape=circle, style=filled color=red, fillcolor=gold, peripheries=3];"+ "\n";
 				}else{
-					s += stateVertex.convertToDOTString() + " [shape=doublecircle, penwidth=3];" + "\n";
+					s += stateVertex.convertToDOTString() + " [shape=circle, penwidth=3];" + "\n";
 				}
 			}
 		}
@@ -97,19 +101,27 @@ public class GraphDOT {
 		if(domain.equalsIgnoreCase("BLOCKS")) { //partial states ok
 			while(itr.hasNext()) {
 				StateVertex v = itr.next().getValue();
-				if(v.isaPartialDesirableState()){
-					s += v.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
-				}else if(v.isaPartialCriticalState()){
-					s+=v.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				if(v.isaPartialDesirableState() && !v.isaPartialCriticalState()){ //plain desirable
+					s += v.convertToDOTString() + " [shape=circle, style=filled, fillcolor=palegreen1, peripheries=3];" + "\n";
+				}else if(!v.isaPartialDesirableState() && v.isaPartialCriticalState()) { //plain critical
+					s += v.convertToDOTString() + " [shape=circle, style=filled, fillcolor=lightpink, peripheries=3];" + "\n";
+				}else if(v.isaPartialCriticalState() &&  v.isaPartialDesirableState()){ //critical and desirable both
+					s+=v.convertToDOTString() + " [shape=circle, style=filled color=red, fillcolor=gold, peripheries=3];"+ "\n";
+				}else{
+					s += v.convertToDOTString() + " [shape=circle, penwidth=3];" + "\n";
 				}
 			}
 		}else {
 			while(itr.hasNext()) {
 				StateVertex v = itr.next().getValue();
-				if(v.isContainsDesirableState()){
-					s += v.convertToDOTString() + " [shape=doublecircle,color=green, peripheries=3];" + "\n";
-				}else if(v.isContainsCriticalState()){
-					s+=v.convertToDOTString() + " [shape=doublecircle, color=crimson, peripheries=3];"+ "\n";
+				if(v.isContainsDesirableState() && !v.isContainsCriticalState()){
+					s += v.convertToDOTString() + " [shape=circle, style=filled, fillcolor=palegreen1, peripheries=3];" + "\n";
+				}else if(!v.isContainsDesirableState() && v.isContainsCriticalState()) { //plain critical
+					s += v.convertToDOTString() + " [shape=circle, style=filled, fillcolor=lightpink, peripheries=3];" + "\n";
+				}else if(v.isContainsCriticalState() && v.isContainsDesirableState()){
+					s+=v.convertToDOTString() + " [shape=circle, style=filled color=red, fillcolor=gold, peripheries=3];"+ "\n";
+				}else{
+					s += v.convertToDOTString() + " [shape=circle, penwidth=3];" + "\n";
 				}
 			}
 		}

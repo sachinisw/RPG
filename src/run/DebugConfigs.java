@@ -4,7 +4,7 @@ public class DebugConfigs {
 	public static final int scenario = 0;
 	public static final int runmode = -1;
 	public static final boolean writeDOT = true;
-	public static final String domain = "NAVIGATOR"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
+	public static final String domain = "FERRY"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
 	public static final String root = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
 	public static final String obsdir = "/obs/";
 	public static final String outsdir = "/outs/";

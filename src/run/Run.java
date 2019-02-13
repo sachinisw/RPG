@@ -111,32 +111,10 @@ public class Run {
 		return cons;
 	}
 
-	//1/10/2019: deprecated. not using weighted CRD anymore
-//	public static void computeMetricsWeighted(String domain, Observation ob, Decider attacker, ArrayList<StateGraph> attackers, 
-//			String filename, String owFile){
-//		ArrayList<String> items = new ArrayList<String>();
-//		ObjectiveWeight ow = new ObjectiveWeight(owFile);
-//		ow.assignWeights();
-//		for (int i=1; i<attackers.size(); i++) {
-//			attacker.setState(attackers.get(i)); //add stategraphs to user, attacker objects
-//			Metrics metrics = new Metrics(attacker, domain,lmoutput, arpg, con); //compute metrics for user, attacker
-//			metrics.computeFeatureSet();
-//			for (WeightGroup grp : ow.getWeights()) {
-//				WeightedDataLine data = new WeightedDataLine(ob.getObservations().get(i-1), metrics, grp);
-//				data.computeWeightedMetrics();
-//				data.computeObjectiveFunctionValue();
-//				items.add(data.toString());
-//			}
-//		}
-//		CSVGenerator results = new CSVGenerator(filename, items, 1);
-//		results.writeOutput();
-//	}
-
 	public static void computeMetricsForDecisionTree(String domain, Observation ob, Decider decider, ArrayList<StateGraph> trees, 
 			RelaxedPlanningGraph arpg, ConnectivityGraph con, String filename, String lmoutput){
 		ArrayList<String> items = new ArrayList<String>();
 		for (int i=1; i<trees.size(); i++) {
-//			System.out.println("Current Graph's Root===="+trees.get(i).getRoot());
 			decider.setState(trees.get(i)); //add stategraphs to user, attacker objects
 			Metrics metrics = new Metrics(decider, domain, lmoutput, arpg, con); //compute features for decision tree
 			metrics.computeFeatureSet();
@@ -146,6 +124,20 @@ public class Run {
 		}
 		CSVGenerator results = new CSVGenerator(filename, items, 0);
 		results.writeOutput();
+	}
+	
+	private static boolean restrict(int mode, int limit, String domain) {
+		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigs.runmode && limit>TestConfigs.fileLimit) ||
+				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigs.runmode && limit>TestConfigs.fileLimit) || 
+				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigs.runmode && limit>TestConfigs.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+			return true;
+		}else {
+			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit) || 
+					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
@@ -158,8 +150,7 @@ public class Run {
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
 		int obFileLimit = 1; 
 		for (String file : obFiles) { 
-			if((domain.equalsIgnoreCase("EASYIPC") && mode==1 && obFileLimit>10) ||
-					(domain.equalsIgnoreCase("NAVIGATOR") && mode==1 && obFileLimit>10) 	) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+			if (restrict(mode, obFileLimit, domain)) {
 				break;
 			}
 			obFileLimit++;
@@ -268,7 +259,7 @@ public class Run {
 		}else if(mode==TrainConfigs.runmode) {
 			runAsTraining(mode);
 		}else if(mode==TestConfigs.runmode){
-			int start = 2; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
+			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runAsTesting(mode,start);
 		}
 	}

@@ -77,7 +77,8 @@ public class PlanningProblemGenerator {
 			a_init_t.addAll(a_init_temp); 
 			a_init.addAll(a_init_t);//add both user and attacker inits to attacker problem
 		}else if(TraceConfigs.domain.equalsIgnoreCase("easyipc") || 
-				TraceConfigs.domain.equalsIgnoreCase("navigator") ) { //attacker and user inits are identical. everything in t_init is needed
+				TraceConfigs.domain.equalsIgnoreCase("navigator") ||
+				TraceConfigs.domain.equalsIgnoreCase("ferry")) { //attacker and user inits are identical. everything in t_init is needed
 			domainObjects = extractDomainObjectsFromInit(t_init);
 			a_init.addAll(t_init);
 			u_init.addAll(t_init);
@@ -123,7 +124,8 @@ public class PlanningProblemGenerator {
 			}
 		}
 		else if(TraceConfigs.domain.equalsIgnoreCase("easyipc") ||
-				TraceConfigs.domain.equalsIgnoreCase("navigator")) { //template inits are equal to train scenario inits
+				TraceConfigs.domain.equalsIgnoreCase("navigator") ||
+				TraceConfigs.domain.equalsIgnoreCase("ferry")) { //template inits are equal to train scenario inits
 			init.addAll(t_init);
 		}
 		return init;
@@ -186,6 +188,20 @@ public class PlanningProblemGenerator {
 					objects.add(inparts[2].trim());
 				}
 			}
+		}else if(TraceConfigs.domain.equalsIgnoreCase("ferry")) {
+			for (String in : inits) { //add locations
+				if(in.contains("NOT-EQ")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[1].trim()); 
+					objects.add(inparts[2].trim());
+				}
+			}
+			for (String in : inits) { //add cars
+				if(in.contains("AT") && !in.contains("FERRY")){
+					String[] inparts = in.trim().substring(1,in.length()-1).split(" "); 
+					objects.add(inparts[1].trim()); 
+				}
+			}
 		}
 		return objects;
 	}
@@ -215,6 +231,16 @@ public class PlanningProblemGenerator {
 				}
 			}
 			ob = places + " - place\n";
+		}else if(TraceConfigs.domain.equalsIgnoreCase("ferry")) {
+			String places = "", cars = "";
+			for (String s : objs) {
+				if(s.contains("L")) {
+					places+=s+"\n";
+				}else if(s.contains("C")) {
+					cars+=s +"\n";
+				}
+			}
+			ob = places + " - location\n" + cars + " - car\n";
 		}
 		ArrayList<String> domupdated = new ArrayList<String>();
 		domupdated.addAll(t_domain);

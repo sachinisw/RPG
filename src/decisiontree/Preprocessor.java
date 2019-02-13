@@ -260,12 +260,12 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
 		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
-		int instances  = 3;
+		String domain = "FERRY";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int instances  = 1;
 		int casePerInstance = 20;
 		Preprocessor pre = new Preprocessor();
 		if(mode==-1) {
-			LOGGER.log(Level.CONFIG, "Preprocessing for DEBUG mode");
+			LOGGER.log(Level.CONFIG, "Preprocessing for DEBUG mode. DOMAIN======"+ domain);
 			String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
 			String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
 			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
@@ -276,7 +276,8 @@ public class Preprocessor {
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
 			for(int currentCase=0; currentCase<cases; currentCase++) {
-				LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode: CASE = "+ currentCase);
+				LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
+				LOGGER.log(Level.CONFIG, "CASE = "+ currentCase);
 				String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
 				String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
 				String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
@@ -287,8 +288,8 @@ public class Preprocessor {
 			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else if (mode==1){
-			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode");
-			for (int instance = 2; instance <= instances; instance++) {
+			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode DOMAIN======"+ domain);
+			for (int instance = 1; instance <= instances; instance++) {
 				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
 				String instout_lm=prefix+String.valueOf(instance)+"/data/instlm.csv";

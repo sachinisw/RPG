@@ -384,25 +384,36 @@ public class Decider extends Agent{
 		this.verifiedLandmarks = lm.verifyLandmarks(lgg, critical.getCriticalStatePredicates(), getInitialState().getState(), lmoutput);
 	}
 
-	//what percetage of active landmarks does the root contain?
+	//what percentage of active landmarks from all possible landmarks does the root contain?
 	public double computePrecentActiveAttackLm() {
 		StateVertex root = attackerState.getRoot();
+		ArrayList<ArrayList<String>> cleanedlm = cleanLandmarks();
 		int count = 0;
 		for (String st : root.getStates()) {
-			for (LGGNode node : this.verifiedLandmarks) {
-				ArrayList<String> nodestate = node.getValue();
-				if(listContainsState(nodestate, st)) {	
-					//					System.out.println(nodestate);
+			for (ArrayList<String> lm : cleanedlm) {
+				if(listContainsState(lm, st)) {	
 					count++;
 				}
 			}
 		}
+		System.out.println("ROOT=="+root);
+		System.out.println(count + "/" + cleanedlm.size());
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
-		//		System.out.println("contains="+count + " total="+root.getStates().size());
-		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(root.getStates().size()));
+		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(cleanedlm.size()));
 		return Double.valueOf(format);
 	}
 
+	private ArrayList<ArrayList<String>> cleanLandmarks(){ //remove landmarks that are equal to goal state. goal is trivial landmark
+		ArrayList<ArrayList<String>> cleanedlm = new ArrayList<>();
+		for (LGGNode node : this.verifiedLandmarks) {
+			ArrayList<String> nodestate = node.getValue();
+			if(!critical.getCriticalStatePredicates().equals(nodestate)) {
+				cleanedlm.add(nodestate);
+			}
+		}
+		return cleanedlm;
+	}
+	
 	private boolean listContainsState(ArrayList<String> states, String state){ //state has surrounding paranthesis.
 		for (String s : states) {
 			if(s.equalsIgnoreCase(state)){

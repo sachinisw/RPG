@@ -190,7 +190,7 @@ public class StateVertex implements Comparable<StateVertex>{
 		}
 		return false;
 	}
-
+	
 	public void addStates(ArrayList<String> st){
 		states.addAll(st);
 	}
@@ -241,5 +241,15 @@ public class StateVertex implements Comparable<StateVertex>{
 
 	public void setaPartialDesirableState(boolean aPartialDesirableState) {
 		this.aPartialDesirableState = aPartialDesirableState;
+	}
+	
+	public String toStringShort() {
+		String s="";
+		for (String string : states) {
+			if(!string.contains("NOT-EQ")) {
+				s+=string;
+			}
+		}
+		return s;
 	}
 }
