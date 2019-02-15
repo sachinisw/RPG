@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,8 +24,8 @@ public class Run {
 	private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
 	private static final boolean asTraceGenerator = false;
 
-	public static ArrayList<String> getObservationFiles(String obsfiles){
-		ArrayList<String> obFiles = new ArrayList<String>();
+	public static TreeSet<String> getObservationFiles(String obsfiles){
+		TreeSet<String> obFiles = new TreeSet<String>();
 		try {
 			File dir = new File(obsfiles);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
@@ -33,7 +34,7 @@ public class Run {
 			}
 		}catch (IOException e) {
 			e.printStackTrace();
-		} 
+		}
 		return obFiles;	
 	}
 
@@ -51,7 +52,8 @@ public class Run {
 		return cp;
 	}
 
-	public static ArrayList<StateGraph> process(String domain, ArrayList<State> states, StateGenerator gen, int config, int obFileId, boolean writedot){
+	public static ArrayList<StateGraph> process(String domain, ArrayList<State> states, StateGenerator gen, int config, 
+			String obFileId, boolean writedot){
 		ArrayList<StateGraph> graphs = new ArrayList<>();
 		for (int i=0; i<states.size(); i++) {
 			ArrayList<State> statesSeen = copyStates(states, i);
@@ -69,7 +71,8 @@ public class Run {
 		return graphs;
 	}
 
-	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, String dom, Observation ob, InitialState init, int reverseConfig, int obFileId, boolean writedot, boolean fulltrace){
+	public static ArrayList<StateGraph> generateStateGraphsForObservations(Agent agent, String dom, Observation ob, InitialState init, int reverseConfig, 
+			String obFileId, boolean writedot, boolean fulltrace){
 		StateGenerator gen = new StateGenerator(agent, dom);
 		ArrayList<State> state = null;
 		if(fulltrace) {
@@ -112,9 +115,9 @@ public class Run {
 	}
 
 	public static void computeMetricsForDecisionTree(String domain, Observation ob, Decider decider, ArrayList<StateGraph> trees, 
-			RelaxedPlanningGraph arpg, ConnectivityGraph con, String filename, String lmoutput){
+			RelaxedPlanningGraph arpg, ConnectivityGraph con, String outputfilename, String lmoutput){
 		ArrayList<String> items = new ArrayList<String>();
-		for (int i=1; i<trees.size(); i++) {
+		for (int i=1; i<trees.size(); i++) { //skip the first one. It's the initial state or in the case of half traces, it's the state before I start making decisions
 			decider.setState(trees.get(i)); //add stategraphs to user, attacker objects
 			Metrics metrics = new Metrics(decider, domain, lmoutput, arpg, con); //compute features for decision tree
 			metrics.computeFeatureSet();
@@ -122,7 +125,7 @@ public class Run {
 			data.computeObjectiveFunctionValue();
 			items.add(data.toString());
 		}
-		CSVGenerator results = new CSVGenerator(filename, items, 0);
+		CSVGenerator results = new CSVGenerator(outputfilename, items, 0);
 		results.writeOutput();
 	}
 	
@@ -142,10 +145,10 @@ public class Run {
 
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
 			String a_out, String criticalfile, String a_init, String a_dotsuf, String obs, 
-			String ds_csv, String lm_out, boolean writedot, boolean full) {
+			String ds_csv, String lm_out, int delay, boolean writedot, boolean full) {
 		int reverseConfig = 1;
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
-		ArrayList<String> obFiles = getObservationFiles(obs);
+		TreeSet<String> obFiles = getObservationFiles(obs);
 		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(decider, domain);
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
 		int obFileLimit = 1; 
@@ -155,27 +158,27 @@ public class Run {
 			}
 			obFileLimit++;
 			String name[] = file.split("/");
-//									if(Integer.parseInt(name[name.length-1])==17){ //DEBUG;;;; remove after fixing
-			LOGGER.log(Level.INFO, "Processing observation file: "+ file);
-			Observation curobs = setObservations(file); //TODO: how to handle noise in trace. what counts as noise?
+			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
 			LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
-			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, Integer.parseInt(name[name.length-1]), writedot, full);//generate graph for attacker and user
+			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, 
+					name[name.length-1], writedot, full);//generate graph for attacker and user
 			if(full) {
-//				REMOVED:::: computeMetricsWeighted(domain, curobs, decider, attackerState, wt_csv+name[name.length-1]+".csv", ow);
-				computeMetricsForDecisionTree(domain, curobs, decider, attackerState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+".csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
+				LOGGER.log(Level.INFO, "Processing FULL observation file: "+ file);
+				computeMetricsForDecisionTree(domain, curobs, decider, attackerState, a_rpg.get(0), a_con.get(0), 
+						ds_csv+name[name.length-1]+".csv",lm_out); //rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state.
 			}else {
+				LOGGER.log(Level.INFO, "Processing PARTIAL observation file: "+ file);
 				Observation cleaned = new Observation();
 				ArrayList<String> cl = new ArrayList<>();
 				for (String o : curobs.getObservations()) {
-					if(!o.contains("*")) {
+					if(!o.contains("*")) { //add observations that does not have a *. the others are the ones that can be skipped
 						cl.add(o);
 					}
 				}
 				cleaned.setObservations(cl);
-//				REMOVED:::: computeMetricsWeighted(domain, cleaned, decider, attackerState, wt_csv+name[name.length-1]+"lm.csv", ow);
-				computeMetricsForDecisionTree(domain, cleaned, decider, attackerState, a_rpg.get(0), a_con.get(0), ds_csv+name[name.length-1]+"lm.csv",lm_out);				//rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state. TODO: check with dw to see if a change is needed
+				computeMetricsForDecisionTree(domain, cleaned, decider, attackerState, a_rpg.get(0), a_con.get(0), 
+						ds_csv+name[name.length-1]+"lm"+String.valueOf(delay)+".csv",lm_out); //file path -- scenarios/x/data/decision/0_lm50.csv
 			}
-//									}
 		}
 	}
 
@@ -196,7 +199,7 @@ public class Run {
 			String obs = TrainConfigs.root+casenum+TrainConfigs.obsdir;
 			boolean writedot = TrainConfigs.writeDOT;
 			run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
-					a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, writedot, true);
+					a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true);
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
@@ -217,7 +220,7 @@ public class Run {
 		String obs = DebugConfigs.root+DebugConfigs.obsdir;
 		boolean writedot = DebugConfigs.writeDOT;
 		run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
-				a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, writedot, true);
+				a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true);
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
@@ -226,7 +229,7 @@ public class Run {
 		boolean writedot = TestConfigs.writeDOT; 
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
 		for (int instance=start; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+			for (int x=1; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String domainfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.domainFile;
 				String desirablefile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.desirableStateFile;
 				String criticalfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.criticalStateFile;
@@ -238,22 +241,26 @@ public class Run {
 				String a_dotsuf = TestConfigs.a_dotFileSuffix;
 				String ds_csv = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.decisionCSV;
 				String lm_out_full = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputFull;
-				String lm_out_short = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputShort;
+				String lm_out_short50 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputShort50;
+				String lm_out_short75 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputShort75;
 				String obs = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.observationFiles;
-				String obslm = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.observationLMFiles; 
-				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, 
-						a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, writedot, true);
+				String obslm50 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.limitedObservationFiles50;
+				String obslm75 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.limitedObservationFiles75; 
+				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, 0, writedot, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
 				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
-						a_out, criticalfile, a_init, a_dotsuf, obslm, ds_csv, lm_out_short, writedot, false);
-				LOGGER.log(Level.INFO, "Finished reduced case: "+ x +" for test instance:" +instance );
+						a_out, criticalfile, a_init, a_dotsuf, obslm50, ds_csv, lm_out_short50, 50, writedot, false);
+				LOGGER.log(Level.INFO, "Finished 50% reduced case: "+ x +" for test instance:" +instance );
+				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
+						a_out, criticalfile, a_init, a_dotsuf, obslm75, ds_csv, lm_out_short75, 75, writedot, false);
+				LOGGER.log(Level.INFO, "Finished 75% reduced case: "+ x +" for test instance:" +instance );
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
 		}
 	}
 
 	public static void main(String[] args) { 
-		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigs.runmode){
 			runAsDebug(mode);
 		}else if(mode==TrainConfigs.runmode) {

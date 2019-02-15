@@ -196,6 +196,9 @@ public class ReducedTraceGenerator {
 					}
 				}
 			}
+			if(limits[0]>limits[1]) { //make sure the 75% mark is at least as far as 50%
+				limits[1]=limits[0];
+			}
 			for (int i=0; i<limits.length; i++) {
 				ArrayList<String> lmplan = new ArrayList<>();
 				if(limits[i]<steps.size()) { //there is a point in the plan that activates the required limit on landmark percentage. do the decision from this point on.
@@ -305,7 +308,7 @@ public class ReducedTraceGenerator {
 			for (Plan p : data) {
 				String idparts[] = p.getPlanID().split("/");
 				String fileid = idparts[idparts.length-1];
-				writer = new PrintWriter(outputpath+"/"+fileid, "UTF-8");
+				writer = new PrintWriter(outputpath+"/"+fileid.substring(0, fileid.indexOf("_")), "UTF-8");
 				for (int i = 0; i < p.getPlanSteps().size(); i++) {
 					writer.write(p.getPlanSteps().get(i));
 					writer.println();
@@ -317,6 +320,17 @@ public class ReducedTraceGenerator {
 		}
 	}
 
+	public static ArrayList<Plan> filterPlansByDelayPercentage(int percentage, ArrayList<Plan> clmactions){
+		ArrayList<Plan> filtered = new ArrayList<Plan>();
+		for (Plan plan : clmactions) {
+			String id = plan.getPlanID();
+			if(id.contains("_"+String.valueOf(percentage))) {
+				filtered.add(plan);
+			}
+		}
+		return filtered;
+	}
+	
 	public static void generateReducedTrace(int start) {
 		generateRPGandConnectvity(start); 		//generate rpg and cons for attacker domain
 		generateLandmarks(start); //generate landmarks and write output to lmfile
@@ -330,13 +344,16 @@ public class ReducedTraceGenerator {
 				String lmoutpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.lmFile;
 				String conpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.acon;
 				String obspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obsdir+"/"; //take this as the root plan
-				String obslmpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm;
+				String obslm50path = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm50;
+				String obslm75path = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm75;
 				ArrayList<String> lmlines  = readLMData(lmoutpath);
 				HashMap<ArrayList<String>, ArrayList<String>> lms = extractVerifiedLM(lmlines);
 				ArrayList<ArrayList<String>> criticallm= getLMBeforeCritical(lms,critical.get(j));
-				System.out.println(criticallm);
 				ArrayList<Plan> clmactions = reduceTraceByActiveLandmarkPercentage(criticallm, inits, conpath, obspath);
-				writeToFile(clmactions, obslmpath);//write reduced traces to file.
+				ArrayList<Plan> delay50 = filterPlansByDelayPercentage(50, clmactions);
+				ArrayList<Plan> delay75 = filterPlansByDelayPercentage(75, clmactions);
+				writeToFile(delay50, obslm50path);//write reduced traces to file.
+				writeToFile(delay75, obslm75path);//write reduced traces to file.
 			}
 		}
 		LOGGER.log(Level.INFO, "Reduced traces generated");

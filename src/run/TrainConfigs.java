@@ -6,7 +6,7 @@ public class TrainConfigs {
 	public static final int cases = 20;
 	public static final int fileLimit = 100;
 	public static final boolean writeDOT = false;
-	public static final String domain = "FERRY"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
+	public static final String domain = "NAVIGATOR"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
 	public static final String root = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
 	public static final String obsdir = "/obs/";
 	public static final String outsdir = "/outs/";

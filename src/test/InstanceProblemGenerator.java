@@ -192,7 +192,8 @@ public class InstanceProblemGenerator {
 		new File(outputpath+scenarioid+"/"+HarnessConfigs.outdir+"/attacker/").mkdirs();
 		new File(outputpath+scenarioid+"/"+HarnessConfigs.outdir+"/user/").mkdirs();
 		new File(outputpath+scenarioid+"/"+HarnessConfigs.obsdir+"/").mkdirs();
-		new File(outputpath+scenarioid+"/"+HarnessConfigs.obslm+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.obslm50+"/").mkdirs();
+		new File(outputpath+scenarioid+"/"+HarnessConfigs.obslm75+"/").mkdirs();
 		new File(outputpath+scenarioid+"/"+HarnessConfigs.tempplan+"/").mkdirs();
 	}
 

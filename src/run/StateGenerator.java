@@ -513,7 +513,7 @@ public class StateGenerator {
 		}
 	}
 
-	public void graphToDOT(StateGraph g, int namesuffix, int foldersuffix, boolean writeDOTFile){
+	public void graphToDOT(StateGraph g, int namesuffix, String foldersuffix, boolean writeDOTFile){
 		if(writeDOTFile){//name format = /home/sachini/BLOCKS/scenarios/2/dot/graph_ag_noreverse_1_4.dot
 			GraphDOT dot = new GraphDOT(g, agent.domain); 
 			dot.generateDOT(agent.dotFilePrefix+agent.dotFileSuffix+foldersuffix+"_"+namesuffix+dotFileExt);

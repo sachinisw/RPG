@@ -396,8 +396,6 @@ public class Decider extends Agent{
 				}
 			}
 		}
-		System.out.println("ROOT=="+root);
-		System.out.println(count + "/" + cleanedlm.size());
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
 		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(cleanedlm.size()));
 		return Double.valueOf(format);

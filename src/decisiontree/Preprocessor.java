@@ -211,10 +211,17 @@ public class Preprocessor {
 					cleaned.add(df);
 				}
 			}
-		} else if(testtype==2) { //limited trace
+		} else if(testtype==2) { //limited trace 50
 			for (DataFile df : dataFile) {
 				String parts [] = df.getFilename().split("/");
-				if(parts[parts.length-1].contains("lm.csv")) {
+				if(parts[parts.length-1].contains("lm50.csv")) {
+					cleaned.add(df);
+				}
+			}
+		}else if(testtype==3) { //limited trace 75
+			for (DataFile df : dataFile) {
+				String parts [] = df.getFilename().split("/");
+				if(parts[parts.length-1].contains("lm75.csv")) {
 					cleaned.add(df);
 				}
 			}
@@ -260,9 +267,9 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
 		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "FERRY";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 1;
-		int casePerInstance = 20;
+		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();
 		if(mode==-1) {
 			LOGGER.log(Level.CONFIG, "Preprocessing for DEBUG mode. DOMAIN======"+ domain);
@@ -292,22 +299,27 @@ public class Preprocessor {
 			for (int instance = 1; instance <= instances; instance++) {
 				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
-				String instout_lm=prefix+String.valueOf(instance)+"/data/instlm.csv";
+				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
+				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";
 				ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
-				ArrayList<ArrayList<DataFile>> inst_lm = new ArrayList<>();
-
+				ArrayList<ArrayList<DataFile>> inst_lm50 = new ArrayList<>();
+				ArrayList<ArrayList<DataFile>> inst_lm75 = new ArrayList<>();
 				for(int instcase = 0; instcase<casePerInstance; instcase++) {
 					String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
 					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
 					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
-					String outFull_lm = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_lm.csv";
+					String outFull_lm50 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_50lm.csv";
+					String outFull_lm75 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_75lm.csv";
 					ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1);
-					ArrayList<DataFile> dlm = pre.preprocessTestingData(inputfilepath, out, outFull_lm, 2);
+					ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2);
+					ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3);
 					inst_full.add(df);
-					inst_lm.add(dlm);
+					inst_lm50.add(dlm50);
+					inst_lm75.add(dlm75);
 				}
 				writeInstanceSpecificOutput(inst_full, instout_full);
-				writeInstanceSpecificOutput(inst_lm, instout_lm);
+				writeInstanceSpecificOutput(inst_lm50, instout_lm50);
+				writeInstanceSpecificOutput(inst_lm75, instout_lm75);
 				LOGGER.log(Level.INFO, "Instance: " + instance  + " complete");
 			}
 		}
