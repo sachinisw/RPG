@@ -56,8 +56,8 @@ public class Preprocess {
 
 	public static void preparePredictionFile() {
 		int scenario = 0;
-		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
-		int instances  = 1;
+		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int instances  = 3;
 		for (int instance = 1; instance <= instances; instance++) {
 			String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 			String inst_full=prefix+String.valueOf(instance)+"/data/instfull.arff";
@@ -74,6 +74,6 @@ public class Preprocess {
 	}
 
 	public static void main(String[] args) {
-		preparePredictionFile();
+		preparePredictionFile(); //run this first in prediction
 	}
 }
