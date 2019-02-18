@@ -2,7 +2,7 @@ package test;
 
 public class HarnessConfigs {
 	//TEMPLATES
-	public final static String domain = "NAVIGATOR";//BLOCKS,EASYIPC,NAVIGATOR,FERRY
+	public final static String domain = "EASYIPC";//BLOCKS,EASYIPC,NAVIGATOR,FERRY
 	public final static String testscenario = "0"; //this is which trained attack scenario it is. e.g. BLOCKS has 4 testable attack scenarios.
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+testscenario+"/inst";
 	public final static String criticalstates = "/cs.txt";

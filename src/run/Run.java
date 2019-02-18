@@ -136,7 +136,8 @@ public class Run {
 			return true;
 		}else {
 			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit) || 
-					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
+					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit) ||
+					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
 				return true;
 			}
 		}
@@ -229,7 +230,7 @@ public class Run {
 		boolean writedot = TestConfigs.writeDOT; 
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
 		for (int instance=start; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			for (int x=1; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+			for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String domainfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.domainFile;
 				String desirablefile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.desirableStateFile;
 				String criticalfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.criticalStateFile;
@@ -260,7 +261,7 @@ public class Run {
 	}
 
 	public static void main(String[] args) { 
-		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigs.runmode){
 			runAsDebug(mode);
 		}else if(mode==TrainConfigs.runmode) {

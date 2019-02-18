@@ -267,7 +267,7 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
 		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 1;
 		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();

@@ -137,7 +137,5 @@ public class TestInstanceGenerator {
 			generateProblems(criticals, problemFile, problemspath);
 		}
 		LOGGER.log(Level.INFO, "Template generation done" );
-	}
-
-	//README: This is called first. From templates, generate 3 test instances with 'testProblemCount' problems
+	}	//README: This is called first. From templates, generate 3 test instances with 'testProblemCount' problems
 }
