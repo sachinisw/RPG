@@ -28,11 +28,11 @@ public class AccuracyCalculator {
 			String l50 = computeAccuracy(inst_lm50p, inst_lm50a, "lm50");
 			String l75 = computeAccuracy(inst_lm75p, inst_lm75a, "lm75");
 			out += f+l50+l75;
-			writeStructureToFile(out, outfile);
+			writeLineToFile(out, outfile);
 		}
 	}
 
-	public static void writeStructureToFile(String s, String out) {
+	public static void writeLineToFile(String s, String out) {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(out, "UTF-8");
