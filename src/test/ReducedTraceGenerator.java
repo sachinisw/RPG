@@ -2,20 +2,27 @@ package test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
-
-import con.ConnectivityGraph;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import con.ConnectivityGraph;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+
 import landmark.RelaxedPlanningGraphGenerator;
+import plan.Plan;
 
 public class ReducedTraceGenerator {
 	/**
@@ -55,15 +62,38 @@ public class ReducedTraceGenerator {
 		return init;
 	}
 
-	public static ArrayList<String> readRootPlan(String obs) {
-		ArrayList<String> pl = new ArrayList<String>();
+	public static ArrayList<String> getDataFiles(String filedir){		
+		ArrayList<String> dataFilePaths = new ArrayList<String>(); 
+		try {
+			File dir = new File(filedir);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				dataFilePaths.add(fileItem.getCanonicalPath());
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		return dataFilePaths;	
+	}
+
+	//read all full observation files and add them as plans
+	public static ArrayList<Plan> readRootPlans(String obs) {
+		ArrayList<String> files = getDataFiles(obs);
+		ArrayList<Plan> pl = new ArrayList<Plan>();
 		Scanner reader;
 		try {
-			reader = new Scanner (new File(obs));
-			while(reader.hasNextLine()) {
-				pl.add(reader.nextLine());
+			for (String path : files) {
+				ArrayList<String> plansteps = new ArrayList<String>();
+				reader = new Scanner (new File(path));
+				while(reader.hasNextLine()) {
+					plansteps.add(reader.nextLine());
+				}
+				reader.close();
+				Plan p = new Plan(plansteps, path);
+				pl.add(p);
 			}
-			reader.close();
+
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -89,87 +119,128 @@ public class ReducedTraceGenerator {
 		return lines;
 	}
 
-	public static ArrayList<ArrayList<String>> extractLM(ArrayList<String> lmLines){
-		ArrayList<ArrayList<String>> lm = new ArrayList<ArrayList<String>>();
+	public static HashMap<ArrayList<String>, ArrayList<String>> extractVerifiedLM(ArrayList<String> lmLines){
+		HashMap<ArrayList<String> ,ArrayList<String>> lm = new HashMap<>();
 		for (String string : lmLines) {
-			ArrayList<String> data = new ArrayList<>();
 			String parts [] = string.split(":");
-			String key="",value="";
 			ArrayList<String> keys = new ArrayList<>();
 			ArrayList<String> values = new ArrayList<>();
 			if (!parts[0].trim().isEmpty()) {
-				key = parts[0].trim().substring(2, parts[0].length()-2);
-				String keyparts[]=key.split(",");
+				String keyparts[]=parts[0].trim().substring(2, parts[0].length()-2).split(",");
 				for (String k : keyparts) {
 					keys.add(k.substring(k.indexOf("("),k.indexOf(")")+1));
 				}
 			}
 			if(parts[1].trim().length()>0){
-				value = parts[1].trim().substring(1, parts[1].length()-2);
-				String valueparts[]=value.split("}");
+				String valueparts[]=parts[1].trim().substring(1, parts[1].length()-2).split("}");
 				for (String v : valueparts) {
 					values.add(v.substring(v.indexOf("("),v.indexOf(")")+1));
 				}
 			}
-			data.addAll(keys);
-			data.addAll(values);
-			lm.add(data);
+			lm.put(keys, values);
 		}
-		//				for (ArrayList<String> arrayList : lm) {
-		//					System.out.println(arrayList);
-		//				}
 		return lm;
 	}
 
-	public static HashMap<String, ArrayList<String>> extractLMBeforeUndesirableState(ArrayList<ArrayList<String>> lm) {
-		HashMap<String, ArrayList<String>> causes = new HashMap<>();
-		ArrayList<String> goal = lm.get(0);
-		for(int i=1; i<lm.size(); i++){
-			List<String> data = lm.get(i).subList(1, lm.get(i).size());
-			for (String c : goal) {
-				String s = listContainsState(data, c);
-				if(s!=null) {
-					if(!causes.containsKey(c)) {
-						ArrayList<String> val= new ArrayList<String>();
-						val.add(lm.get(i).get(0));
-						causes.put(c, val);
-					}else {
-						ArrayList<String> current = causes.get(c);
-						current.add(lm.get(i).get(0));
+	public static ArrayList<ArrayList<String>> getLMBeforeCritical(HashMap<ArrayList<String>,ArrayList<String>> lm, String critical) {
+		String temp [] = critical.split("#")[0].split(",");
+		ArrayList<String> cs = new ArrayList<String>();
+		cs.addAll(Arrays.asList(temp));
+		ArrayList<ArrayList<String>> clearedLm = new ArrayList<>();
+		Iterator<Entry<ArrayList<String>, ArrayList<String>>> it = lm.entrySet().iterator();
+		while(it.hasNext()) {
+			Entry<ArrayList<String>, ArrayList<String>> e = it.next();
+			if(!e.getKey().equals(cs)) {
+				clearedLm.add(e.getKey());
+			}
+		}
+		return clearedLm;
+	}
+
+	public static ArrayList<Plan> reduceTraceByActiveLandmarkPercentage(ArrayList<ArrayList<String>> clm, ArrayList<String> init, 
+			String congraphpath, String planpath){
+		ArrayList<Plan> allplans = new ArrayList<>();
+		ConnectivityGraph con = new ConnectivityGraph(congraphpath);
+		con.readConGraphOutput(congraphpath);
+		ArrayList<Plan> rootplans = readRootPlans(planpath);
+		for (Plan plan : rootplans) {
+			int [] limits = new int [2];
+			ArrayList<String> steps = plan.getPlanSteps();
+			ArrayList<String> currentstate = new ArrayList<String>();
+			double[] ratios = new double [steps.size()];
+			currentstate.addAll(init);
+			int count = 0, halfpoint = 0;
+			for (String step : steps) {
+				ArrayList<String> stateafterstep = getEffectsOfAction(step, currentstate, con);
+				double lmpercentage = getPercentageOfActiveLandmarksInState(stateafterstep, clm);
+				ratios[count++] = lmpercentage;
+				currentstate.clear();
+				currentstate.addAll(stateafterstep);
+			}
+			for (int a=0; a<ratios.length; a++) {//find the latest observation that has 50<rate<75
+				if(HarnessConfigs.activeLMRatio[0]<=ratios[a] && ratios[a]<HarnessConfigs.activeLMRatio[1]) {
+					limits[0] = a;
+					halfpoint = a;
+				}
+			}
+			for (int a=0; a<ratios.length; a++) {//find the latest observation that has 75<=rate
+				if(ratios[a]>=HarnessConfigs.activeLMRatio[1] && a>=halfpoint) {
+					limits[1] = a;
+				}
+			}
+			if(limits[1]==0) { //if no such 75% was found start from the largest percentage
+				double max= ratios[0];
+				for (int a=1; a<ratios.length; a++) {//find the latest observation that has 75<=rate
+					if(ratios[a]>=max && a>=halfpoint) {
+						limits[1] = a;
 					}
 				}
 			}
+			if(limits[0]>limits[1]) { //make sure the 75% mark is at least as far as 50%
+				limits[1]=limits[0];
+			}
+			for (int i=0; i<limits.length; i++) {
+				ArrayList<String> lmplan = new ArrayList<>();
+				if(limits[i]<steps.size()) { //there is a point in the plan that activates the required limit on landmark percentage. do the decision from this point on.
+					for(int j=0; j<steps.size(); j++) {
+						if(j<limits[i]) {
+							lmplan.add("*"+steps.get(j)); //README:: ignore obs with * when generating feature values for reduced trace
+						}else {
+							lmplan.add(steps.get(j));
+						}
+					}
+				}
+				String planid = plan.getPlanID()+"_"+HarnessConfigs.activeLMRatio[i]*100;
+				allplans.add(new Plan(lmplan,planid.substring(0, planid.length()-2)));
+			}
 		}
-		//		System.out.println("done");
-		//		Iterator<Entry<String, ArrayList<String>>> it = causes.entrySet().iterator();
-		//		while(it.hasNext()) {
-		//			Entry<String, ArrayList<String>> e = it.next();
-		//			System.out.println(e.getKey()+"---"+e.getValue());
-		//		}
-		return causes;
+
+		return allplans;
 	}
 
-	public static ArrayList<String> actionsAddingCriticalLandmark(HashMap<String, ArrayList<String>> clm, String congraphpath, String planpath){
-		ArrayList<String> actions = new ArrayList<>();
-		ConnectivityGraph con = new ConnectivityGraph(congraphpath);
-		con.readConGraphOutput(congraphpath);
-		ArrayList<String> rootplan = readRootPlan(planpath);
-		int startpoint = 0;
-		for (String step : rootplan) {
-			ArrayList<String> ads = con.findStatesAddedByAction(step.substring(2));
-			startpoint++;
-			if(addContainsCriticalLM(ads, clm)) {
-				break;
+	public static ArrayList<String> getEffectsOfAction(String action, ArrayList<String> currentstate, ConnectivityGraph con){
+		ArrayList<String> updatedState = new ArrayList<String>();
+		String ac = action.substring(2, action.length());
+		ArrayList<String> adds = con.findStatesAddedByAction(ac);
+		ArrayList<String> dels = con.findStatesDeletedByAction(ac);
+		updatedState.addAll(currentstate);
+		updatedState.removeAll(dels);
+		updatedState.addAll(adds);
+		return updatedState;
+	}
+
+	public static double getPercentageOfActiveLandmarksInState(ArrayList<String> state, ArrayList<ArrayList<String>> clm) {
+		int count = 0;
+		for (String st : state) {
+			for (ArrayList<String> lm : clm) {
+				if(listContainsState(lm, st) != null) {	
+					count++;
+				}
 			}
 		}
-		for(int i=0; i<rootplan.size(); i++) {
-			if(i<startpoint-1) {
-				actions.add("*"+rootplan.get(i)); //README:: ignore obs with * when generating feature values for reduced trace
-			}else {
-				actions.add(rootplan.get(i));
-			}
-		}
-		return actions;
+		DecimalFormat decimalFormat = new DecimalFormat("##.##");
+		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(clm.size()));
+		return Double.valueOf(format);
 	}
 
 	public static boolean addContainsCriticalLM(ArrayList<String> adds, HashMap<String, ArrayList<String>> clm) {
@@ -199,34 +270,30 @@ public class ReducedTraceGenerator {
 		return null;
 	}
 
-	public static void generateRPGandConnectvity() {
+	public static void generateRPGandConnectvity(int start) {
 		//FORMAT: /home/sachini/domains/BLOCKS/scenarios/TEST1/inst1/scenarios/0/outs/attacker
-		for(int i=1; i<=TestGeneratorConfigs.testInstanceCount; i++) { 
-			String pathprefix = TestGeneratorConfigs.prefix+String.valueOf(i)+TestGeneratorConfigs.problemgen_output;
-			for (int j = 0; j < TestGeneratorConfigs.testProblemCount; j++) { //attacker
-				String aplanspath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/";
-				String uplanspath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/user/";
-				String domainpath = pathprefix+String.valueOf(j)+TestGeneratorConfigs.domainFile;
+		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
+			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
+			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //attacker
+				String aplanspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/";
+				String domainpath = pathprefix+String.valueOf(j)+HarnessConfigs.domainFile;
 				String problemspath = pathprefix+String.valueOf(j)+"/";
-				Planner.runFF(1, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath); 
-				Planner.runFF(2, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath);
-				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.aprobfilename, aplanspath);
-				Planner.runFF(1, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath); 
-				Planner.runFF(2, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
-				Planner.runFF(3, domainpath, problemspath+TestGeneratorConfigs.uprobfilename, uplanspath);
+				Planner.runFF(1, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath); 
+				Planner.runFF(2, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath);
+				Planner.runFF(3, domainpath, problemspath+HarnessConfigs.aprobfilename, aplanspath);
 			}
 		}
 	}
 
-	public static void generateLandmarks() {
-		for(int i=1; i<=TestGeneratorConfigs.testInstanceCount; i++) { 
-			String pathprefix = TestGeneratorConfigs.prefix+String.valueOf(i)+TestGeneratorConfigs.problemgen_output;
-			for (int j = 0; j < TestGeneratorConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
-				String rpgpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.arpg;
-				String conpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.acon;
-				String csfile = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.critical;
-				String initfile = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.ainit;
-				String lmoutpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.lmFile;
+	public static void generateLandmarks(int start) {
+		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
+			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
+			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
+				String rpgpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.arpg;
+				String conpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.acon;
+				String csfile = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.critical;
+				String initfile = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.ainit;
+				String lmoutpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.lmFile;
 				ArrayList<String> criticals = readCriticals(csfile);
 				ArrayList<String> inits = readInits(initfile);
 				RelaxedPlanningGraphGenerator rpggen = new RelaxedPlanningGraphGenerator();
@@ -235,43 +302,60 @@ public class ReducedTraceGenerator {
 		}
 	}
 
-	public static void writeToFile(ArrayList<String> data, String outputpath, String filename){
+	public static void writeToFile(ArrayList<Plan> data, String outputpath){
 		PrintWriter writer = null;
 		try{
-			writer = new PrintWriter(outputpath+"/"+filename, "UTF-8");
-			for (int i = 0; i < data.size(); i++) {
-				writer.write(data.get(i));
-				writer.println();
+			for (Plan p : data) {
+				String idparts[] = p.getPlanID().split("/");
+				String fileid = idparts[idparts.length-1];
+				writer = new PrintWriter(outputpath+"/"+fileid.substring(0, fileid.indexOf("_")), "UTF-8");
+				for (int i = 0; i < p.getPlanSteps().size(); i++) {
+					writer.write(p.getPlanSteps().get(i));
+					writer.println();
+				}
+				writer.close();
 			}
 		}catch (FileNotFoundException | UnsupportedEncodingException  e) {
 			e.printStackTrace();
-		}finally{
-			writer.close();
 		}
 	}
 
-	public static void generateReducedTrace() {
-		generateRPGandConnectvity(); 		//generate rpg and cons
-		generateLandmarks(); //generate landmarks and write output to lmfile
-		for(int i=1; i<=TestGeneratorConfigs.testInstanceCount; i++) { 
-			String pathprefix = TestGeneratorConfigs.prefix+String.valueOf(i)+TestGeneratorConfigs.problemgen_output;
-			for (int j = 0; j < TestGeneratorConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
-				String lmoutpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.lmFile;
-				String conpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.outdir+"/attacker/"+TestGeneratorConfigs.acon;
-				String obspath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.obsdir+"/"+String.valueOf(j); //take this as the root plan
-				String obslmpath = pathprefix+String.valueOf(j)+"/"+TestGeneratorConfigs.obslm;
+	public static ArrayList<Plan> filterPlansByDelayPercentage(int percentage, ArrayList<Plan> clmactions){
+		ArrayList<Plan> filtered = new ArrayList<Plan>();
+		for (Plan plan : clmactions) {
+			String id = plan.getPlanID();
+			if(id.contains("_"+String.valueOf(percentage))) {
+				filtered.add(plan);
+			}
+		}
+		return filtered;
+	}
+	
+	public static void generateReducedTrace(int start) {
+		generateRPGandConnectvity(start); 		//generate rpg and cons for attacker domain
+		generateLandmarks(start); //generate landmarks and write output to lmfile
+		for(int i=start; i<=HarnessConfigs.testInstanceCount; i++) { 
+			String pathprefix = HarnessConfigs.prefix+String.valueOf(i)+HarnessConfigs.problemgen_output;
+			String initspath = HarnessConfigs.prefix+String.valueOf(i)+"/"+HarnessConfigs.initFile;
+			String cfile = HarnessConfigs.prefix+String.valueOf(i)+"/"+HarnessConfigs.criticalStateFile;
+			ArrayList<String> inits = readInits(initspath);
+			ArrayList<String> critical = readCriticals(cfile);
+			for (int j = 0; j < HarnessConfigs.testProblemCount; j++) { //only attacker's paths are needed because landmark considers attacker's problem only
+				String lmoutpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.lmFile;
+				String conpath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.outdir+"/attacker/"+HarnessConfigs.acon;
+				String obspath = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obsdir+"/"; //take this as the root plan
+				String obslm50path = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm50;
+				String obslm75path = pathprefix+String.valueOf(j)+"/"+HarnessConfigs.obslm75;
 				ArrayList<String> lmlines  = readLMData(lmoutpath);
-				ArrayList<ArrayList<String>> lms = extractLM(lmlines);
-				HashMap<String, ArrayList<String>> criticallm= extractLMBeforeUndesirableState(lms);
-				ArrayList<String> clmactions = actionsAddingCriticalLandmark(criticallm, conpath, obspath);	//after this find the action that first adds this landmark. remove actions before that action from the trace
-				writeToFile(clmactions, obslmpath, String.valueOf(j));//write trace to file
+				HashMap<ArrayList<String>, ArrayList<String>> lms = extractVerifiedLM(lmlines);
+				ArrayList<ArrayList<String>> criticallm= getLMBeforeCritical(lms,critical.get(j));
+				ArrayList<Plan> clmactions = reduceTraceByActiveLandmarkPercentage(criticallm, inits, conpath, obspath);
+				ArrayList<Plan> delay50 = filterPlansByDelayPercentage(50, clmactions);
+				ArrayList<Plan> delay75 = filterPlansByDelayPercentage(75, clmactions);
+				writeToFile(delay50, obslm50path);//write reduced traces to file.
+				writeToFile(delay75, obslm75path);//write reduced traces to file.
 			}
 		}
 		LOGGER.log(Level.INFO, "Reduced traces generated");
 	}
-
-//	public static void main(String[] args) {
-//		generateReducedTrace();
-//		LOGGER.log(Level.INFO, "Reduced traces generated");
-//	}
 }

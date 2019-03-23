@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 import java.util.Scanner;
 
 import plan.Plan;
-import test.TestGeneratorConfigs;
+import test.HarnessConfigs;
 /**
  * Generate observation traces for testing the trained model of the decision tree
  * This is called first. From templates, generate 3 test instances with 20 problems for each instance
@@ -53,11 +53,7 @@ public class TestInstanceGenerator {
 			reader = new Scanner (new File(cspath));
 			while(reader.hasNextLine()) {
 				String state = reader.nextLine();
-				if(TestGeneratorConfigs.domain.equalsIgnoreCase("blocks")) {
-					cs.add(state.substring(0, state.indexOf("-")));
-				}else if((TestGeneratorConfigs.domain.equalsIgnoreCase("easyipc"))) {
-					cs.add(state.substring(0, state.indexOf("#")));
-				}
+				cs.add(state.substring(0, state.indexOf("#")));
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
@@ -84,7 +80,7 @@ public class TestInstanceGenerator {
 	private static void generateProblems(ArrayList<String> goalstates, String templatepath, String problemsout) {
 		ArrayList<String> problem = readTemplateProblem(templatepath);
 		ArrayList<ArrayList<String>> problems = new ArrayList<>();
-		for (String cs : goalstates) { //replace tag <CRITICAL> with cs
+		for (String cs : goalstates) { //replace tag <CRITICAL> with cs. contains a separating comma. dont have to remove it
 			ArrayList<String> current = new ArrayList<String>();
 			problem.set(problem.size()-3, cs);
 			current.addAll(problem);
@@ -112,7 +108,7 @@ public class TestInstanceGenerator {
 	}
 
 	public static void generatePlans(String problemspath, String domainpath, String planspath, String tracepath) {
-		for (int i = 0; i < TestGeneratorConfigs.testProblemCount; i++) {
+		for (int i = 0; i < HarnessConfigs.testProblemCount; i++) {
 			Planner.runFF(1, domainpath, problemspath+"problem_"+i+".pddl", planspath); //just create a plan
 		}
 		ArrayList<Plan> plans = Planner.readPlans(planspath);
@@ -131,21 +127,15 @@ public class TestInstanceGenerator {
 	}
 
 	//generates common templates and full trace set (all actions including) for each test instance {1,2,3}
-	public static void generateProblemsFromTemplate(){ 
-		for(int instance=1; instance<=TestGeneratorConfigs.testInstanceCount; instance++){
+	public static void generateProblemsFromTemplate(int start){ 
+		for(int instance=start; instance<=HarnessConfigs.testInstanceCount; instance++){
 			LOGGER.log(Level.INFO, "Template generation for test instance "+ instance );
-			String problemFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.template_problem;
-			String criticalStateFile = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.criticalStateFile;
-			String problemspath = TestGeneratorConfigs.prefix+instance+TestGeneratorConfigs.problems;
+			String problemFile = HarnessConfigs.prefix+instance+HarnessConfigs.template_problem;
+			String criticalStateFile = HarnessConfigs.prefix+instance+HarnessConfigs.criticalStateFile;
+			String problemspath = HarnessConfigs.prefix+instance+HarnessConfigs.problems;
 			ArrayList<String> criticals =  readCriticals(criticalStateFile);
 			generateProblems(criticals, problemFile, problemspath);
 		}
 		LOGGER.log(Level.INFO, "Template generation done" );
-	}
-
-	//README: This is called first. From templates, generate 3 test instances with 'testProblemCount' problems
-//	public static void main(String[] args) { 
-//		generateProblemsFromTemplate();
-//		LOGGER.log(Level.INFO, "Finished template generation" );
-//	}
+	}	//README: This is called first. From templates, generate 3 test instances with 'testProblemCount' problems
 }

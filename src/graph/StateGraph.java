@@ -102,7 +102,6 @@ public class StateGraph {
 				}else{
 					edges.add(new ActionEdge(action, from, to, false));
 				}
-
 			}
 		}
 	}
@@ -257,16 +256,6 @@ public class StateGraph {
 		}
 	}
 
-	//vertex connectivity of a graph g is the smallest number of vertices whose deletion from g disconnects g.
-	public void vertexConnctivity(){
-
-	}
-
-	//The edge connectivity of a graph g is the smallest number of edges whose deletion from g disconnects g.
-	public int getEdgeConnectivity(){
-		return 0;
-	}
-
 	//the number of in-edges for each vertex
 	public HashMap<StateVertex, Integer> getVertexInDegree(){
 		HashMap<StateVertex, Integer> dIn = new HashMap<>();
@@ -402,7 +391,7 @@ public class StateGraph {
 	}
 
 	//remove reverse edges (undo actions) and convert graph into a tree
-	public StateGraph convertToTree(StateVertex init){
+	public StateGraph convertToTree(StateVertex init, String domain){
 		HashMap<StateVertex, TreeSet<StateVertex>> adjacencyListTree = new HashMap<StateVertex, TreeSet<StateVertex>>();
 		HashMap<String, StateVertex> verticesTree = new HashMap<>();
 		ArrayList<ActionEdge> edgesTree = new ArrayList<>();
@@ -449,14 +438,8 @@ public class StateGraph {
 		tree.setEdges(edgesTree);
 		tree.setNumEdges(edgesTree.size());
 		tree.setNumVertices(verticesTree.size());
-		tree.markVerticesContainingCriticalState(critical);
-		tree.markVerticesContainingDesirableState(desirable);
-		//				System.out.println("THIS IS THE TREE ADJ LIST-----------------------------------------------------------------------------");
-		//				System.out.println(tree.toString());
-		//				System.out.println("TREE EDGE SET----------------------");
-		//				for (ActionEdge e : edgesTree) {
-		//					System.out.println(e);
-		//				}
+		tree.markVerticesContainingCriticalState(critical, domain);
+		tree.markVerticesContainingDesirableState(desirable, domain);
 		return tree;
 	}
 
@@ -553,58 +536,151 @@ public class StateGraph {
 		return null;
 	}
 
-	public void markVerticesContainingCriticalState(CriticalState critical){
+	public void markVerticesContainingCriticalState(CriticalState critical, String domain){
 		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
-		while(itr.hasNext()){
-			StateVertex v = itr.next().getValue();
-			if(v.containsCriticalState(critical.getCriticalState())){
-				v.setContainsCriticalState(true);
-			}
-		}
-	}
-
-	public void markVerticesContainingDesirableState(DesirableState desirable){ //arg comes from input file
-		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
-		while(itr.hasNext()){
-			StateVertex v = itr.next().getValue();
-			if(v.containsDesirableState(desirable.getDesirable())){
-				v.setContainsDesirableState(true);
-			}
-		}
-	}
-
-	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
-		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
-		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
-		Stack<StateVertex> stack = new Stack<StateVertex>();
-		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
-		ArrayList<StateVertex> base = new ArrayList<>();
-		stack.push(getRoot());
-		while(!stack.isEmpty()){
-			StateVertex current = stack.pop();
-			visited.add(current);
-			base.add(current);
-			TreeSet<StateVertex> neighbors = adj.get(current);
-			for (StateVertex stateVertex : neighbors) {
-				stack.add(stateVertex);
-			}
-			if(isVertexInSpecifiedList(current, getLeafNodes())){ //found a leaf. now compute the path from root. (base  must have all nodes in path)
-				ArrayList<StateVertex> path = new ArrayList<>();
-				path.addAll(base);
-				int index = path.size()-1;
-				ArrayList<StateVertex> copy = new ArrayList<>();
-				copy.addAll(stack);
-				while(canBackTrack(path.get(index), copy) && index>0){
-					base.remove(path.get(index));
-					index--;
+		if(domain.equalsIgnoreCase("BLOCKS")) {
+			while(itr.hasNext()){
+				StateVertex v = itr.next().getValue();
+				if(v.containsPartialStateBlockWords(critical.getCriticalStatePredicates(), true)){
+					v.setaPartialCriticalState(true);
 				}
-				paths.add(path);
-			}	
+			}
+		}else {
+			while(itr.hasNext()){
+				StateVertex v = itr.next().getValue();
+				if(v.containsState(critical.getCriticalStatePredicates())){
+					v.setContainsCriticalState(true);
+				}
+			}
+		}
+	}
+
+	public void markVerticesContainingDesirableState(DesirableState desirable, String domain){ //arg comes from input file
+		Iterator<Entry<String, StateVertex>> itr = vertices.entrySet().iterator();
+		if(domain.equalsIgnoreCase("BLOCKS")) {
+			while(itr.hasNext()){
+				StateVertex v = itr.next().getValue();
+				if(v.containsPartialStateBlockWords(desirable.getDesirableStatePredicates(), false)){
+					v.setaPartialDesirableState(true);
+				}
+			}
+		}else {
+			while(itr.hasNext()){
+				StateVertex v = itr.next().getValue();
+				if(v.containsState(desirable.getDesirableStatePredicates())){
+					v.setContainsDesirableState(true);
+				}
+			}
+		}
+	}
+
+	/*
+	 * Collect all paths the user will likely follow to build the desirable state. 
+	 * Some of these paths will trigger the undesirable state.
+	 */
+	public ArrayList<ArrayList<StateVertex>> getLikelyPathsForUser(ArrayList<String> desirablestate, String domain){
+		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
+		ArrayList<StateVertex> desirablenodes = getNodesContainingDesirableState(desirablestate, domain);
+		paths = getAllPathsToDesirableNodes(desirablenodes);
+		return paths;
+	}
+
+	//return nodes that will contain user's desirable goals. If paths in the tree contain these nodes, then the user may likely follow that path to reach its goal
+	//while doing that, the user may inadvertently trigger the undesirable state.
+	//previously I was checking just the leaf nodes. now corrected to check if ANY node in the tree has the desirable state.
+	//This change generates the same traces for blocks. I think it should also be more accurate for grid-worlds.
+	public ArrayList<StateVertex> getNodesContainingDesirableState(ArrayList<String> desirablestate, String domain){
+		ArrayList<StateVertex> desirableNodes = new ArrayList<StateVertex>();
+		if(domain.equalsIgnoreCase("blocks")) {
+			for (StateVertex v : vertices.values()) {
+				if(v.containsPartialStateBlockWords(desirablestate, false)){
+					desirableNodes.add(v);
+				}
+			}
+		}else {
+			for (StateVertex v : vertices.values()) {
+				if(v.containsState(desirablestate)){
+					desirableNodes.add(v);
+				}
+			}
+		}
+		return desirableNodes;
+	}
+
+	public ArrayList<ArrayList<StateVertex>> getAllPathsToDesirableNodes(ArrayList<StateVertex> dnodes){
+		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
+		ArrayList<StateVertex> currentpath = new ArrayList<>();
+		HashMap<StateVertex, Boolean> visited = new HashMap<StateVertex, Boolean>();
+		visited.put(getRoot(), true);
+		for (StateVertex d : dnodes) {
+			allPathsFromSrcToDest(getRoot(), d, visited, currentpath, paths);
 		}
 		return paths;
 	}
 	
-	private boolean canBackTrack(StateVertex current, ArrayList<StateVertex> unprocessed){ //return false, when you find the first node with unvisited children
+	private void allPathsFromSrcToDest(StateVertex s, StateVertex d, HashMap<StateVertex, Boolean> visited, ArrayList<StateVertex> currentpath,
+			ArrayList<ArrayList<StateVertex>> paths) {
+		currentpath.add(s);
+		if(s.equals(d)) {
+			paths.add(new ArrayList<>(currentpath));
+		}
+		else {
+			TreeSet<StateVertex> neighbors = getAdjacencyList().get(s);
+			for (StateVertex nbr : neighbors) {
+				allPathsFromSrcToDest(nbr, d, visited, currentpath, paths);
+			}
+		}
+		currentpath.remove(s);
+	}
+	
+//	public ArrayList<ArrayList<StateVertex>> getAllPathsFromRoot(){
+//		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
+//		ArrayList<ArrayList<StateVertex>> paths = new ArrayList<>();
+//		Stack<StateVertex> stack = new Stack<StateVertex>();
+//		ArrayList<StateVertex> visited = new ArrayList<StateVertex>();
+//		ArrayList<StateVertex> base = new ArrayList<>();
+//		stack.push(getRoot());
+//		while(!stack.isEmpty()){
+//			StateVertex current = stack.pop();
+//			System.out.println("currently visiting>> "+current.toStringShort());
+//			visited.add(current);
+//			base.add(current);
+//			TreeSet<StateVertex> neighbors = adj.get(current);
+//			stack.addAll(neighbors);
+//			System.out.println("current stack>>>>");
+//			for (StateVertex stateVertex : stack) {
+//				System.out.print(stateVertex.toStringShort()+"|");
+//			}
+//			System.out.println();
+//			System.out.println("current base>>>>");
+//			for (StateVertex stateVertex : base) {
+//				System.out.print(stateVertex.toStringShort()+"|");
+//			}
+//			System.out.println();
+//			if(isVertexInSpecifiedList(current, getLeafNodes())){ //found a leaf. now compute the path from root. (base  must have all nodes in path)
+//				System.out.println("leaf!");
+//				ArrayList<StateVertex> path = new ArrayList<>();
+//				path.addAll(base);
+//				int index = path.size()-1;
+//				ArrayList<StateVertex> stackcopy = new ArrayList<>();
+//				stackcopy.addAll(stack);
+//				while(canBackTrack(path.get(index), stackcopy) && index>0){//remove nodes from base, whose children have been processed completely
+//					base.remove(path.get(index));
+//					index--;
+//				}
+//				System.out.print("path found-------------->");
+//				for (StateVertex stateVertex : path) {
+//					System.out.print(stateVertex.toStringShort()+"|");
+//				}
+//				System.out.println();
+//				paths.add(path);
+//			}
+//		}
+//		return paths;
+//	}
+
+	//return false, when you find the first node with unvisited children
+	public boolean canBackTrack(StateVertex current, ArrayList<StateVertex> unprocessed){ 
 		HashMap<StateVertex, TreeSet<StateVertex>> adj = getAdjacencyList();
 		TreeSet<StateVertex> neighbors = adj.get(current);
 		for (StateVertex stateVertex : neighbors) {
@@ -618,16 +694,24 @@ public class StateGraph {
 	public ArrayList<ArrayList<StateVertex>> getUndesirablePaths(ArrayList<ArrayList<StateVertex>> allpathsfromroot, String domainName){
 		ArrayList<ArrayList<StateVertex>> undesirablePaths = new ArrayList<ArrayList<StateVertex>>();
 		if(domainName.equalsIgnoreCase("blocks")){
-			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For blocks only
-				if(path.get(path.size()-1).containsCriticalState(critical.getCriticalState())){
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find any node in the path that contains the critical state. E.g. critical = BAD. BARD and BRAD will equally qualify
+				boolean found = false;
+				for (StateVertex stateVertex : path) {
+					if(stateVertex.containsPartialStateBlockWords(critical.getCriticalStatePredicates(), true)){
+						found = true;
+					}
+				}
+				if(found){
 					undesirablePaths.add(path);
 				}
 			}
-		}else if(domainName.equalsIgnoreCase("EASYIPC")){
-			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For grid navigation, crical node may occur before reaching leaf nodes.
+		}else if(domainName.equalsIgnoreCase("NAVIGATOR") 
+				|| domainName.equalsIgnoreCase("FERRY") 
+				|| domainName.equalsIgnoreCase("EASYIPC")){
+			for (ArrayList<StateVertex> path : allpathsfromroot) { //find leaf node that contains the critical state. For navigator, critical node may occur before reaching leaf nodes.
 				boolean found = false;
 				for (StateVertex stateVertex : path) {
-					if(stateVertex.containsCriticalState(critical.getCriticalState())){
+					if(stateVertex.containsState(critical.getCriticalStatePredicates())){
 						found = true;
 					}
 				}
@@ -686,7 +770,7 @@ public class StateGraph {
 	}
 
 	public void setVertices(HashMap<String, StateVertex> vertices) {
-		this.vertices = vertices;
+		this.vertices = vertices; 
 	}
 
 	public ArrayList<ActionEdge> getEdges() {
