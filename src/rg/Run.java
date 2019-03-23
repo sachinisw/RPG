@@ -11,6 +11,7 @@ public class Run {
 		obs.readObs(obsin);
 		System.out.println(hyp);
 		System.out.println(obs);
+		System.out.println();
 	}
 
 }
