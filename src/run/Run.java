@@ -261,7 +261,7 @@ public class Run {
 	}
 
 	public static void main(String[] args) { 
-		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = -1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigs.runmode){
 			runAsDebug(mode);
 		}else if(mode==TrainConfigs.runmode) {

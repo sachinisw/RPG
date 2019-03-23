@@ -59,7 +59,7 @@ public class TraceGenerator {
 		ArrayList<ArrayList<StateVertex>> likelypaths = decider.getLikelyPathsForUser(decider.getDesirable().getDesirableStatePredicates(), domain);
 		for(int i=0; i<likelypaths.size(); i++){
 			ArrayList<StateVertex> likelipath = likelypaths.get(i);
-//			System.out.println("Current path ==== " + likelipath);
+			//			System.out.println("Current path ==== " + likelipath);
 			ArrayList<String> trc = new ArrayList<String>();
 			if(domain.equalsIgnoreCase("blocks")) { //active attacker e.g. block-words
 				if(likelipath.get(likelipath.size()-1).containsPartialStateBlockWords(decider.getDesirable().getDesirableStatePredicates(), false)) {
@@ -190,25 +190,22 @@ public class TraceGenerator {
 	public static void generateSampleObservationTrace(){
 		//generating trace for a sample intervention problem. For errors and bug fixing
 		LOGGER.log(Level.INFO, "----Generating Debug Observation Trace---");
-		for(int trainInstance=0; trainInstance<=22; trainInstance++){
-			if(trainInstance==0){
-				String domainFile = SampleConfigs.prefix+trainInstance+SampleConfigs.domainFile;
-				String desirableStateFile = SampleConfigs.prefix+trainInstance+SampleConfigs.desirableStateFile;
-				String a_problemFile = SampleConfigs.prefix+trainInstance+SampleConfigs.a_problemFile;
-				String a_outputPath = SampleConfigs.prefix+trainInstance+SampleConfigs.a_outputPath;
-				String criticalStateFile = SampleConfigs.prefix+trainInstance+SampleConfigs.criticalStateFile;
-				String a_initFile = SampleConfigs.prefix+trainInstance+SampleConfigs.a_initFile;
-				String a_dotFilePrefix = SampleConfigs.prefix+trainInstance;
-				String tracepath = SampleConfigs.traces+trainInstance;
-				String domain = SampleConfigs.domain;
-				Decider decider = new Decider(domain, domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, SampleConfigs.a_dotFile);
-				LOGGER.log(Level.INFO, "Generating State Tree for ["+ SampleConfigs.domain +"] instance --> "+trainInstance);
-				ArrayList<StateGraph> attackerState = generateStateGraph(decider, domain, decider.getInitialState());//generate graph for attacker and user
-				LOGGER.log(Level.INFO, "Writing traces to files");
-				writeTracesToFile(generateTrace(attackerState.get(0), domain), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
-				LOGGER.log(Level.INFO, "----Sample Traces done---");
-			}
-		}
+		int trainInstance = 0;
+		String domainFile = SampleConfigs.prefix+trainInstance+SampleConfigs.domainFile;
+		String desirableStateFile = SampleConfigs.prefix+trainInstance+SampleConfigs.desirableStateFile;
+		String a_problemFile = SampleConfigs.prefix+trainInstance+SampleConfigs.a_problemFile;
+		String a_outputPath = SampleConfigs.prefix+trainInstance+SampleConfigs.a_outputPath;
+		String criticalStateFile = SampleConfigs.prefix+trainInstance+SampleConfigs.criticalStateFile;
+		String a_initFile = SampleConfigs.prefix+trainInstance+SampleConfigs.a_initFile;
+		String a_dotFilePrefix = SampleConfigs.prefix+trainInstance;
+		String tracepath = SampleConfigs.traces+trainInstance;
+		String domain = SampleConfigs.domain;
+		Decider decider = new Decider(domain, domainFile, desirableStateFile, a_problemFile, a_outputPath, criticalStateFile, a_initFile, a_dotFilePrefix, SampleConfigs.a_dotFile);
+		LOGGER.log(Level.INFO, "Generating State Tree for ["+ SampleConfigs.domain +"] instance --> "+trainInstance);
+		ArrayList<StateGraph> attackerState = generateStateGraph(decider, domain, decider.getInitialState());//generate graph for attacker and user
+		LOGGER.log(Level.INFO, "Writing traces to files");
+		writeTracesToFile(generateTrace(attackerState.get(0), domain), tracepath); //i can give the same dot file path beacause I am generating the graph for initial state only
+		LOGGER.log(Level.INFO, "----Sample Traces done---");
 	}
 
 	public static void generateTrainingObservationTrace() { //generating observations for actual set of training data.
@@ -241,7 +238,7 @@ public class TraceGenerator {
 	}
 
 	public static void main(String[] args) { 
-		int mode=1; //TODO: README edit here first 		//0-generate obs for sample intervention scenario for debugging, 1-generate obs for 20 intervention problems for training
+		int mode=0; //TODO: README edit here first 		//0-generate obs for sample intervention scenario for debugging, 1-generate obs for 20 intervention problems for training
 		if(mode==0) { //Debug  only
 			generateSampleObservationTrace();
 		}else {

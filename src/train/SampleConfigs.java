@@ -1,7 +1,7 @@
 package train;
 
 public class SampleConfigs {
-	public final static String domain = "NAVIGATOR";//BLOCKS,EASYIPC,NAVIGATOR,FERRY
+	public final static String domain = "DEPOT";//BLOCKS,EASYIPC,NAVIGATOR,FERRY,DEPOT
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/"; //base path. must be followed by a number 1, 2...
 	public final static String domainFile = "/domain.pddl";
 	public final static String desirableStateFile = "/desirable.txt"; //attacker and user do not need separate files for desirable states. this is because the state graphs are generated from the observer's (3rd agent) point of view

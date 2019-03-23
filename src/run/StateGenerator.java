@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -218,16 +220,20 @@ public class StateGenerator {
 		return newState;
 	}
 
-	public boolean stoppable(ArrayList<String> state, int x, int y, HashMap<String, String> desirableloc){//how to identify leaf nodes
-		if(domain.equalsIgnoreCase("blocks")){//x y not applicable. put -1, -1 where called
+	public boolean stoppable(ArrayList<String> state, int x, int y, int crate, HashMap<String, String> desirableloc){//how to identify leaf nodes
+		if(domain.equalsIgnoreCase("blocks")){//x y hoists not applicable. put -1, -1 where called
 			return stoppableBlocks(state);
 		}else if(domain.equalsIgnoreCase("easyipc")){
-			return stoppableGrid(state, x, y); //desirable state position, always top-right
+			return stoppableGrid(state, x, y); 
 		}else if(domain.equalsIgnoreCase("ferry")){
 			return stoppableFerry(state, desirableloc);
-		}else if(domain.equalsIgnoreCase("navigator")){  //desirable state position, always top-right
+		}else if(domain.equalsIgnoreCase("navigator")){  
 			return stoppableNavigator(state,x,y);
-		}if(domain.equalsIgnoreCase("sblocks")){//x y not applicable. put -1, -1 where called
+		}else if(domain.equalsIgnoreCase("logistics")){ 
+			return stoppableLogistics(state,desirableloc);
+		}else if(domain.equalsIgnoreCase("depot")){ 
+			return stoppableDepot(state,crate);
+		}else if(domain.equalsIgnoreCase("sblocks")){//x y not applicable. put -1, -1 where called
 			return stoppableBlocks(state);
 		}
 		return false;
@@ -324,6 +330,81 @@ public class StateGenerator {
 		return false;
 	}
 
+	//general rule for identifying leaf nodes. 
+	//if all (or specific) objects are in desirable places
+	public boolean stoppableLogistics(ArrayList<String> state, HashMap<String, String> userwantloc){
+		//find OBJ locations. can be either AT loc or IN Truck or IN airplane
+		HashMap<String,String> obpos = new HashMap<String, String>(); 
+		for (String st : state) {
+			if(st.contains("OBJ")) {
+				String parts [] = st.substring(1,st.length()-1).split(" ");
+				if(parts[0].equalsIgnoreCase("AT")) {
+					obpos.put(parts[1],parts[2]);
+				}else if(parts[0].startsWith("IN")) {
+					String container = parts[2];
+					String loc = "";
+					for (String s : state) {
+						String sparts [] = s.substring(1,s.length()-1).split(" ");
+						if(sparts[0].startsWith("AT")&& sparts[1].equalsIgnoreCase(container)) {
+							loc=sparts[2];
+						}
+					}
+					obpos.put(parts[1], loc);
+				}
+			}
+		}
+		for (Map.Entry<String,String> entry : userwantloc.entrySet()) {
+			String userkey = entry.getKey();
+			String userval = entry.getValue();
+			if(!obpos.get(userkey).equals(userval)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	//All crates must be vertically stacked on a pellet in the depot
+	public boolean stoppableDepot(ArrayList<String> state, int crates){
+		int clearCount = 0;
+		int crateCount = 0;
+		LinkedList<String> order = new LinkedList<>();
+		for(int i=0; i<state.size(); i++){
+			String parts []= state.get(i).substring(1, state.get(i).length()-1).split(" ");
+			if(parts[0].contains("ON")){
+				if(parts[1].startsWith("CRATE")) {
+					if(!order.contains(parts[1]) && !order.contains(parts[2])) {
+						order.add(parts[1]);
+						order.add(order.indexOf(parts[1])+1, parts[2]);
+					}else if(order.contains(parts[1]) && !order.contains(parts[2])) {
+						order.add(order.indexOf(parts[1])+1, parts[2]);
+					}else if(!order.contains(parts[1]) && order.contains(parts[2])) {
+						order.add(parts[1]);
+						if(order.indexOf(parts[2])-1>=0)
+							order.add(order.indexOf(parts[2])-1, parts[1]);
+						else
+							order.add(0, parts[1]);
+					}
+					if(parts[2].startsWith("CRATE")){
+						crateCount++;
+					}
+				}
+				
+			}
+			if(parts[0].contains("CLEAR") && parts[1].contains("CRATE")) {
+				if(parts[1].contains("CRATE")) {
+					clearCount++;
+				}
+			}
+		}
+		System.out.println(order + " stacked crates="+crateCount);
+		System.out.println("state="+state);
+		if(!order.isEmpty() && order.get(0).contains("CRATE") && order.getLast().contains("PALLET") && crateCount== crates && clearCount==1){
+			System.out.println("***********************************match");
+			return true;
+		}
+		return false;
+	}
+
 	public StateGraph enumerateStates(State in, ArrayList<State> seen){ //draw a state transition graph starting with state 'in'
 		runPlanner();
 		ArrayList<ConnectivityGraph> cons = readConnectivityGraphs();		
@@ -333,26 +414,59 @@ public class StateGenerator {
 		cs.readCriticalState();
 		StateGraph graph = new StateGraph(cs, ds);
 		graph.addVertex(in.getState());
+		HashSet<String> crates = null; //for depots domain
+		if(domain.equalsIgnoreCase("depot")) {
+			crates = new HashSet<String>(); //for depots domain
+			for (String st : in.getState()) {
+				if(st.contains("CRATE")) {
+					String[] parts = st.substring(1,st.length()-1).split(" ");
+					for (String s : parts) {
+						if(s.contains("CRATE")) {
+							crates.add(s);
+						}
+					}
+				}
+			}
+		}
 		for(int i=0; i<cons.size(); i++){
 			ArrayList<String> currentState = in.getState();
 			if(domain.equalsIgnoreCase("blocks")) {
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, null);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, -1, null);
 			}else if(domain.equalsIgnoreCase("easyipc")) {
 				int [] xy = getGridEdge(ds.getDesirableStatePredicates());
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], null);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], -1, null);
 			}else if(domain.equalsIgnoreCase("navigator")) {
 				int [] xy = getNavigatorEdge(ds.getDesirableStatePredicates());
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], null);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, xy[0], xy[1], -1, null);
 			}else if(domain.equalsIgnoreCase("ferry")) {
 				HashMap<String, String> des = getDesirableLocationsFerry(ds.getDesirableStatePredicates());
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, des);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, -1, des);
+			}else if(domain.equalsIgnoreCase("depot")) {
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, crates.size(), null);
+			}else if(domain.equalsIgnoreCase("logistics")) { //stack-overflow. too many operators to be enumerated in the intervention graph
+				HashMap<String, String> des = getDesirableLocationsLogistics(ds.getDesirableStatePredicates());
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, -1, des);
 			}else if(domain.equalsIgnoreCase("sblocks")) {
-				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1, null);
+				recursiveAddEdge(currentState, cons.get(i), graph, seen, -1, -1,-1, null);
 			}
 		}
 		graph.markVerticesContainingCriticalState(cs, domain);
 		graph.markVerticesContainingDesirableState(ds, domain);
 		return graph; //this graph is bidirectional
+	}
+
+	private HashMap<String, String> getDesirableLocationsLogistics(ArrayList<String> des) {
+		HashMap<String, String> desloc = new HashMap<>();
+		for (String st : des) {
+			if(st.contains("AT")) {
+				String parts [] = st.substring(1,st.length()-1).split(" ");
+				if(parts[1].startsWith("OBJ")) {
+					String o = parts[1]; String l=parts[2];
+					desloc.put(o,l);
+				}
+			}
+		}
+		return desloc;
 	}
 
 	private HashMap<String, String> getDesirableLocationsFerry(ArrayList<String> des) {
@@ -484,30 +598,31 @@ public class StateGenerator {
 	}
 
 	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen, 
-			int x, int y, HashMap<String, String> deslocs){
-		if(stoppable(currentState, x, y, deslocs)){
+			int x, int y, int crates, HashMap<String, String> deslocs){
+		if(stoppable(currentState, x, y, crates, deslocs)){
+			System.out.println("stopping"+currentState);
 			seen.remove(seen.size()-1);
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
-//			System.out.println("applicable actions======"+actions);
+												System.out.println("applicable actions======"+actions);
 			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("navigator") 
-					|| domain.equalsIgnoreCase("ferry") || domain.equalsIgnoreCase("sblocks") ) {//reversible domains. i.e. you can go back to previous state
+					|| domain.equalsIgnoreCase("ferry") || domain.equalsIgnoreCase("logistics") || domain.equalsIgnoreCase("depot")) {//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path.
-//				System.out.println("Cleaned actions====="+cleaned);
+												System.out.println("Cleaned actions====="+cleaned);
 			}
 			else if(domain.equalsIgnoreCase("pag") )//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
 			for (String action : cleaned) {
-//				System.out.println("expanding...... "+ action);
+				//								System.out.println("expanding...... "+ action);
 				////README:::: seen [] only has the initial state. if you add newstate, other branches in the graph lose possible actions. The branches in the graph must be independent. children's possible actions must only depend on their immediate parents' state and not on other paths in the tree
 				ArrayList<String> newState = addGraphEdgeForAction(action, currentState, con, graph);
 				State s = new State();
 				s.setState(newState);
 				seen.add(s);
-				recursiveAddEdge(newState, con, graph, seen, x, y, deslocs);
+				recursiveAddEdge(newState, con, graph, seen, x, y, crates, deslocs);
 			}
 			seen.remove(seen.size()-1);
 		}
