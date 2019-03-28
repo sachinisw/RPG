@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class Observations {
-	public ArrayList<String> obs;
+	private ArrayList<String> obs;
 
 	public Observations() {
 		obs = new ArrayList<>();
@@ -20,6 +20,7 @@ public class Observations {
 			while(sc.hasNextLine()) {
 				obs.add(sc.nextLine().trim());
 			}
+			sc.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -27,5 +28,13 @@ public class Observations {
 
 	public String toString() {
 		return Arrays.toString(obs.toArray());
+	}
+
+	public ArrayList<String> getObs() {
+		return obs;
+	}
+
+	public void setObs(ArrayList<String> obs) {
+		this.obs = obs;
 	}
 }
