@@ -1,5 +1,8 @@
 package rg;
 
+import fdplan.FDPlan;
+import fdplan.FDPlanner;
+
 public class Run {
 
 	public static void runObservationFile(Observations obs, Domain dom, Problem problem) {
@@ -21,6 +24,11 @@ public class Run {
 				domain = copy; //pass the domain from this round to the next observation
 			}
 		}
+	}
+	
+	public static FDPlan producePlans(Domain dom, Problem prob) {
+		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
+		return fd.getFDPlan();
 	}
 	
 	public static void main(String[] args) {

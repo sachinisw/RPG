@@ -11,11 +11,13 @@ public class Problem implements Cloneable{
 	private ArrayList<String> header;
 	private ArrayList<String> init;
 	private ArrayList<String> goal;
-
+	private String problemPath;
+	
 	public Problem() {
 		header = new ArrayList<>();
 		init = new ArrayList<>();
 		goal = new ArrayList<>();
+		problemPath = "";
 	}
 
 	public void readProblemPDDL(String infile) {
@@ -30,6 +32,7 @@ public class Problem implements Cloneable{
 			e.printStackTrace();
 		}
 		setObjects(lines);
+		setProblemPath(infile);
 	}
 
 	public void setObjects(ArrayList<String> lines) {
@@ -60,6 +63,7 @@ public class Problem implements Cloneable{
 
 	public void writeProblemFile(String filename) {
 		FileWriter writer = null;
+		setProblemPath(filename);
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
@@ -151,5 +155,13 @@ public class Problem implements Cloneable{
 	}
 	public void setGoal(ArrayList<String> goal) {
 		this.goal = goal;
+	}
+
+	public String getProblemPath() {
+		return problemPath;
+	}
+
+	public void setProblemPath(String problemPath) {
+		this.problemPath = problemPath;
 	}
 }

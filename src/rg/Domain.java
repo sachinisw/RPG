@@ -15,12 +15,14 @@ public class Domain implements Cloneable{
 	private ArrayList<String> constants;
 	private ArrayList<String> predicates;
 	private ArrayList<Action> actions;
-
+	private String domainPath;
+	
 	public Domain() {
 		header = new ArrayList<>();
 		constants = new ArrayList<>();
 		predicates = new ArrayList<>();
 		actions = new ArrayList<>();
+		domainPath = "";
 	}
 
 	public void readDominPDDL(String infile) {
@@ -35,6 +37,7 @@ public class Domain implements Cloneable{
 			e.printStackTrace();
 		}
 		setObjects(lines);
+		setDomainPath(infile);
 	}
 
 	public void setObjects(ArrayList<String> lines) {
@@ -128,6 +131,7 @@ public class Domain implements Cloneable{
 
 	public void writeDomainFile(String filename) {
 		FileWriter writer = null;
+		setDomainPath(filename);
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
@@ -289,5 +293,13 @@ public class Domain implements Cloneable{
 
 	public void setActions(ArrayList<Action> actions) {
 		this.actions = actions;
+	}
+
+	public String getDomainPath() {
+		return domainPath;
+	}
+
+	public void setDomainPath(String domainPath) {
+		this.domainPath = domainPath;
 	}
 }
