@@ -10,9 +10,11 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import igplan.Plan;
+
 import java.util.Scanner;
 
-import plan.Plan;
 import test.HarnessConfigs;
 /**
  * Generate observation traces for testing the trained model of the decision tree
