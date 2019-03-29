@@ -15,11 +15,15 @@ public class Run {
 			}
 			Domain copy = domain.compileObservation(now,prev);
 			String obpred = copy.createPrediateFromObservation(now);
-			Problem copyProb = problem.addPredicateToGoal(obpred);
-			Problem negProb = copyProb.negateGoal();
+			Problem copyProb = problem.addPredicateToGoal(obpred); //G+O
+			Problem negProb = copyProb.negateGoal(); //G + not O
 			copy.writeDomainFile("/home/sachini/domains/R&G/domain-compiled-"+i+".pddl");
 			copyProb.writeProblemFile("/home/sachini/domains/R&G/p-compiled_"+i+".pddl");
 			negProb.writeProblemFile("/home/sachini/domains/R&G/pneg-compiled_"+i+".pddl");
+			FDPlan gpluso = producePlans(copy, copyProb);
+			FDPlan gnoto = producePlans(copy, negProb);
+			int diff = getPlanCostDifference(gpluso, gnoto);
+			System.out.println(now + "===" + diff);
 			if(i==0) {
 				domain = copy; //pass the domain from this round to the next observation
 			}
@@ -29,6 +33,10 @@ public class Run {
 	public static FDPlan producePlans(Domain dom, Problem prob) {
 		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
 		return fd.getFDPlan();
+	}
+	
+	public static int getPlanCostDifference(FDPlan gpluso, FDPlan gnoto) {
+		return gpluso.getPlanCost() - gnoto.getPlanCost();
 	}
 	
 	public static void main(String[] args) {

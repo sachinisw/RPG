@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class FDPlanner {
 	private final static String fdPath = "/home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
 	private final static String fdConfig = " --search \"astar(lmcut())\"";
-	private final static String fdoutpath = "/home/sachini/eclipse-workspace/IJCAI16/RPG/";
+	private final static String fdoutpath = "/home/sachini/domains/Planners/LAMA/FD/sas_plan";
 	private String domainfile;
 	private String problemfile;
 
@@ -71,7 +71,6 @@ public class FDPlanner {
 		ArrayList<String> lines = readFile(fdoutpath);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		fp.setLength(lines.size());
 		//removeOutputDir();
 		return fp;
 	}
