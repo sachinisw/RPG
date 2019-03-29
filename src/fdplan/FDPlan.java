@@ -1,13 +1,13 @@
-package tk;
+package fdplan;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class SASPlan {
+public class FDPlan {
 	private ArrayList<String> actions;
 	private int length;
 	
-	public SASPlan() {
+	public FDPlan() {
 		actions = new ArrayList<String>();
 		length = 0;
 	}

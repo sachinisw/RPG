@@ -27,10 +27,10 @@ import graph.ActionEdge;
 import graph.GraphDOT;
 import graph.StateGraph;
 import graph.StateVertex;
+import igplan.Plan;
+import igplan.PlanExtractor;
 import landmark.RelaxedPlanningGraph;
 import landmark.RelaxedPlanningGraphGenerator;
-import plan.Plan;
-import plan.PlanExtractor;
 import rpg.PlanningGraph;
 
 public class StateGenerator {

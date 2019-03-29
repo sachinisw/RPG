@@ -17,12 +17,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import con.ConnectivityGraph;
+import igplan.Plan;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import landmark.RelaxedPlanningGraphGenerator;
-import plan.Plan;
 
 public class ReducedTraceGenerator {
 	/**

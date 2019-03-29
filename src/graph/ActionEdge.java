@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import con.ConnectivityGraph;
-import plan.Plan;
+import igplan.Plan;
 import run.InitialState;
 
 public class ActionEdge {

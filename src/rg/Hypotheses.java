@@ -20,6 +20,7 @@ public class Hypotheses {
 			while(sc.hasNextLine()) {
 				hyps.add(sc.nextLine().trim());
 			}
+			sc.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}

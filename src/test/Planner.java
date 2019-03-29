@@ -13,8 +13,8 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
-import plan.Plan;
-import plan.PlanExtractor;
+import igplan.Plan;
+import igplan.PlanExtractor;
 
 public class Planner {
 	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
