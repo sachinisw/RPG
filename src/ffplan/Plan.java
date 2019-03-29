@@ -1,9 +1,9 @@
-package plan;
+package ffplan;
 import java.util.ArrayList;
 
 import con.ConnectivityGraph;
 
-
+//Plan generated with Metric-FF
 public class Plan {
 
 	private ArrayList<String> planSteps;
@@ -23,7 +23,6 @@ public class Plan {
 		}
 	}
 
-	
 	public Plan(Plan toCopy){
 		ArrayList<String> stepsCopy = new ArrayList<String>();
 		stepsCopy.addAll(toCopy.getPlanSteps());
