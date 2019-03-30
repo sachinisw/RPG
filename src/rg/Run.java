@@ -17,9 +17,9 @@ public class Run {
 			String obpred = copy.createPrediateFromObservation(now);
 			Problem copyProb = problem.addPredicateToGoal(obpred); //G+O
 			Problem negProb = copyProb.negateGoal(); //G + not O
-			copy.writeDomainFile("/home/sachini/domains/R&G/domain-compiled-"+i+".pddl");
-			copyProb.writeProblemFile("/home/sachini/domains/R&G/p-compiled_"+i+".pddl");
-			negProb.writeProblemFile("/home/sachini/domains/R&G/pneg-compiled_"+i+".pddl");
+			copy.writeDomainFile("/home/sachini/domains/RG/domain-compiled-"+i+".pddl");
+			copyProb.writeProblemFile("/home/sachini/domains/RG/p-compiled_"+i+".pddl");
+			negProb.writeProblemFile("/home/sachini/domains/RG/pneg-compiled_"+i+".pddl");
 			FDPlan gpluso = producePlans(copy, copyProb);
 			FDPlan gnoto = producePlans(copy, negProb);
 			int diff = getPlanCostDifference(gpluso, gnoto);
@@ -27,6 +27,7 @@ public class Run {
 			if(i==0) {
 				domain = copy; //pass the domain from this round to the next observation
 			}
+			break;
 		}
 	}
 	
@@ -40,13 +41,13 @@ public class Run {
 	}
 	
 	public static void main(String[] args) {
-		String hypin = "/home/sachini/domains/R&G/hyps";
-		String obsin = "/home/sachini/domains/R&G/obs";
-		String originaldomain = "/home/sachini/domains/R&G/domain.pddl";
+		String hypin = "/home/sachini/domains/RG/hyps";
+		String obsin = "/home/sachini/domains/RG/obs";
+		String originaldomain = "/home/sachini/domains/RG/domain.pddl";
 		Hypotheses hyp = new Hypotheses();
 		Observations obs = new Observations();
 		obs.readObs(obsin);
-		String pFile = "/home/sachini/domains/R&G/p.pddl";
+		String pFile = "/home/sachini/domains/RG/p.pddl";
 		Domain dom = new Domain();
 		dom.readDominPDDL(originaldomain);
 		Problem problem = new Problem();
