@@ -11,6 +11,8 @@ public class FDPlanner {
 	private final static String fdPath = "python /home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
 	private final static String fdConfig = " --search astar(lmcut())";
 	private final static String fdoutput = "/home/sachini/eclipse-workspace/IJCAI16/RPG/sas_plan";
+	private final static String fdoutputsub = "/home/sachini/eclipse-workspace/IJCAI16/RPG/output.sas";
+
 	private String domainfile;
 	private String problemfile;
 
@@ -54,7 +56,7 @@ public class FDPlanner {
 	}
 
 	public void removeOutputDir() {
-		String command = "rm -rf "+ fdoutput ;
+		String command = "rm "+ fdoutput + " " + fdoutputsub;
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
@@ -71,7 +73,6 @@ public class FDPlanner {
 		ArrayList<String> lines = readFile(fdoutput);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		System.out.println(fp);
 		removeOutputDir();
 		return fp;
 	}

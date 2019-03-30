@@ -127,11 +127,12 @@ public class Problem implements Cloneable{
 		return copy;
 	}
 	
-	public Problem addPredicateToGoal(String pred) { //create a clone and negate the predicates added from observations.
+	public Problem addPredicateToGoal(String pred, String hyp) { 
+		//create a clone and negate the predicates added from observations.
 		Problem copy = null;
 		try {
 			copy = (Problem) clone();
-			copy.getGoal().add(copy.getGoal().size()-2,pred);
+			copy.getGoal().set(copy.getGoal().size()-3, pred+hyp);
 		}catch (CloneNotSupportedException e) {
 			e.printStackTrace();
 		}
