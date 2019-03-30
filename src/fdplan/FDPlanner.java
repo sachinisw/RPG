@@ -8,9 +8,9 @@ import java.util.ArrayList;
 
 //Generates **one** plan from Fast Downward using lmcut() heuristic given problem and domain.
 public class FDPlanner {
-	private final static String fdPath = "/home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
-	private final static String fdConfig = " --search \"astar(lmcut())\"";
-	private final static String fdoutpath = "/home/sachini/eclipse-workspace/IJCAI16/RPG/";
+	private final static String fdPath = "python /home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
+	private final static String fdConfig = " --search astar(lmcut())";
+	private final static String fdoutput = "/home/sachini/eclipse-workspace/IJCAI16/RPG/sas_plan";
 	private String domainfile;
 	private String problemfile;
 
@@ -24,19 +24,7 @@ public class FDPlanner {
 		String command =  fdPath + " " + domainfile + " " + problemfile + fdConfig;
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
-			proc.waitFor();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
-		}
-	}
-
-	public void removeOutputDir() {
-		String command = "rm -rf "+ fdoutpath ;
-		try {
-			Process proc = Runtime.getRuntime().exec(command);
-			proc.waitFor();
+			proc.waitFor();			
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
 		} catch (InterruptedException e) {
@@ -65,14 +53,26 @@ public class FDPlanner {
 		return lines;
 	}
 
+	public void removeOutputDir() {
+		String command = "rm -rf "+ fdoutput ;
+		try {
+			Process proc = Runtime.getRuntime().exec(command);
+			proc.waitFor();
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		} catch (InterruptedException e) {
+			System.err.println(e.getMessage());
+		}
+	}
+	
 	//run planner, read output, delete the plan output file.
 	public FDPlan getFDPlan(){
 		runFDPlanner();
-		ArrayList<String> lines = readFile(fdoutpath);
+		ArrayList<String> lines = readFile(fdoutput);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		fp.setLength(lines.size());
-		//removeOutputDir();
+		System.out.println(fp);
+		removeOutputDir();
 		return fp;
 	}
 

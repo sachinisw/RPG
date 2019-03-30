@@ -5,11 +5,14 @@ import java.util.Arrays;
 
 public class FDPlan {
 	private ArrayList<String> actions;
-	private int length;
+	private static final int UNIT_COST = 1;
 	
 	public FDPlan() {
 		actions = new ArrayList<String>();
-		length = 0;
+	}
+	
+	public int getPlanCost() {
+		return actions.size()*UNIT_COST; //assumes unit cost
 	}
 	
 	public String toString() {
@@ -22,10 +25,5 @@ public class FDPlan {
 	public void setActions(ArrayList<String> actions) {
 		this.actions = actions;
 	}
-	public int getLength() {
-		return length;
-	}
-	public void setLength(int length) {
-		this.length = length;
-	}
+	
 }
