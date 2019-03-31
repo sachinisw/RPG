@@ -117,7 +117,21 @@ public class Problem implements Cloneable{
 			copy = (Problem) clone();
 			for (String g : copy.getGoal()) {
 				if(g.contains("_")) {
-					String neg = "(not "+ g + ")";
+					String parts [] = g.split("\\)\\(");
+					String neg = "";
+					for (String s : parts) {
+						if(s.contains("obp")) {
+							if(s.startsWith("(")) {
+								s = "( not " + s + "))";
+							}
+							else {
+								s = "( not (" + s + "))";
+							}
+						}else {
+							s = "("+s;
+						}
+						neg+= s;
+					}
 					copy.getGoal().set(copy.getGoal().indexOf(g), neg);
 				}
 			}

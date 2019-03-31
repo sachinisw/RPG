@@ -166,7 +166,7 @@ public class Domain implements Cloneable{
 		for (int i=1; i<parts.length; i++) {
 			namesuffix+=parts[i]+"-";
 		}
-		return "(p"+parts[0]+namesuffix.substring(0,namesuffix.length()-1)+")";
+		return "(obp_"+parts[0]+namesuffix.substring(0,namesuffix.length()-1)+")";
 	}
 
 	//ramirez geffener 2009 (2010 compile observation method for a->b is not clear)
@@ -182,7 +182,7 @@ public class Domain implements Cloneable{
 				if(!prevO.isEmpty()) {
 					prevPred = createPrediateFromObservation(prevO);
 				}
-				String header_new = "(:action ob_"+predicate.substring(2,predicate.length()-1)+"\n";
+				String header_new = "(:action ob_"+predicate.substring(4,predicate.length()-1)+"\n";
 				domCopy.getPredicates().add(1,predicate); //add the new predicate for observation to domain
 				acCopyClone.setHeader(header_new);
 				HashMap<String, String> maps = new HashMap<>();

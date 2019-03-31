@@ -16,18 +16,20 @@ public class Run {
 			}
 			Domain copy = domain.compileObservation(now,prev);
 			String obpred = copy.createPrediateFromObservation(now);
+			Problem copyProb = null, negProb = null;
 			goalpredicate += obpred;
-			System.out.println(goalpredicate);
 			copy.writeDomainFile("/home/sachini/domains/RG/domain-compiled-"+i+".pddl");
-			for (int j=0; j<hyp.hyps.size(); j++) {
-				Problem copyProb = problem.addPredicateToGoal(goalpredicate, hyp.hyps.get(j)); //G+O
-				Problem negProb = copyProb.negateGoal(); //G + not O
+			for (int j=0; j<hyp.getHyps().size(); j++) {
+				copyProb = problem.addPredicateToGoal(goalpredicate, hyp.getHyps().get(j)); //G+O
+				negProb = copyProb.negateGoal(); //G + not O
 				copyProb.writeProblemFile("/home/sachini/domains/RG/p_"+i+"_"+j+".pddl");
 				negProb.writeProblemFile("/home/sachini/domains/RG/pneg_"+i+"_"+j+".pddl");
 				FDPlan gpluso = producePlans(copy, copyProb);
 				FDPlan gnoto = producePlans(copy, negProb);
+				System.out.println(gpluso);
+				System.out.println(gnoto);
 				int diff = getPlanCostDifference(gpluso, gnoto);
-				System.out.println(hyp.hyps.get(j)+":  "+ now + "===" + diff);
+				System.out.println(hyp.getHyps().get(j)+":  "+ now + "===" + diff);
 			}
 			if(i==0) {
 				domain = copy; //pass the domain from this round to the next observation
@@ -39,7 +41,7 @@ public class Run {
 		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
 		return fd.getFDPlan();
 	}
-	
+		
 	public static int getPlanCostDifference(FDPlan gpluso, FDPlan gnoto) {
 		return gpluso.getPlanCost() - gnoto.getPlanCost();
 	}

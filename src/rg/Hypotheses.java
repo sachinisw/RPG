@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class Hypotheses {
-	public ArrayList<String> hyps;
+	private ArrayList<String> hyps;
 	
 	public Hypotheses() {
 		hyps = new ArrayList<>();
@@ -25,7 +25,15 @@ public class Hypotheses {
 			e.printStackTrace();
 		}
 	}
-	
+
+	public ArrayList<String> getHyps() {
+		return hyps;
+	}
+
+	public void setHyps(ArrayList<String> hyps) {
+		this.hyps = hyps;
+	}
+
 	public String toString() {
 		return Arrays.toString(hyps.toArray());
 	}

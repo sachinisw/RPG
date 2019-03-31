@@ -55,7 +55,7 @@ public class FDPlanner {
 		return lines;
 	}
 
-	public void removeOutputDir() {
+	public void removeOutputFiles() {
 		String command = "rm "+ fdoutput + " " + fdoutputsub;
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
@@ -73,7 +73,7 @@ public class FDPlanner {
 		ArrayList<String> lines = readFile(fdoutput);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		removeOutputDir();
+		removeOutputFiles();
 		return fp;
 	}
 
