@@ -67,19 +67,33 @@ public class Run {
 		return e;
 	}
 	
-	public static void main(String[] args) {
-		String hypin = "/home/sachini/domains/RG/hyps";
-		String obsin = "/home/sachini/domains/RG/obs";
-		String originaldomain = "/home/sachini/domains/RG/domain.pddl";
-		String pFile = "/home/sachini/domains/RG/ptemplate.pddl";
+	public static Hypotheses setHypothesis(String criticalfile, String desirablefile) {
 		Hypotheses hyp = new Hypotheses();
+		hyp.readHyps(criticalfile);
+		hyp.readHyps(desirablefile);
+		return hyp;
+	}
+	
+	public static void main(String[] args) {
+		int inst = 1; //per domain 1-3
+		int scen = 0; // per instance 1-20
+		int obf = 0;
+		String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
+		String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
+		String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles + obf;
+		String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
+		String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
+		Hypotheses hyp = setHypothesis(criticals, desirables);
 		Observations obs = new Observations();
-		obs.readObs(obsin);
-		hyp.readHyps(hypin);
+		obs.readObs(observations);
 		Domain dom = new Domain();
-		dom.readDominPDDL(originaldomain);
+		dom.readDominPDDL(domfile);
 		Problem probTemplate = new Problem();
-		probTemplate.readProblemPDDL(pFile);
+		probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
+//		String hypin = "/home/sachini/domains/RG/hyps";
+//		String obsin = "/home/sachini/domains/RG/obs";
+//		String originaldomain = "/home/sachini/domains/RG/domain.pddl";
+//		String pFile = "/home/sachini/domains/RG/ptemplate.pddl";
 		runObservationFile(obs, dom, probTemplate, hyp);
 	}
 }
