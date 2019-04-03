@@ -73,7 +73,7 @@ public class FDPlanner {
 		ArrayList<String> lines = readFile(fdoutput);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		removeOutputFiles();
+//		removeOutputFiles();
 		return fp;
 	}
 

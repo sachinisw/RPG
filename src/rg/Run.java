@@ -5,13 +5,32 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
 import java.util.Map.Entry;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import fdplan.FDPlan;
 import fdplan.FDPlanner;
 
 public class Run {
 
+	public static TreeSet<String> getObservationFiles(String obsfiles){
+		TreeSet<String> obFiles = new TreeSet<String>();
+		try {
+			File dir = new File(obsfiles);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				obFiles.add(fileItem.getCanonicalPath());
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		return obFiles;	
+	}
+	
 	//ramirez geffener 2009
 	public static HashMap<String, String> doPRPforObservations(Observations obs, Domain dom, Problem problem, Hypotheses hyp, int inst, int scen) {
 		Domain domain = dom;
@@ -106,30 +125,36 @@ public class Run {
 	}
 	
 	public static void runRandG() {
-		int inst = 1; //per domain 1-3
-		int scen = 0; //per instance 1-20
 		int obf = 0;
-		String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
-		String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
-		String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles + obf;
-		String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
-		String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
-		String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.outputfile + "_" + obf + ".csv";
-		Domain dom = new Domain();
-		dom.readDominPDDL(domfile);
-		Problem probTemplate = new Problem();
-		probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
-		Hypotheses hyp = setHypothesis(criticals, desirables);
-		Observations obs = new Observations(); //this one has the class labels
-		obs.readObs(observations);
-		try {
-			Observations noLabel = (Observations) obs.clone();
-			noLabel.removeLabels();
-			HashMap<String, String> decisions = doPRPforObservations(noLabel, dom, probTemplate, hyp, inst, scen);
-			writeResultFile(decisions, obs, outputfile);
-		} catch (CloneNotSupportedException e) {
-			System.err.println(e.getMessage());
-		}		
+		for (int inst=0; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
+				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
+				String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles + obf;
+				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
+				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
+				String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.outputfile + "_" + obf + ".csv";
+				TreeSet<String> obfiles = getObservationFiles(observations);
+				for (String path : obfiles) {
+					Domain dom = new Domain();
+					dom.readDominPDDL(domfile);
+					Problem probTemplate = new Problem();
+					probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
+					Hypotheses hyp = setHypothesis(criticals, desirables);
+					Observations obs = new Observations(); //this one has the class labels
+					obs.readObs(path);
+					try {
+						Observations noLabel = (Observations) obs.clone();
+						noLabel.removeLabels();
+						HashMap<String, String> decisions = doPRPforObservations(noLabel, dom, probTemplate, hyp, inst, scen);
+						writeResultFile(decisions, obs, outputfile);
+					} catch (CloneNotSupportedException e) {
+						System.err.println(e.getMessage());
+					}		
+				}
+				
+			}
+		}
 	}
 	
 	public static void main(String[] args) {
