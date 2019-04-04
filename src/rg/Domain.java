@@ -68,11 +68,11 @@ public class Domain implements Cloneable{
 				predicates.add(s);
 			}
 			if(acstart) {
-				Action ac = new Action(s.split(" ")[2]);
+				Action ac = new Action(s.split(" ")[1]);
 				actions.add(ac);
 				acstart = false;
 				accont = true;
-				acname = s.split(" ")[2];
+				acname = s.split(" ")[1];
 			}
 			if(accont) {
 				if(s.contains(":parameters")) {

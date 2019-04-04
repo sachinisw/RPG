@@ -125,34 +125,32 @@ public class Run {
 	}
 	
 	public static void runRandG() {
-		int obf = 0;
-		for (int inst=0; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
 				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
-				String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles + obf;
+				String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
 				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
-				String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.outputfile + "_" + obf + ".csv";
+				String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.outputfile + "_";
 				TreeSet<String> obfiles = getObservationFiles(observations);
-				for (String path : obfiles) {
+				for (int i=0; i<obfiles.size(); i++) {
 					Domain dom = new Domain();
 					dom.readDominPDDL(domfile);
 					Problem probTemplate = new Problem();
 					probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
 					Hypotheses hyp = setHypothesis(criticals, desirables);
 					Observations obs = new Observations(); //this one has the class labels
-					obs.readObs(path);
+					obs.readObs(obfiles.pollFirst());
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
 						HashMap<String, String> decisions = doPRPforObservations(noLabel, dom, probTemplate, hyp, inst, scen);
-						writeResultFile(decisions, obs, outputfile);
+						writeResultFile(decisions, obs, outputfile + i + ".csv");
 					} catch (CloneNotSupportedException e) {
 						System.err.println(e.getMessage());
 					}		
 				}
-				
 			}
 		}
 	}
