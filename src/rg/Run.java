@@ -43,7 +43,7 @@ public class Run {
 			if(i>0) {
 				prev = obs.getObs().get(i-1);
 			}
-			HashMap<String, Integer> map = new HashMap<String, Integer>();
+			HashMap<String, Double> map = new HashMap<String, Double>();
 			Domain copy = domain.compileObservation(now,prev);
 			String obpred = copy.createPrediateFromObservation(now);
 			Problem copyProb = null, negProb = null;
@@ -56,19 +56,19 @@ public class Run {
 				negProb.writeProblemFile(out+"pneg_"+i+"_"+j+".pddl");
 				FDPlan gpluso = producePlans(copy, copyProb);
 				FDPlan gnoto = producePlans(copy, negProb);
-				int diff = getPlanCostDifference(gpluso, gnoto);
-				System.out.println(hyp.getHyps().get(j)+":  "+ now + "===" + diff);
-				map.put(hyp.getHyps().get(j), diff);
+				double goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
+				System.out.println(hyp.getHyps().get(j)+":    ["+ now + "]    diff=" + goalprob);
+				map.put(hyp.getHyps().get(j), goalprob);
 			}
-			Entry<String, Integer> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
+			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
 			if(ent != null) {
 				obsTolikelgoal.put(now, ent.getKey());
 			}else {
 				obsTolikelgoal.put(now, null);
 			}
-			if(i==0) {
+//			if(i==0) {
 				domain = copy; //pass the domain from this round to the next observation
-			}
+//			}
 		}
 		System.out.println(obsTolikelgoal);
 		return obsTolikelgoal;
@@ -78,26 +78,31 @@ public class Run {
 		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
 		return fd.getFDPlan();
 	}
-		
-	public static int getPlanCostDifference(FDPlan gpluso, FDPlan gnoto) {
-		return gpluso.getPlanCost() - gnoto.getPlanCost();
+			
+	public static double getGoalProbabilityGivenObservations(FDPlan gpluso, FDPlan gnoto) { 
+		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
+		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
+		int costdiff = gpluso.getPlanCost() - gnoto.getPlanCost();
+		double alpha = 1.0, beta = -1,  PrG = 1.0;
+		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
+		return alpha*PrOG*PrG;
 	}
-	
-	public static Entry<String, Integer> maxLikelyGoal(HashMap<String, Integer> map) {
-		Entry<String, Integer> e = null;
-		int max = Integer.MIN_VALUE;
-		int count = 1; //check if there are ties. if there is a tie, that means the agent can't decide whats the likely goal.
-		Iterator<Entry<String, Integer>> itr = map.entrySet().iterator();
+	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
+		Entry<String, Double> e = null;
+		double max = Double.MIN_VALUE;
+		int count = 0; //check if there are ties. if there is a tie, that means the agent can't decide whats the likely goal.
+		Iterator<Entry<String, Double>> itr = map.entrySet().iterator();
 		while(itr.hasNext()) {
-			Entry<String, Integer> ent = itr.next();
-			if(ent.getValue()>max) {
+			Entry<String, Double> ent = itr.next();
+			if(ent.getValue()>=max) {
 				count++;
 				e = ent;
-			}
-			if(count>1) {
-				e = null;
+				max = ent.getValue();
 			}
 		}
+//		if(count>1) {
+//			e=null;
+//		}
 		return e;
 	}
 	
@@ -149,9 +154,12 @@ public class Run {
 						writeResultFile(decisions, obs, outputfile + i + ".csv");
 					} catch (CloneNotSupportedException e) {
 						System.err.println(e.getMessage());
-					}		
+					}
+					break;
 				}
+				break;
 			}
+			break;
 		}
 	}
 	
