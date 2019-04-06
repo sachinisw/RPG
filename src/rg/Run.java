@@ -16,6 +16,7 @@ import plans.FDPlan;
 import plans.FDPlanner;
 import plans.HSPFPlan;
 import plans.HSPPlanner;
+import plans.Plan;
 
 public class Run {
 
@@ -91,7 +92,7 @@ public class Run {
 		return hp.getHSPPlan();
 	}
 	
-	public static double getGoalProbabilityGivenObservations(FDPlan gpluso, FDPlan gnoto) { 
+	public static double getGoalProbabilityGivenObservations(Plan gpluso, Plan gnoto) { 
 		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
 		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
 		int costdiff = gpluso.getPlanCost() - gnoto.getPlanCost();
@@ -100,14 +101,14 @@ public class Run {
 		return alpha*PrOG*PrG;
 	}
 	
-	public static double getGoalProbabilityGivenObservations(HSPFPlan gpluso, HSPFPlan gnoto) { 
-		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
-		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
-		int costdiff = gpluso.getPlanCost() - gnoto.getPlanCost();
-		double alpha = 1.0, beta = -1,  PrG = 1.0;
-		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
-		return alpha*PrOG*PrG;
-	}
+//	public static double getGoalProbabilityGivenObservations(HSPFPlan gpluso, HSPFPlan gnoto) { 
+//		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
+//		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
+//		int costdiff = gpluso.getPlanCost() - gnoto.getPlanCost();
+//		double alpha = 1.0, beta = -1,  PrG = 1.0;
+//		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
+//		return alpha*PrOG*PrG;
+//	}
 	
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
 		Entry<String, Double> e = null;

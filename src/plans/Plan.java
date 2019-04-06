@@ -3,7 +3,7 @@ package plans;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class Plan {
+public abstract class Plan {
 	private ArrayList<String> actions;
 	
 	public Plan() {
@@ -21,4 +21,6 @@ public class Plan {
 	public String toString() {
 		return Arrays.toString(getActions().toArray());
 	}
+	
+	public abstract int getPlanCost();
 }
