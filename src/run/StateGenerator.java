@@ -27,8 +27,8 @@ import graph.ActionEdge;
 import graph.GraphDOT;
 import graph.StateGraph;
 import graph.StateVertex;
-import igplan.Plan;
-import igplan.PlanExtractor;
+import plans.InterventionPlan;
+import plans.InterventionPlanExtractor;
 import landmark.RelaxedPlanningGraph;
 import landmark.RelaxedPlanningGraphGenerator;
 import rpg.PlanningGraph;
@@ -189,9 +189,9 @@ public class StateGenerator {
 		return connectivities;
 	}
 
-	public ArrayList<Plan> readPlans(){
+	public ArrayList<InterventionPlan> readPlans(){
 		ArrayList<String> planFiles = getPlanFiles();
-		PlanExtractor px = new PlanExtractor();
+		InterventionPlanExtractor px = new InterventionPlanExtractor();
 		for(int i=0; i<planFiles.size(); i++){
 			px.readFFPlanOutput(planFiles.get(i));
 		}

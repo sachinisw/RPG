@@ -12,10 +12,10 @@ import java.util.Map.Entry;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
-import fdplan.FDPlan;
-import fdplan.FDPlanner;
-import hspfplan.HSPFPlan;
-import hspfplan.HSPPlanner;
+import plans.FDPlan;
+import plans.FDPlanner;
+import plans.HSPFPlan;
+import plans.HSPPlanner;
 
 public class Run {
 

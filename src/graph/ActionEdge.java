@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import con.ConnectivityGraph;
-import igplan.Plan;
+import plans.InterventionPlan;
 import run.InitialState;
 
 public class ActionEdge {
@@ -59,7 +59,7 @@ public class ActionEdge {
 		return Objects.hash(this.getFrom(),this.getTo());
 	}
 
-	public boolean isEdgeInPlan(Plan p, ConnectivityGraph c, InitialState init){
+	public boolean isEdgeInPlan(InterventionPlan p, ConnectivityGraph c, InitialState init){
 		ArrayList<ArrayList<String>> seq = p.getStateSequence(init.getState(), c);
 		for(int i=0; i<p.getPlanSteps().size(); i++){
 			String ac = p.getPlanSteps().get(i).substring(p.getPlanSteps().get(i).indexOf(":")+1,p.getPlanSteps().get(i).length()).trim();
