@@ -169,7 +169,7 @@ public class Domain implements Cloneable{
 		return "(obp_"+parts[0]+namesuffix.substring(0,namesuffix.length()-1)+")";
 	}
 
-	//ramirez geffener 2009 (2010 compile observation method for a->b is not clear)
+	//ramirez geffener 2009 (2010 compile observation method for a->b is not clear. it's the same thing has 2009 with just that change)
 	public Domain compileObservation (String curO, String prevO) { //create a grounded action from this observation. when grounded no parameters
 		Domain domCopy = null;
 		try {
@@ -256,7 +256,7 @@ public class Domain implements Cloneable{
 
 	public Action findAction(String ac) {
 		for (Action action : actions) {
-			if(action.getHeader().contains(ac)) {
+			if(action.getHeader().toLowerCase().contains(ac.toLowerCase())) {
 				return action;
 			}
 		}

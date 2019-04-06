@@ -7,6 +7,7 @@ public class TestConfigs {
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
 	public static final String domain = "EASYIPC"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final String planner = "lama/"; //hsp_f //lama
 	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String instancedir="inst";
 	public static final String instscenario="/scenarios/";

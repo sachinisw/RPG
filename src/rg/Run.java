@@ -14,6 +14,8 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import fdplan.FDPlan;
 import fdplan.FDPlanner;
+import hspfplan.HSPFPlan;
+import hspfplan.HSPPlanner;
 
 public class Run {
 
@@ -30,13 +32,13 @@ public class Run {
 		}
 		return obFiles;	
 	}
-	
+
 	//ramirez geffener 2009
-	public static HashMap<String, String> doPRPforObservations(Observations obs, Domain dom, Problem problem, Hypotheses hyp, int inst, int scen) {
+	public static HashMap<String, String> doPRPforObservationsWithFD(Observations obs, Domain dom, Problem problem, Hypotheses hyp, int inst, int scen) {
 		Domain domain = dom;
 		String goalpredicate = "";
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
-		String out = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout;
+		String out = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
 		for (int i=0; i<obs.getObs().size(); i++) {
 			String now = obs.getObs().get(i);
 			String prev = "";
@@ -50,13 +52,20 @@ public class Run {
 			goalpredicate += obpred;
 			copy.writeDomainFile(out+"domain-compiled-"+i+".pddl");
 			for (int j=0; j<hyp.getHyps().size(); j++) {
+				double goalprob = 0.0;
 				copyProb = problem.addPredicateToGoal(goalpredicate, hyp.getHyps().get(j)); //G+O
 				negProb = copyProb.negateGoal(); //G + not O
 				copyProb.writeProblemFile(out+"p_"+i+"_"+j+".pddl");
 				negProb.writeProblemFile(out+"pneg_"+i+"_"+j+".pddl");
-				FDPlan gpluso = producePlans(copy, copyProb);
-				FDPlan gnoto = producePlans(copy, negProb);
-				double goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
+				if(TestConfigs.planner.contains("lama")) {
+					FDPlan gpluso = producePlansFD(copy, copyProb);
+					FDPlan gnoto = producePlansFD(copy, negProb);
+					goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
+				}else if(TestConfigs.planner.contains("hsp")) {
+					HSPFPlan gpluso = producePlansHSP(copy, copyProb);
+					HSPFPlan gnoto = producePlansHSP(copy, negProb);
+					goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
+				}
 				System.out.println(hyp.getHyps().get(j)+":    ["+ now + "]    diff=" + goalprob);
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
@@ -66,19 +75,22 @@ public class Run {
 			}else {
 				obsTolikelgoal.put(now, null);
 			}
-//			if(i==0) {
-				domain = copy; //pass the domain from this round to the next observation
-//			}
+			domain = copy; //pass the domain from this round to the next observation
 		}
 		System.out.println(obsTolikelgoal);
 		return obsTolikelgoal;
 	}
-	
-	public static FDPlan producePlans(Domain dom, Problem prob) {
+
+	public static FDPlan producePlansFD(Domain dom, Problem prob) {
 		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
 		return fd.getFDPlan();
 	}
-			
+
+	public static HSPFPlan producePlansHSP(Domain dom, Problem prob) {
+		HSPPlanner hp = new HSPPlanner(dom.getDomainPath(), prob.getProblemPath());
+		return hp.getHSPPlan();
+	}
+	
 	public static double getGoalProbabilityGivenObservations(FDPlan gpluso, FDPlan gnoto) { 
 		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
 		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
@@ -87,6 +99,16 @@ public class Run {
 		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
 		return alpha*PrOG*PrG;
 	}
+	
+	public static double getGoalProbabilityGivenObservations(HSPFPlan gpluso, HSPFPlan gnoto) { 
+		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
+		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
+		int costdiff = gpluso.getPlanCost() - gnoto.getPlanCost();
+		double alpha = 1.0, beta = -1,  PrG = 1.0;
+		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
+		return alpha*PrOG*PrG;
+	}
+	
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
 		Entry<String, Double> e = null;
 		double max = Double.MIN_VALUE;
@@ -100,19 +122,16 @@ public class Run {
 				max = ent.getValue();
 			}
 		}
-//		if(count>1) {
-//			e=null;
-//		}
 		return e;
 	}
-	
+
 	public static Hypotheses setHypothesis(String criticalfile, String desirablefile) {
 		Hypotheses hyp = new Hypotheses();
 		hyp.readHyps(criticalfile);
 		hyp.readHyps(desirablefile);
 		return hyp;
 	}
-	
+
 	public static void writeResultFile(HashMap<String, String> decisions, Observations actuals, String outfile) {
 		FileWriter writer = null;
 		try {
@@ -128,7 +147,7 @@ public class Run {
 			e.printStackTrace();
 		} 
 	}
-	
+
 	public static void runRandG() {
 		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
@@ -137,7 +156,7 @@ public class Run {
 				String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
 				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
-				String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.outputfile + "_";
+				String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner + TestConfigs.outputfile + "_";
 				TreeSet<String> obfiles = getObservationFiles(observations);
 				for (int i=0; i<obfiles.size(); i++) {
 					Domain dom = new Domain();
@@ -150,7 +169,7 @@ public class Run {
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doPRPforObservations(noLabel, dom, probTemplate, hyp, inst, scen);
+						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, inst, scen);
 						writeResultFile(decisions, obs, outputfile + i + ".csv");
 					} catch (CloneNotSupportedException e) {
 						System.err.println(e.getMessage());
@@ -162,7 +181,7 @@ public class Run {
 			break;
 		}
 	}
-	
+
 	public static void main(String[] args) {
 		runRandG();
 	}
