@@ -12,7 +12,7 @@ public class Problem implements Cloneable{
 	private ArrayList<String> init;
 	private ArrayList<String> goal;
 	private String problemPath;
-	
+
 	public Problem() {
 		header = new ArrayList<>();
 		init = new ArrayList<>();
@@ -84,7 +84,7 @@ public class Problem implements Cloneable{
 			e.printStackTrace();
 		} 
 	}
-	
+
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 		Problem clone = null;
@@ -110,7 +110,7 @@ public class Problem implements Cloneable{
 		}
 		return clone;
 	}
-	
+
 	public Problem negateGoal() { //create a clone and negate the predicates added from observations.
 		Problem copy = null;
 		try {
@@ -140,19 +140,23 @@ public class Problem implements Cloneable{
 		}
 		return copy;
 	}
-	
+
 	public Problem addPredicateToGoal(String pred, String hyp) { 
 		//create a clone and negate the predicates added from observations.
 		Problem copy = null;
 		try {
 			copy = (Problem) clone();
-			copy.getGoal().set(copy.getGoal().size()-3, pred+hyp);
+			if(hyp.contains("desirable")) {
+				copy.getGoal().set(copy.getGoal().size()-3, pred+hyp.substring(hyp.indexOf(":")+1));
+			}else {
+				copy.getGoal().set(copy.getGoal().size()-3, pred+hyp);
+			}
 		}catch (CloneNotSupportedException e) {
 			e.printStackTrace();
 		}
 		return copy;
 	}
-	
+
 	public ArrayList<String> getHeader() {
 		return header;
 	}

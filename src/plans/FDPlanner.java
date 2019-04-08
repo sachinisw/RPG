@@ -67,13 +67,12 @@ public class FDPlanner {
 		}
 	}
 	
-	//run planner, read output, delete the plan output file.
+	//run planner, read output
 	public FDPlan getFDPlan(){
 		runFDPlanner();
 		ArrayList<String> lines = readFile(fdoutput);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		removeOutputFiles();
 		return fp;
 	}
 

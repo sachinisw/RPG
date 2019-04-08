@@ -3,11 +3,14 @@ package rg;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -84,7 +87,9 @@ public class Run {
 
 	public static FDPlan producePlansFD(Domain dom, Problem prob) {
 		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
-		return fd.getFDPlan();
+		FDPlan fdp =  fd.getFDPlan();
+		fd.removeOutputFiles();
+		return fdp;
 	}
 
 	public static HSPFPlan producePlansHSP(Domain dom, Problem prob) {
@@ -104,15 +109,18 @@ public class Run {
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
 		Entry<String, Double> e = null;
 		double max = Double.MIN_VALUE;
-		int count = 0; //check if there are ties. if there is a tie, that means the agent can't decide whats the likely goal.
 		Iterator<Entry<String, Double>> itr = map.entrySet().iterator();
 		while(itr.hasNext()) {
 			Entry<String, Double> ent = itr.next();
-			if(ent.getValue()>=max) {
-				count++;
+			if(ent.getValue()>max) {
 				e = ent;
 				max = ent.getValue();
 			}
+		}
+		Collection<Double> valuesList = map.values();
+		Set<Double> valuesSet = new HashSet<Double>(map.values());
+		if(valuesList.size()!=valuesSet.size() && valuesSet.contains(max)) {//check if there are ties. if there is a tie, that means the agent can't decide whats the likely goal.
+			e = null;
 		}
 		return e;
 	}
