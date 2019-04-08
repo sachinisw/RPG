@@ -1,13 +1,16 @@
 package rg;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
@@ -23,10 +26,11 @@ import plans.Plan;
 
 public class Run {
 
-	public static TreeSet<String> getObservationFiles(String obsfiles){
+	//reads the observations corresponding to files in /data/decision
+	public static TreeSet<String> getFilesInPath(String filepath){
 		TreeSet<String> obFiles = new TreeSet<String>();
 		try {
-			File dir = new File(obsfiles);
+			File dir = new File(filepath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
 				obFiles.add(fileItem.getCanonicalPath());
@@ -36,13 +40,28 @@ public class Run {
 		}
 		return obFiles;	
 	}
+	
+	public static TreeSet<String> filterFiles(TreeSet<String> files, TreeSet<String> actualobs){
+		TreeSet<String> filtered = new TreeSet<String>();
+		for (String string : files) {
+			if(!string.contains("lm")) {
+				String parts[] = string.split("/");
+				for (String o : actualobs) {
+					String oparts[] = o.split("/");
+					if(oparts[oparts.length-1].equalsIgnoreCase(parts[parts.length-1].substring(0, parts[parts.length-1].indexOf(".")))) {
+						filtered.add(o);
+					}
+				}
+			}
+		}
+		return filtered;
+	}
 
 	//ramirez geffener 2009
-	public static HashMap<String, String> doPRPforObservationsWithFD(Observations obs, Domain dom, Problem problem, Hypotheses hyp, int inst, int scen) {
+	public static HashMap<String, String> doPRPforObservationsWithFD(Observations obs, Domain dom, Problem problem, Hypotheses hyp, int inst, int scen, String out) {
 		Domain domain = dom;
 		String goalpredicate = "";
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
-		String out = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
 		for (int i=0; i<obs.getObs().size(); i++) {
 			String now = obs.getObs().get(i);
 			String prev = "";
@@ -96,7 +115,7 @@ public class Run {
 		HSPPlanner hp = new HSPPlanner(dom.getDomainPath(), prob.getProblemPath());
 		return hp.getHSPPlan();
 	}
-	
+
 	public static double getGoalProbabilityGivenObservations(Plan gpluso, Plan gnoto) { 
 		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
 		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
@@ -105,7 +124,7 @@ public class Run {
 		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
 		return alpha*PrOG*PrG;
 	}
-		
+
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
 		Entry<String, Double> e = null;
 		double max = Double.MIN_VALUE;
@@ -148,33 +167,41 @@ public class Run {
 		} 
 	}
 
+	public static void createDirectory(String outputpath, String obfilename) {
+		new File(outputpath+obfilename+"/").mkdirs();
+	}
+
 	public static void runRandG() {
 		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
 				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
-				String observations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
+				String testedObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.testedObservationFiles;
+				String actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
 				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
-				String outputfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner + TestConfigs.outputfile + "_";
-				TreeSet<String> obfiles = getObservationFiles(observations);
-				for (int i=0; i<obfiles.size(); i++) {
+				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
+				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
+				Iterator<String> itr = obfiles.iterator();
+				while(itr.hasNext()) {
+					String s = itr.next();
+					String path[] = s.split("/");
+					createDirectory(outdir, path[path.length-1]);
 					Domain dom = new Domain();
 					dom.readDominPDDL(domfile);
 					Problem probTemplate = new Problem();
 					probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
 					Hypotheses hyp = setHypothesis(criticals, desirables);
 					Observations obs = new Observations(); //this one has the class labels
-					obs.readObs(obfiles.pollFirst());
+					obs.readObs(s);
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, inst, scen);
-						writeResultFile(decisions, obs, outputfile + i + ".csv");
+						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, inst, scen, outdir+path[path.length-1]+"/");
+						writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
 					} catch (CloneNotSupportedException e) {
 						System.err.println(e.getMessage());
 					}
-					break;
 				}
 				break;
 			}
@@ -182,7 +209,35 @@ public class Run {
 		}
 	}
 
+	public static ArrayList<String> readResultOutput(String filename){
+		ArrayList<String> results = new ArrayList<String>();
+		Scanner sc;
+		try {
+			sc = new Scanner(new File(filename));
+			while(sc.hasNextLine()) {
+				results.add(sc.nextLine().trim());
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return results;
+	}
+
+	//TNR,TPR,FNR,FPR values for R&G, using current planner
+	public static void computeResults() {
+		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
+//				for (int i=0; i<obfiles.size(); i++) {
+//					readResultOutput(outdir+String.valueOf(i)+"/"+TestConfigs.outputfile + "_" + i + ".csv");
+//				}
+			}
+		}
+	}
+
 	public static void main(String[] args) {
 		runRandG();
+		computeResults();
 	}
 }
