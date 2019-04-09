@@ -8,17 +8,26 @@ import java.util.Scanner;
 
 public class Hypotheses {
 	private ArrayList<String> hyps;
-	
+
 	public Hypotheses() {
 		hyps = new ArrayList<>();
 	}
-	
+
 	public void readHyps(String infile) {
 		Scanner sc;
+		String critical = "";
 		try {
 			sc = new Scanner(new File(infile));
 			while(sc.hasNextLine()) {
-				hyps.add(sc.nextLine().trim());
+				String line = sc.nextLine().trim();
+				if(line.contains("desirable:")) {
+					hyps.add(line);
+				}else {
+					critical+=line;
+				}
+			}
+			if(!critical.isEmpty()) {
+				hyps.add(critical);
 			}
 			sc.close();
 		} catch (FileNotFoundException e) {

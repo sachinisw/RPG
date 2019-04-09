@@ -89,7 +89,7 @@ public class Run {
 					HSPFPlan gnoto = producePlansHSP(copy, negProb);
 					goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
 				}
-				System.out.println(hyp.getHyps().get(j)+":    ["+ now + "]    diff=" + goalprob);
+//				System.out.println(hyp.getHyps().get(j)+":    ["+ now + "]    diff=" + goalprob);
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
 			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
@@ -181,6 +181,7 @@ public class Run {
 				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
+				Hypotheses hyp = setHypothesis(criticals, desirables);
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {
@@ -191,7 +192,6 @@ public class Run {
 					dom.readDominPDDL(domfile);
 					Problem probTemplate = new Problem();
 					probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
-					Hypotheses hyp = setHypothesis(criticals, desirables);
 					Observations obs = new Observations(); //this one has the class labels
 					obs.readObs(s);
 					try {
@@ -227,17 +227,113 @@ public class Run {
 	//TNR,TPR,FNR,FPR values for R&G, using current planner
 	public static void computeResults() {
 		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			int tp=0, tn=0, fp=0, fn = 0;
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
-//				for (int i=0; i<obfiles.size(); i++) {
-//					readResultOutput(outdir+String.valueOf(i)+"/"+TestConfigs.outputfile + "_" + i + ".csv");
-//				}
+				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
+				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
+				Hypotheses hyp = setHypothesis(criticals, desirables);
+				TreeSet<String> paths = getFilesInPath(outdir);
+				for (String s : paths) {
+					if(s.contains("out_")) {
+						ArrayList<String> result = readResultOutput(s);
+						System.out.println("****"+result);
+						tp+=countTP(result, hyp);
+						tn+=countTN(result, hyp);
+						fp+=countFP(result, hyp);
+						fn+=countFN(result, hyp);
+					}
+				}
+				break;
 			}
+			if(TestConfigs.planner.contains("lama")) {
+				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_lama.csv");//this is the tp, tn totals for the 20 cases for the current instance.
+			}else if(TestConfigs.planner.contains("hsp")) {
+				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_hsp.csv");
+			}
+			break;
 		}
 	}
 
+	public static void writeRatesToFile(int TP, int TN, int FP, int FN, String filename) {
+		FileWriter writer = null;
+		double tpr = (double) TP/(double) (TP+FN);
+		double tnr = (double) TN/(double) (TN+FP);
+		double fnr = (double) FN/(double) (TP+FN);
+		double fpr = (double) FP/(double) (TN+FP);
+		System.out.println(tpr+","+tnr+","+fnr+","+fpr);
+		try {
+			File file = new File(filename);
+			writer = new FileWriter(file);
+			writer.write("TPR,TNR,FPR,FNR"+"\n");
+			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+	}
+	
+	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String critical = hyp.getHyps().get(0).substring(1,hyp.getHyps().get(0).length()-1);
+		System.out.println("-----"+critical);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("Y:")) {
+				if(parts[2].equalsIgnoreCase(critical) ){
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String desirable = hyp.getHyps().get(1);
+		System.out.println(desirable);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			System.out.println(parts[2]);
+			if(parts[0].equalsIgnoreCase("N:")) {
+				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static int countFP(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String critical = hyp.getHyps().get(0).substring(1,hyp.getHyps().get(0).length()-1);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("N:")) {
+				if(parts[2].equalsIgnoreCase(critical)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static int countFN(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String desirable = hyp.getHyps().get(1);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("Y:")) {
+				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
 	public static void main(String[] args) {
-		runRandG();
+//		runRandG();
 		computeResults();
 	}
 }

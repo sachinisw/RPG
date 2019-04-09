@@ -21,4 +21,5 @@ public class TestConfigs {
 	public static final String rgout = "/rg/";
 	public static final String outputfile = "out";
 	public static final String testedObservationFiles = "/data/decision/";
+	public static final String resultOutpath = "/data/";
 }
