@@ -20,5 +20,9 @@ public class Test {
 				}
 				System.out.println(neg);
 			}
+		String ab = "(ON AC)";
+		if(ab.contains("\\)")) {
+			System.out.println("yep!");
+		}
 	}
 }

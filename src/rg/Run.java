@@ -89,7 +89,6 @@ public class Run {
 					HSPFPlan gnoto = producePlansHSP(copy, negProb);
 					goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
 				}
-//				System.out.println(hyp.getHyps().get(j)+":    ["+ now + "]    diff=" + goalprob);
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
 			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
@@ -275,10 +274,11 @@ public class Run {
 	
 	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
-		String critical = hyp.getHyps().get(0).substring(1,hyp.getHyps().get(0).length()-1);
+		String critical = hyp.getHyps().get(0);
 		System.out.println("-----"+critical);
 		for (String string : result) {
 			String[] parts = string.split(",");
+			System.out.println("#####"+parts[2]);
 			if(parts[0].equalsIgnoreCase("Y:")) {
 				if(parts[2].equalsIgnoreCase(critical) ){
 					count++;
@@ -306,7 +306,7 @@ public class Run {
 	
 	public static int countFP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
-		String critical = hyp.getHyps().get(0).substring(1,hyp.getHyps().get(0).length()-1);
+		String critical = hyp.getHyps().get(0);
 		for (String string : result) {
 			String[] parts = string.split(",");
 			if(parts[0].equalsIgnoreCase("N:")) {
@@ -333,7 +333,7 @@ public class Run {
 	}
 	
 	public static void main(String[] args) {
-//		runRandG();
+		runRandG();
 		computeResults();
 	}
 }

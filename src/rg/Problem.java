@@ -116,7 +116,7 @@ public class Problem implements Cloneable{
 		try {
 			copy = (Problem) clone();
 			for (String g : copy.getGoal()) {
-				if(g.contains("_")) {
+				if(g.contains("_")) { //(obp_PICK-UP_A //ON P A //ON A C)
 					String parts [] = g.split("\\)\\(");
 					String neg = "";
 					for (String s : parts) {
@@ -129,10 +129,13 @@ public class Problem implements Cloneable{
 							}
 						}else {
 							s = "("+s;
+							if(!s.contains(")")){
+								s += ")";
+							}
 						}
 						neg+= s;
 					}
-					copy.getGoal().set(copy.getGoal().indexOf(g), neg);
+					copy.getGoal().set(copy.getGoal().indexOf(g), neg.replace(",", ""));
 				}
 			}
 		} catch (CloneNotSupportedException e) {
@@ -147,9 +150,9 @@ public class Problem implements Cloneable{
 		try {
 			copy = (Problem) clone();
 			if(hyp.contains("desirable")) {
-				copy.getGoal().set(copy.getGoal().size()-3, pred+hyp.substring(hyp.indexOf(":")+1));
+				copy.getGoal().set(copy.getGoal().size()-3, pred+hyp.substring(hyp.indexOf(":")+1).replace(",", ""));
 			}else {
-				copy.getGoal().set(copy.getGoal().size()-3, pred+hyp);
+				copy.getGoal().set(copy.getGoal().size()-3, (pred+hyp).replace(",", ""));
 			}
 		}catch (CloneNotSupportedException e) {
 			e.printStackTrace();

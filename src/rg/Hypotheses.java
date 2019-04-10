@@ -21,13 +21,13 @@ public class Hypotheses {
 			while(sc.hasNextLine()) {
 				String line = sc.nextLine().trim();
 				if(line.contains("desirable:")) {
-					hyps.add(line);
+					hyps.add(line.replace(",",""));
 				}else {
 					critical+=line;
 				}
 			}
 			if(!critical.isEmpty()) {
-				hyps.add(critical);
+				hyps.add(critical.replace(",",""));
 			}
 			sc.close();
 		} catch (FileNotFoundException e) {
