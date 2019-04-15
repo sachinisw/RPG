@@ -18,6 +18,7 @@ import java.util.TreeSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
+import log.EventLogger;
 import plans.FDPlan;
 import plans.FDPlanner;
 import plans.HSPFPlan;
@@ -64,6 +65,7 @@ public class Run {
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
 		for (int i=0; i<obs.getObs().size(); i++) {
 			String now = obs.getObs().get(i);
+			System.out.println("current observation-----"+ now);
 			String prev = "";
 			if(i>0) {
 				prev = obs.getObs().get(i-1);
@@ -92,14 +94,16 @@ public class Run {
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
 			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
+			System.out.println(map);
 			if(ent != null) {
 				obsTolikelgoal.put(now, ent.getKey());
+				System.out.println(now+"-----"+ent.getKey());
 			}else {
 				obsTolikelgoal.put(now, null);
+				System.out.println(now+"-----"+null);
 			}
 			domain = copy; //pass the domain from this round to the next observation
 		}
-		System.out.println(obsTolikelgoal);
 		return obsTolikelgoal;
 	}
 
@@ -118,6 +122,8 @@ public class Run {
 	public static double getGoalProbabilityGivenObservations(Plan gpluso, Plan gnoto) { 
 		//Pr(G|O) = alpha. Pr(O|G) . Pr(G)
 		//Pr(O|G) is computed by plan cost difference. Assume uniform distribution for Pr(G)
+		//if cost difference is high that means (g given obs) is larger than (g not given obs)
+		//if diff is high then, probability will be high. 
 		int costdiff = gpluso.getPlanCost() - gnoto.getPlanCost();
 		double alpha = 1.0, beta = -1,  PrG = 1.0;
 		double PrOG = (double)(Math.exp(beta*costdiff))/(double)(1+(Math.exp(beta*costdiff)));
@@ -125,6 +131,7 @@ public class Run {
 	}
 
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
+		//for each goal compute P(Gi|O) (i=1,2) using method above. highest P(Gi|O) is the most likely goal
 		Entry<String, Double> e = null;
 		double max = Double.MIN_VALUE;
 		Iterator<Entry<String, Double>> itr = map.entrySet().iterator();
@@ -172,6 +179,7 @@ public class Run {
 
 	public static void runRandG() {
 		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			EventLogger.initLog(TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.logfilename);
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
 				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
@@ -185,6 +193,7 @@ public class Run {
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {
 					String s = itr.next();
+					System.out.println("current observation file ======> "+ s);
 					String path[] = s.split("/");
 					createDirectory(outdir, path[path.length-1]);
 					Domain dom = new Domain();
@@ -201,6 +210,7 @@ public class Run {
 					} catch (CloneNotSupportedException e) {
 						System.err.println(e.getMessage());
 					}
+					break;
 				}
 				break;
 			}
@@ -226,7 +236,7 @@ public class Run {
 	//TNR,TPR,FNR,FPR values for R&G, using current planner
 	public static void computeResults() {
 		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			int tp=0, tn=0, fp=0, fn = 0;
+			int tp=0, tn=0, fp=0, fn=0;
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
 				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
@@ -236,7 +246,6 @@ public class Run {
 				for (String s : paths) {
 					if(s.contains("out_")) {
 						ArrayList<String> result = readResultOutput(s);
-						System.out.println("****"+result);
 						tp+=countTP(result, hyp);
 						tn+=countTN(result, hyp);
 						fp+=countFP(result, hyp);
@@ -245,6 +254,7 @@ public class Run {
 				}
 				break;
 			}
+			System.out.println(tp + "  tn="+tn + " fp="+fp +" fn="+fn);
 			if(TestConfigs.planner.contains("lama")) {
 				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_lama.csv");//this is the tp, tn totals for the 20 cases for the current instance.
 			}else if(TestConfigs.planner.contains("hsp")) {
@@ -275,10 +285,10 @@ public class Run {
 	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String critical = hyp.getHyps().get(0);
-		System.out.println("-----"+critical);
+		System.out.println("TP-----"+critical);
 		for (String string : result) {
 			String[] parts = string.split(",");
-			System.out.println("#####"+parts[2]);
+			System.out.println("TP#####"+parts[2]);
 			if(parts[0].equalsIgnoreCase("Y:")) {
 				if(parts[2].equalsIgnoreCase(critical) ){
 					count++;
@@ -291,10 +301,10 @@ public class Run {
 	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String desirable = hyp.getHyps().get(1);
-		System.out.println(desirable);
+		System.out.println("TN-----"+desirable);
 		for (String string : result) {
 			String[] parts = string.split(",");
-			System.out.println(parts[2]);
+			System.out.println("TN#####"+parts[2]);
 			if(parts[0].equalsIgnoreCase("N:")) {
 				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
 					count++;

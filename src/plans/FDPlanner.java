@@ -5,11 +5,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
-//Generates **one** plan from Fast Downward using lmcut() heuristic given problem and domain.
+import log.EventLogger;
+
+//Generates **one** plan from Fast Downward using lazy-greedy heuristic given problem and domain.
 public class FDPlanner {
 	private final static String fdPath = "python /home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
-	private final static String fdConfig = " --search astar(lmcut())";
+	private final static String fdConfigGreedy = " --evaluator hff=ff() --evaluator hcea=cea() --search lazy_greedy([hff,hcea],preferred=[hff,hcea])";
 	private final static String fdoutput = "/home/sachini/eclipse-workspace/IJCAI16/RPG/sas_plan";
 	private final static String fdoutputsub = "/home/sachini/eclipse-workspace/IJCAI16/RPG/output.sas";
 
@@ -23,10 +26,10 @@ public class FDPlanner {
 
 
 	public void runFDPlanner() {
-		String command =  fdPath + " " + domainfile + " " + problemfile + fdConfig;
+		String command =  fdPath + " " + domainfile + " " + problemfile + fdConfigGreedy;
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
-			proc.waitFor();			
+			proc.waitFor();
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
 		} catch (InterruptedException e) {
@@ -48,9 +51,9 @@ public class FDPlanner {
 			}
 			bufferedReader.close();
 		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR readFile():: " + e.getMessage());
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR readFile():: " + e.getMessage());
 		}
 		return lines;
 	}
@@ -61,9 +64,9 @@ public class FDPlanner {
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR removeOutputFiles():: " + e.getMessage());
 		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR removeOutputFiles():: " + e.getMessage());
 		}
 	}
 	
