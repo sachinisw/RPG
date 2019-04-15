@@ -13,7 +13,6 @@ public class EventLogger {
 	
 	public static void initLog(String path) {
 		try {
-			System.out.println(path);
 			System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%6$s%n");
 			handler = new FileHandler(path);
 			LOGGER.addHandler(handler);

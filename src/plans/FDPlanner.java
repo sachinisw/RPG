@@ -1,7 +1,6 @@
 package plans;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,10 +29,8 @@ public class FDPlanner {
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
+		} catch (IOException | InterruptedException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR runFDPlaner():: " + e.getMessage());
 		}
 	}
 
@@ -50,11 +47,9 @@ public class FDPlanner {
 				}
 			}
 			bufferedReader.close();
-		} catch (FileNotFoundException e) {
-			EventLogger.LOGGER.log(Level.SEVERE, "ERROR readFile():: " + e.getMessage());
 		} catch (IOException e) {
 			EventLogger.LOGGER.log(Level.SEVERE, "ERROR readFile():: " + e.getMessage());
-		}
+		} 
 		return lines;
 	}
 

@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.logging.Level;
+
+import log.EventLogger;
 
 //Generates the optimal plan from HSP-F from problem and domain.
 public class HSPPlanner {
@@ -35,11 +38,9 @@ public class HSPPlanner {
 				}
 			}
 			input.close();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
-		}
+		} catch (IOException | InterruptedException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR runHSPPlanner():: " + e.getMessage());
+		} 
 		return lines;
 	}
 

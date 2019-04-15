@@ -65,7 +65,7 @@ public class Run {
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
 		for (int i=0; i<obs.getObs().size(); i++) {
 			String now = obs.getObs().get(i);
-			System.out.println("current observation-----"+ now);
+//			System.out.println("observation-----"+ now);
 			String prev = "";
 			if(i>0) {
 				prev = obs.getObs().get(i-1);
@@ -94,13 +94,11 @@ public class Run {
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
 			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
-			System.out.println(map);
+//			System.out.println(map);
 			if(ent != null) {
 				obsTolikelgoal.put(now, ent.getKey());
-				System.out.println(now+"-----"+ent.getKey());
 			}else {
 				obsTolikelgoal.put(now, null);
-				System.out.println(now+"-----"+null);
 			}
 			domain = copy; //pass the domain from this round to the next observation
 		}
@@ -177,8 +175,8 @@ public class Run {
 		new File(outputpath+obfilename+"/").mkdirs();
 	}
 
-	public static void runRandG() {
-		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+	public static void runRandG(int start) {
+		for (int inst=start; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			EventLogger.initLog(TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.logfilename);
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
@@ -193,7 +191,7 @@ public class Run {
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {
 					String s = itr.next();
-					System.out.println("current observation file ======> "+ s);
+					System.out.println("current file ============> "+ s);
 					String path[] = s.split("/");
 					createDirectory(outdir, path[path.length-1]);
 					Domain dom = new Domain();
@@ -210,11 +208,8 @@ public class Run {
 					} catch (CloneNotSupportedException e) {
 						System.err.println(e.getMessage());
 					}
-					break;
 				}
-				break;
 			}
-			break;
 		}
 	}
 
@@ -234,8 +229,8 @@ public class Run {
 	}
 
 	//TNR,TPR,FNR,FPR values for R&G, using current planner
-	public static void computeResults() {
-		for (int inst=1; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+	public static void computeResults(int start) {
+		for (int inst=start; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			int tp=0, tn=0, fp=0, fn=0;
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
@@ -252,15 +247,12 @@ public class Run {
 						fn+=countFN(result, hyp);
 					}
 				}
-				break;
 			}
-			System.out.println(tp + "  tn="+tn + " fp="+fp +" fn="+fn);
 			if(TestConfigs.planner.contains("lama")) {
 				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_lama.csv");//this is the tp, tn totals for the 20 cases for the current instance.
 			}else if(TestConfigs.planner.contains("hsp")) {
 				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_hsp.csv");
 			}
-			break;
 		}
 	}
 
@@ -270,7 +262,6 @@ public class Run {
 		double tnr = (double) TN/(double) (TN+FP);
 		double fnr = (double) FN/(double) (TP+FN);
 		double fpr = (double) FP/(double) (TN+FP);
-		System.out.println(tpr+","+tnr+","+fnr+","+fpr);
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
@@ -285,10 +276,8 @@ public class Run {
 	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String critical = hyp.getHyps().get(0);
-		System.out.println("TP-----"+critical);
 		for (String string : result) {
 			String[] parts = string.split(",");
-			System.out.println("TP#####"+parts[2]);
 			if(parts[0].equalsIgnoreCase("Y:")) {
 				if(parts[2].equalsIgnoreCase(critical) ){
 					count++;
@@ -301,10 +290,8 @@ public class Run {
 	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String desirable = hyp.getHyps().get(1);
-		System.out.println("TN-----"+desirable);
 		for (String string : result) {
 			String[] parts = string.split(",");
-			System.out.println("TN#####"+parts[2]);
 			if(parts[0].equalsIgnoreCase("N:")) {
 				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
 					count++;
@@ -343,7 +330,8 @@ public class Run {
 	}
 	
 	public static void main(String[] args) {
-		runRandG();
-		computeResults();
+		int start = 1; //TODO: change first... this is the starting instance number. will go until TestConfig.instances number of times.
+		runRandG(start);
+		computeResults(start);
 	}
 }

@@ -6,8 +6,8 @@ public class TestConfigs {
 	public static final int instances = 1; //from start arg. run test for this many instances
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
-	public static final String domain = "BLOCKS"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
-	public static final String planner = "lama/"; //hsp //lama
+	public static final String domain = "EASYIPC"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final String planner = "hsp/"; //hsp //lama
 	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String instancedir="inst";
 	public static final String instscenario="/scenarios/";
@@ -22,5 +22,5 @@ public class TestConfigs {
 	public static final String outputfile = "out";
 	public static final String testedObservationFiles = "/data/decision/";
 	public static final String resultOutpath = "/data/";
-	public static final String logfilename = "/inst.log";
+	public static final String logfilename = "/inst_"+planner.substring(0, planner.length()-1)+".log";
 }
