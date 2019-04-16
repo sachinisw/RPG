@@ -129,6 +129,19 @@ public class Domain implements Cloneable{
 		}
 	}
 
+	public void addPredicate(String predicate) { //add a new predicate to the beginning if it doesn't already exist
+		boolean found = false;
+		for (String p : predicates) {
+			if(p.equalsIgnoreCase(predicate)) {
+				found = true;
+				break;
+			}
+		}
+		if(!found) {
+			predicates.add(1, predicate);
+		}
+	}
+	
 	public void writeDomainFile(String filename) {
 		FileWriter writer = null;
 		setDomainPath(filename);
@@ -183,7 +196,8 @@ public class Domain implements Cloneable{
 					prevPred = createPrediateFromObservation(prevO);
 				}
 				String header_new = "(:action ob_"+predicate.substring(4,predicate.length()-1)+"\n";
-				domCopy.getPredicates().add(1,predicate); //add the new predicate for observation to domain
+				//domCopy.getPredicates().add(1,predicate); //add the new predicate for observation to domain
+				domCopy.addPredicate(predicate);
 				acCopyClone.setHeader(header_new);
 				HashMap<String, String> maps = new HashMap<>();
 				String pattern = "\\?([a-z,A-Z]{0,})";

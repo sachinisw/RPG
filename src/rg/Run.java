@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -65,7 +66,7 @@ public class Run {
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
 		for (int i=0; i<obs.getObs().size(); i++) {
 			String now = obs.getObs().get(i);
-//			System.out.println("observation-----"+ now);
+			EventLogger.LOGGER.log(Level.INFO, "observation :: " + now);
 			String prev = "";
 			if(i>0) {
 				prev = obs.getObs().get(i-1);
@@ -94,7 +95,6 @@ public class Run {
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
 			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
-//			System.out.println(map);
 			if(ent != null) {
 				obsTolikelgoal.put(now, ent.getKey());
 			}else {
@@ -108,12 +108,20 @@ public class Run {
 	public static FDPlan producePlansFD(Domain dom, Problem prob) {
 		FDPlanner fd = new FDPlanner(dom.getDomainPath(), prob.getProblemPath());
 		FDPlan fdp =  fd.getFDPlan();
+		if(fdp.getActions().isEmpty()) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: FD Plan not found");
+		}
 		fd.removeOutputFiles();
 		return fdp;
 	}
 
 	public static HSPFPlan producePlansHSP(Domain dom, Problem prob) {
 		HSPPlanner hp = new HSPPlanner(dom.getDomainPath(), prob.getProblemPath());
+		if(hp.getHSPPlan().getActions().isEmpty()) {
+			System.out.println(hp.getDomainfile());
+			System.out.println(hp.getProblemfile());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: HSP Plan not found");
+		}
 		return hp.getHSPPlan();
 	}
 
@@ -191,7 +199,7 @@ public class Run {
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {
 					String s = itr.next();
-					System.out.println("current file ============> "+ s);
+					EventLogger.LOGGER.log(Level.INFO, "Current file::   "+s);
 					String path[] = s.split("/");
 					createDirectory(outdir, path[path.length-1]);
 					Domain dom = new Domain();
@@ -206,7 +214,7 @@ public class Run {
 						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, inst, scen, outdir+path[path.length-1]+"/");
 						writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
 					} catch (CloneNotSupportedException e) {
-						System.err.println(e.getMessage());
+						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
 				}
 			}
