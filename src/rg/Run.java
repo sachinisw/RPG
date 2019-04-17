@@ -183,14 +183,21 @@ public class Run {
 		new File(outputpath+obfilename+"/").mkdirs();
 	}
 
-	public static void runRandG(int start) {
+	public static void runRandG(int start, int mode) {
 		for (int inst=start; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			EventLogger.initLog(TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.logfilename);
 			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
 				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
 				String testedObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.testedObservationFiles;
-				String actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
+				String actualObservations = "";
+				if(mode==TestConfigs.obFull) { //full trace
+					actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
+				}else if(mode==TestConfigs.ob50lm) { //50lm
+					actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observation50Files;
+				}else if(mode==TestConfigs.ob75lm) { //75lm
+					actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observation75Files;  
+				}
 				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
@@ -212,7 +219,13 @@ public class Run {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
 						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, inst, scen, outdir+path[path.length-1]+"/");
-						writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
+						if(mode==TestConfigs.obFull) {
+							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
+						}else if (mode==TestConfigs.ob50lm) {
+							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + "50.csv");
+						}else if (mode==TestConfigs.ob75lm) {
+							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + "75.csv");
+						}
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
@@ -338,8 +351,9 @@ public class Run {
 	}
 	
 	public static void main(String[] args) {
-		int start = 1; //TODO: change first... this is the starting instance number. will go until TestConfig.instances number of times.
-		runRandG(start);
+		int start = 3; //TODO: change here. this is the starting instance number. will go until TestConfig.instances number of times.
+		int mode = 1;  // change here to indicate which observation files are being run. full, 50% limited or 75% limited
+		runRandG(start , mode);
 		computeResults(start);
 	}
 }

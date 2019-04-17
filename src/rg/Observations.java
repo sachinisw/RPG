@@ -44,7 +44,7 @@ public class Observations implements Cloneable {
 
 	public void removeLabels() {
 		for (String s : obs) {
-			String snew = s.substring(2);
+			String snew = s.substring(s.indexOf(":")+1);
 			obs.set(obs.indexOf(s), snew);
 		}
 	}
