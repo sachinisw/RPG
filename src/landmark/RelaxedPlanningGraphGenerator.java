@@ -103,21 +103,30 @@ public class RelaxedPlanningGraphGenerator {
 	
 	public static void main(String[] args) {
 		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
-		String inputfilerpg = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/rpg-problem-a";
-		String inputfilecon = "/home/sachini/BLOCKS/scenarios/30/outs/attacker/connectivity-problem-a";
-		String lmoutput = "/home/sachini/BLOCKS/scenarios/30/outs/verifiedlm.txt";
+		String inputfilerpg = "/home/sachini/domains/BLOCKS/scenarios/test/testrpg";
+		String inputfilecon = "/home/sachini/domains/BLOCKS/scenarios/test/testcon";
+		String lmoutput = "/home/sachini/domains/BLOCKS/scenarios/test/verifiedlm.txt";
 		ArrayList<String> critical = new ArrayList<String>();
 		ArrayList<String> init = new ArrayList<String>();
-		critical.add("(ON C A)"); //prob 30
-		critical.add("(ON B D)");
+		critical.add("(ON A B)");
 		init.add("(HANDEMPTY)");
-		init.add("(CLEAR A)");
-		init.add("(ONTABLE A)");
 		init.add("(CLEAR B)");
-		init.add("(ONTABLE B)");
-		init.add("(ONTABLE C)");
-		init.add("(ON D C)");
-		init.add("(CLEAR D)");
+		init.add("(ON B A)");
+		init.add("(ONTABLE A)");
+		
+		
+		
+		
+//		critical.add("(ON C A)"); //prob 30
+//		critical.add("(ON B D)");
+//		init.add("(HANDEMPTY)");
+//		init.add("(CLEAR A)");
+//		init.add("(ONTABLE A)");
+//		init.add("(CLEAR B)");
+//		init.add("(ONTABLE B)");
+//		init.add("(ONTABLE C)");
+//		init.add("(ON D C)");
+//		init.add("(CLEAR D)");
 		 
 //		critical.add("(AT D)"); //prob 31. Give these with paranthesis
 //		init.add("(AT A)");
