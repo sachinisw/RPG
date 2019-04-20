@@ -277,6 +277,52 @@ public class Domain implements Cloneable{
 		return null;
 	}
 
+	public Action groundAction(String ob) { //apply objects in the observation to action
+		String obac = ob.split(" ")[0];
+		String obparams[] = ob.split(" "); //also contains action label
+		Action action = findAction(obac);
+		HashMap<String, String> parammatch = new HashMap<>();
+		Action copy = null;
+		try {
+			copy = (Action) action.clone();
+			AcParameters par = copy.getParams();
+			int index = 1;
+			for (String var : par.getParamlist()) {
+				String pattern = "\\?([a-z,A-Z]{0,})";
+				Pattern r = Pattern.compile(pattern);
+				Matcher m = r.matcher(var);
+				while (m.find()) {
+					parammatch.put(m.group(),obparams[index++]);
+				}
+			}
+			AcPrecondition pre = copy.getPreconds();
+			for (int i=0; i<pre.getPredicates().size(); i++) { //ground preconditions
+				String pattern = "\\?([a-z,A-Z]{0,})";
+				Pattern r = Pattern.compile(pattern);
+				Matcher m = r.matcher(pre.getPredicates().get(i));
+				while (m.find()) {
+					String value = parammatch.get(m.group());
+					String newpred = pre.getPredicates().get(i).replace(m.group(), value);
+					pre.getPredicates().set(i, newpred);
+				}
+			}
+			AcEffect eff = copy.getEffects();
+			for (int i=0; i<eff.getPredicates().size(); i++) { //ground effects
+				String pattern = "\\?([a-z,A-Z]{0,})";
+				Pattern r = Pattern.compile(pattern);
+				Matcher m = r.matcher(eff.getPredicates().get(i));
+				while (m.find()) {
+					String value = parammatch.get(m.group());
+					String newpred = eff.getPredicates().get(i).replace(m.group(), value);
+					eff.getPredicates().set(i, newpred);
+				}
+			} //need to clean paramlist now, since the action is grounded
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return copy;
+	}
+	
 	public ArrayList<String> getHeader() {
 		return header;
 	}

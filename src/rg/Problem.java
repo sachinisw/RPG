@@ -160,6 +160,22 @@ public class Problem implements Cloneable{
 		return copy;
 	}
 
+	public Problem replaceGoal(String hyp) { 
+		//create a clone and replace the current goal with hyp
+		Problem copy = null;
+		try {
+			copy = (Problem) clone();
+			if(hyp.contains("desirable")) {
+				copy.getGoal().set(copy.getGoal().size()-3, hyp.substring(hyp.indexOf(":")+1).replace(",", ""));
+			}else {
+				copy.getGoal().set(copy.getGoal().size()-3, hyp.replace(",", ""));
+			}
+		}catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return copy;
+	}
+	
 	public ArrayList<String> getHeader() {
 		return header;
 	}

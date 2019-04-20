@@ -60,7 +60,7 @@ public class Run {
 	}
 
 	//ramirez geffener 2009
-	public static HashMap<String, String> doPRPforObservationsWithFD(Observations obs, Domain dom, Problem problem, Hypotheses hyp, int inst, int scen, String out) {
+	public static HashMap<String, String> doPRPforObservationsWithFD(Observations obs, Domain dom, Problem problem, Hypotheses hyp, String out) {
 		Domain domain = dom;
 		String goalpredicate = "";
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
@@ -218,7 +218,7 @@ public class Run {
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, inst, scen, outdir+path[path.length-1]+"/");
+						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, outdir+path[path.length-1]+"/");
 						if(mode==TestConfigs.obFull) {
 							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
 						}else if (mode==TestConfigs.ob50lm) {
