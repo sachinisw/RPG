@@ -15,12 +15,10 @@ import java.util.logging.Level;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
+import con.ConnectivityGraph;
 import log.EventLogger;
 import plans.JavaFFPlan;
 import plans.JavaFFPlanner;
-import rg.AcEffect;
-import rg.AcPrecondition;
-import rg.Action;
 import rg.Domain;
 import rg.Hypotheses;
 import rg.Observations;
@@ -82,7 +80,6 @@ public class Run {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		System.out.println(lms);
 		return  lms;
 	}
 
@@ -106,7 +103,9 @@ public class Run {
 				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.verout + TestConfigs.planner;
+				String confile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.connectivityGraphFile;
 				Hypotheses hyp = setHypothesis(criticals, desirables);
+				ConnectivityGraph con = readConnectivityGraphs(confile);
 				ArrayList<String> runningstate = setInits(initfile); //set the state to init.
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
 				ArrayList<String> landmarks = readLandmarks(landmarkfile);
@@ -125,7 +124,7 @@ public class Run {
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, runningstate, dom, probTemplate, hyp, landmarks,
+						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, runningstate, dom, probTemplate, con, hyp, landmarks,
 								outdir+path[path.length-1]+"/");
 						if(mode==TestConfigs.obFull) {
 							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
@@ -145,7 +144,7 @@ public class Run {
 	}
 
 	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> runningstate, 
-			Domain dom, Problem prob, Hypotheses hyp, ArrayList<String> lms, String outdir){ //prob comes from problem_a.txt
+			Domain dom, Problem prob, ConnectivityGraph con, Hypotheses hyp, ArrayList<String> lms, String outdir){ //prob comes from problem_a.txt
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
 		TreeSet<String> achievedFL = new TreeSet<String>();
 		TreeSet<String> activeFL = new TreeSet<String>();
@@ -158,16 +157,21 @@ public class Run {
 		for (int i=0; i<obs.getObs().size(); i++) {
 			String now = obs.getObs().get(i);
 			prefix.add(now);
-			achieveLandmark(now, dom, runningstate, achievedFL, activeFL, lms);
+			achieveLandmark(now, dom, con, runningstate, achievedFL, activeFL, lms);
+			//			System.out.println(Arrays.toString(achievedFL.toArray()));
+			//			System.out.println(Arrays.toString(activeFL.toArray()));
+			for (String hp : hyp.getHyps()) {
+
+			}
 		}
 		return obsTolikelgoal;
 	}
 
 	//observation is a state
-	public static void achieveLandmark(String ob, Domain dom, ArrayList<String> state,
+	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> state,
 			TreeSet<String> achievedFL, TreeSet<String> activeFL, ArrayList<String> landmarks) {
-		ArrayList<String> obstate = convertObservationToState(state, dom, ob);
-		if((!activeFL.isEmpty()) && (observationIntersectswithActiveFL(ob, dom, state, activeFL))) {
+		ArrayList<String> obstate = convertObservationToState(state, dom, con, ob);
+		if((!activeFL.isEmpty()) && (observationIntersectswithActiveFL(ob, dom, con, state, activeFL))) {
 			achievedFL.addAll(activeFL);
 			activeFL.clear();
 		}else if(activeFL.isEmpty()) {
@@ -181,42 +185,25 @@ public class Run {
 		}
 	}
 
-	public static ArrayList<String> convertObservationToState(ArrayList<String> state, Domain dom, String obs){
+	public static ArrayList<String> convertObservationToState(ArrayList<String> state, Domain dom, ConnectivityGraph con, String obs){
 		ArrayList<String> statenew = new ArrayList<String>();
-		Action grounded = dom.groundAction(obs);
-		AcEffect eff = grounded.getEffects();
-		statenew.addAll(state);
-		AcPrecondition pre = grounded.getPreconds(); //safety check. make sure if these preconditions are also in the state
-		boolean missingPrecond = false;
-		for (String pres : pre.getPredicates()) {
-			if(!statenew.contains(pres)) {
-				missingPrecond = true;
-			}
-		}
-		if(!missingPrecond) {
-			for (String s : state) {//remove - effects and add +effects
-				boolean foundpos = false, foundneg = false;
-				for (String pe : eff.getPredicates()) {
-					if(pe.equalsIgnoreCase(s)) {
-						if(pe.contains("not")) {
-							foundneg = true;
-						}else {
-							foundpos = true;
-						}
-					}
-				}
-				if(foundpos) {
-					statenew.add(s);
-				}else if(foundneg){
-					statenew.remove(s);
-				}
+		statenew.addAll(state); //[(CLEAR A), (CLEAR C), (CLEAR L), (CLEAR P), (HANDEMPTY), (ONTABLE A), (ONTABLE C), (ONTABLE L), (ONTABLE P)]
+		ArrayList<String> applicables = con.findApplicableActionsInState(statenew);
+		for (String ac : applicables) {
+			if(obs.equalsIgnoreCase(ac)) {
+				ArrayList<String> del = con.findStatesDeletedByAction(ac);
+				ArrayList<String> add = con.findStatesAddedByAction(ac);
+				statenew.removeAll(del);
+				statenew.addAll(add);
+				break;
 			}
 		}
 		return statenew;
 	}
 
-	public static boolean observationIntersectswithActiveFL(String ob, Domain dom, ArrayList<String> state, TreeSet<String> activeFL) {
-		ArrayList<String> newstate = convertObservationToState(state, dom, ob);
+	public static boolean observationIntersectswithActiveFL(String ob, Domain dom, ConnectivityGraph con, 
+			ArrayList<String> state, TreeSet<String> activeFL) {
+		ArrayList<String> newstate = convertObservationToState(state, dom, con, ob);
 		for (String string : activeFL) {
 			for (String s : newstate) {
 				if(string.equalsIgnoreCase(s)) {
@@ -275,6 +262,12 @@ public class Run {
 			EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: JavaFF Plan not found");
 		}
 		return ffp.getJavaFFPlan();
+	}
+
+	public static ConnectivityGraph readConnectivityGraphs(String confile){
+		ConnectivityGraph graph = new ConnectivityGraph(confile);
+		graph.readConGraphOutput(confile);
+		return graph;
 	}
 
 	public static void main(String[] args) {

@@ -38,4 +38,8 @@ public class LGGEdge {
 	public void setTo(LGGNode to) {
 		this.to = to;
 	}
+	
+	public String toString() {
+		return this.from + " -> " + this.to;
+	}
 }

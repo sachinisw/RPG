@@ -12,6 +12,7 @@ public class TestConfigs {
 	public static final String planner = "jff/"; //javaff
 	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String instancedir="inst";
+	public static final String connectivityGraphFile = "/outs/attacker/connectivity-problem_a";
 	public static final String instscenario="/scenarios/";
 	public static final String observationFiles = "/obs/";
 	public static final String observation50Files = "/obslm50/";
