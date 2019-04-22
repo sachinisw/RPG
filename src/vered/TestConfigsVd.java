@@ -1,6 +1,6 @@
 package vered;
 
-public class TestConfigs {
+public class TestConfigsVd {
 	public static final int obFull = 1;
 	public static final int ob50lm = 2;
 	public static final int ob75lm = 3;

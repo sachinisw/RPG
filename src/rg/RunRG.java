@@ -83,11 +83,11 @@ public class RunRG {
 				negProb = copyProb.negateGoal(); //G + not O
 				copyProb.writeProblemFile(out+"p_"+i+"_"+j+".pddl");
 				negProb.writeProblemFile(out+"pneg_"+i+"_"+j+".pddl");
-				if(TestConfigs.planner.contains("lama")) { //satisfising planner
+				if(TestConfigsRG.planner.contains("lama")) { //satisfising planner
 					FDPlan gpluso = producePlansFD(copy, copyProb);
 					FDPlan gnoto = producePlansFD(copy, negProb);
 					goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
-				}else if(TestConfigs.planner.contains("hsp")) { //optimal planner
+				}else if(TestConfigsRG.planner.contains("hsp")) { //optimal planner
 					HSPFPlan gpluso = producePlansHSP(copy, copyProb);
 					HSPFPlan gnoto = producePlansHSP(copy, negProb);
 					goalprob = getGoalProbabilityGivenObservations(gpluso, gnoto);
@@ -184,23 +184,23 @@ public class RunRG {
 	}
 
 	public static void runRandG(int start, int mode) {
-		for (int inst=start; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			EventLogger.initLog(TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.logfilename);
-			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
-				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
-				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
-				String testedObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.testedObservationFiles;
+		for (int inst=start; inst<=TestConfigsRG.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			EventLogger.initLog(TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.logfilename);
+			for (int scen=0; scen<TestConfigsRG.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String desirables = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.desirableStateFile;
+				String criticals = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.criticalStateFile;
+				String testedObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.testedObservationFiles;
 				String actualObservations = "";
-				if(mode==TestConfigs.obFull) { //full trace
-					actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observationFiles;
-				}else if(mode==TestConfigs.ob50lm) { //50lm
-					actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observation50Files;
-				}else if(mode==TestConfigs.ob75lm) { //75lm
-					actualObservations = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.observation75Files;  
+				if(mode==TestConfigsRG.obFull) { //full trace
+					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observationFiles;
+				}else if(mode==TestConfigsRG.ob50lm) { //50lm
+					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation50Files;
+				}else if(mode==TestConfigsRG.ob75lm) { //75lm
+					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation75Files;  
 				}
-				String domfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.domainFile;
-				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
-				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
+				String domfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.domainFile;
+				String probfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.a_problemFile;
+				String outdir = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.rgout + TestConfigsRG.planner;
 				Hypotheses hyp = setHypothesis(criticals, desirables);
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
 				Iterator<String> itr = obfiles.iterator();
@@ -219,12 +219,12 @@ public class RunRG {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
 						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, outdir+path[path.length-1]+"/");
-						if(mode==TestConfigs.obFull) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + ".csv");
-						}else if (mode==TestConfigs.ob50lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + "50.csv");
-						}else if (mode==TestConfigs.ob75lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigs.outputfile + "_" + path[path.length-1] + "75.csv");
+						if(mode==TestConfigsRG.obFull) {
+							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + ".csv");
+						}else if (mode==TestConfigsRG.ob50lm) {
+							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "50.csv");
+						}else if (mode==TestConfigsRG.ob75lm) {
+							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "75.csv");
 						}
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
@@ -251,12 +251,12 @@ public class RunRG {
 
 	//TNR,TPR,FNR,FPR values for R&G, using current planner
 	public static void computeResults(int start) {
-		for (int inst=start; inst<=TestConfigs.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+		for (int inst=start; inst<=TestConfigsRG.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			int tp=0, tn=0, fp=0, fn=0;
-			for (int scen=0; scen<TestConfigs.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
-				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rgout + TestConfigs.planner;
-				String desirables = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.desirableStateFile;
-				String criticals = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.criticalStateFile;
+			for (int scen=0; scen<TestConfigsRG.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String outdir = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.rgout + TestConfigsRG.planner;
+				String desirables = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.desirableStateFile;
+				String criticals = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.criticalStateFile;
 				Hypotheses hyp = setHypothesis(criticals, desirables);
 				TreeSet<String> paths = getFilesInPath(outdir);
 				for (String s : paths) {
@@ -269,10 +269,10 @@ public class RunRG {
 					}
 				}
 			}
-			if(TestConfigs.planner.contains("lama")) {
-				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_lama.csv");//this is the tp, tn totals for the 20 cases for the current instance.
-			}else if(TestConfigs.planner.contains("hsp")) {
-				writeRatesToFile(tp, tn, fp, fn, TestConfigs.prefix+TestConfigs.instancedir + inst +TestConfigs.resultOutpath+"rg_hsp.csv");
+			if(TestConfigsRG.planner.contains("lama")) {
+				writeRatesToFile(tp, tn, fp, fn, TestConfigsRG.prefix+TestConfigsRG.instancedir + inst +TestConfigsRG.resultOutpath+"rg_lama.csv");//this is the tp, tn totals for the 20 cases for the current instance.
+			}else if(TestConfigsRG.planner.contains("hsp")) {
+				writeRatesToFile(tp, tn, fp, fn, TestConfigsRG.prefix+TestConfigsRG.instancedir + inst +TestConfigsRG.resultOutpath+"rg_hsp.csv");
 			}
 		}
 	}

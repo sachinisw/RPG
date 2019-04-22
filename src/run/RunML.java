@@ -130,14 +130,14 @@ public class RunML {
 	}
 	
 	private static boolean restrict(int mode, int limit, String domain) {
-		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigs.runmode && limit>TestConfigs.fileLimit) ||
-				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigs.runmode && limit>TestConfigs.fileLimit) || 
-				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigs.runmode && limit>TestConfigs.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ||
+				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) || 
+				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
 			return true;
 		}else {
-			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit) || 
-					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit) ||
-					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigs.runmode && limit>TrainConfigs.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
+			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) || 
+					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ||
+					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
 				return true;
 			}
 		}
@@ -184,21 +184,21 @@ public class RunML {
 	}
 
 	public static void runAsTraining(int mode) {
-		LOGGER.log(Level.INFO, "Run mode: TRAINING with "+ TrainConfigs.cases + " cases");
-		String domain = TrainConfigs.domain;
-		for (int casenum=0; casenum<TrainConfigs.cases; casenum++) {
-			String domainfile = TrainConfigs.root+casenum+TrainConfigs.domainFile;
-			String desirablefile = TrainConfigs.root+casenum+TrainConfigs.dstates;
-			String criticalfile = TrainConfigs.root+casenum+TrainConfigs.cstates;
-			String dotpre = TrainConfigs.root+casenum+TrainConfigs.dotdir;
-			String a_prob = TrainConfigs.root+casenum+TrainConfigs.a_problemFile;
-			String a_out = TrainConfigs.root+casenum+TrainConfigs.outsdir+TrainConfigs.a_output;
-			String a_init = TrainConfigs.root+casenum+TrainConfigs.a_initFile;
-			String a_dotsuf = TrainConfigs.a_dotFileSuffix;
-			String ds_csv = TrainConfigs.root+casenum+TrainConfigs.datadir+TrainConfigs.decisionCSV;
-			String lm_out = TrainConfigs.root+casenum+TrainConfigs.datadir+TrainConfigs.lmoutputFile;
-			String obs = TrainConfigs.root+casenum+TrainConfigs.obsdir;
-			boolean writedot = TrainConfigs.writeDOT;
+		LOGGER.log(Level.INFO, "Run mode: TRAINING with "+ TrainConfigsML.cases + " cases");
+		String domain = TrainConfigsML.domain;
+		for (int casenum=0; casenum<TrainConfigsML.cases; casenum++) {
+			String domainfile = TrainConfigsML.root+casenum+TrainConfigsML.domainFile;
+			String desirablefile = TrainConfigsML.root+casenum+TrainConfigsML.dstates;
+			String criticalfile = TrainConfigsML.root+casenum+TrainConfigsML.cstates;
+			String dotpre = TrainConfigsML.root+casenum+TrainConfigsML.dotdir;
+			String a_prob = TrainConfigsML.root+casenum+TrainConfigsML.a_problemFile;
+			String a_out = TrainConfigsML.root+casenum+TrainConfigsML.outsdir+TrainConfigsML.a_output;
+			String a_init = TrainConfigsML.root+casenum+TrainConfigsML.a_initFile;
+			String a_dotsuf = TrainConfigsML.a_dotFileSuffix;
+			String ds_csv = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.decisionCSV;
+			String lm_out = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.lmoutputFile;
+			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
+			boolean writedot = TrainConfigsML.writeDOT;
 			run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
 					a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true);
 		}
@@ -226,27 +226,27 @@ public class RunML {
 	}
 
 	public static void runAsTesting(int mode, int start) {
-		String domain = TestConfigs.domain;
-		boolean writedot = TestConfigs.writeDOT; 
+		String domain = TestConfigsML.domain;
+		boolean writedot = TestConfigsML.writeDOT; 
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
-		for (int instance=start; instance<=TestConfigs.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			for (int x=0; x<TestConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
-				String domainfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.domainFile;
-				String desirablefile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.desirableStateFile;
-				String criticalfile = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.criticalStateFile;
-				String a_prob = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.a_problemFile;
-				String a_out = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.a_outputPath;
-				String a_init = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.a_initFile;
-				String a_dotpre_full = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.a_dotFilePrefix;
-				String a_dotpre_lm = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.a_dotFileLMPrefix;
-				String a_dotsuf = TestConfigs.a_dotFileSuffix;
-				String ds_csv = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.decisionCSV;
-				String lm_out_full = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputFull;
-				String lm_out_short50 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputShort50;
-				String lm_out_short75 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.lmoutputShort75;
-				String obs = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.observationFiles;
-				String obslm50 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.limitedObservationFiles50;
-				String obslm75 = TestConfigs.prefix+TestConfigs.instancedir+String.valueOf(instance)+TestConfigs.instscenario+String.valueOf(x)+TestConfigs.limitedObservationFiles75; 
+		for (int instance=start; instance<=TestConfigsML.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			for (int x=0; x<TestConfigsML.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String domainfile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.domainFile;
+				String desirablefile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.desirableStateFile;
+				String criticalfile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.criticalStateFile;
+				String a_prob = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_problemFile;
+				String a_out = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_outputPath;
+				String a_init = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_initFile;
+				String a_dotpre_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_dotFilePrefix;
+				String a_dotpre_lm = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_dotFileLMPrefix;
+				String a_dotsuf = TestConfigsML.a_dotFileSuffix;
+				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
+				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
+				String lm_out_short50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort50;
+				String lm_out_short75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort75;
+				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
+				String obslm50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles50;
+				String obslm75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles75; 
 				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, 0, writedot, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
 				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
@@ -264,9 +264,9 @@ public class RunML {
 		int mode = -1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigs.runmode){
 			runAsDebug(mode);
-		}else if(mode==TrainConfigs.runmode) {
+		}else if(mode==TrainConfigsML.runmode) {
 			runAsTraining(mode);
-		}else if(mode==TestConfigs.runmode){
+		}else if(mode==TestConfigsML.runmode){
 			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runAsTesting(mode,start);
 		}

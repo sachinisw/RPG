@@ -1,6 +1,6 @@
 package run;
 
-public class TestConfigs {
+public class TestConfigsML {
 	public static final boolean writeDOT = false;
 	public static final int runmode = 1; 
 	public static final int trainedscenario = 0;
