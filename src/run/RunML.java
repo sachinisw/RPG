@@ -19,9 +19,9 @@ import landmark.RelaxedPlanningGraph;
 import out.CSVGenerator;
 import out.DecisionDataLine;
 
-public class Run {
+public class RunML {
 
-	private static final Logger LOGGER = Logger.getLogger(Run.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(RunML.class.getName());
 	private static final boolean asTraceGenerator = false;
 
 	public static TreeSet<String> getObservationFiles(String obsfiles){

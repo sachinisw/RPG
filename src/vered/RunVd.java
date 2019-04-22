@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import con.ConnectivityGraph;
+import landmark.RelaxedPlanningGraphGenerator;
 import log.EventLogger;
 import plans.JavaFFPlan;
 import plans.JavaFFPlanner;
@@ -25,7 +26,7 @@ import rg.Observations;
 import rg.Problem;
 
 
-public class Run {
+public class RunVd {
 
 	//reads the observations corresponding to files in /data/decision
 	public static TreeSet<String> getFilesInPath(String filepath){
@@ -66,10 +67,10 @@ public class Run {
 			sc = new Scanner(new File(lmfile));
 			while(sc.hasNextLine()) {
 				String line = sc.nextLine().trim();
-				if(line.contains(":VERIFIED LM")) {
+				if(line.contains(":LGG GREEDY NECESSARY ORDERS")) {
 					start = true;
 				}
-				if(start && !line.contains("VERIFIED") && !line.isEmpty()) {
+				if(start && !line.contains("LGG GREEDY NECESSARY ORDERS") && !line.isEmpty()) {
 					lms.add(line.substring(1,line.length()-1));
 				}
 				if(start && line.contains("UNVERIFIED")) {
@@ -104,10 +105,17 @@ public class Run {
 				String probfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.a_problemFile;
 				String outdir = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.verout + TestConfigs.planner;
 				String confile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.connectivityGraphFile;
+				String rpgfile = TestConfigs.prefix + TestConfigs.instancedir + inst + TestConfigs.instscenario + scen + TestConfigs.rpgFile;
 				Hypotheses hyp = setHypothesis(criticals, desirables);
 				ConnectivityGraph con = readConnectivityGraphs(confile);
 				ArrayList<String> runningstate = setInits(initfile); //set the state to init.
+				ArrayList<String> critical = new ArrayList<String>();
+				String [] parts = hyp.getHyps().get(0).split("\\)");
+				for (String s : parts) {
+					critical.add(s+")");
+				}
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
+				redoLandmarks(rpgfile, confile, critical, runningstate, landmarkfile);
 				ArrayList<String> landmarks = readLandmarks(landmarkfile);
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {
@@ -167,7 +175,11 @@ public class Run {
 		return obsTolikelgoal;
 	}
 
-	//observation is a state
+	//observation is a state. 
+	//achievedFL=facts that were satisfied before but no longer satisfied
+	//activeFL = facts that are satisfied in current state
+	//prune out goals from hyp if last achieved ordered landmark is associated with that goal
+	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks.
 	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> state,
 			TreeSet<String> achievedFL, TreeSet<String> activeFL, ArrayList<String> landmarks) {
 		ArrayList<String> obstate = convertObservationToState(state, dom, con, ob);
@@ -187,7 +199,7 @@ public class Run {
 
 	public static ArrayList<String> convertObservationToState(ArrayList<String> state, Domain dom, ConnectivityGraph con, String obs){
 		ArrayList<String> statenew = new ArrayList<String>();
-		statenew.addAll(state); //[(CLEAR A), (CLEAR C), (CLEAR L), (CLEAR P), (HANDEMPTY), (ONTABLE A), (ONTABLE C), (ONTABLE L), (ONTABLE P)]
+		statenew.addAll(state);
 		ArrayList<String> applicables = con.findApplicableActionsInState(statenew);
 		for (String ac : applicables) {
 			if(obs.equalsIgnoreCase(ac)) {
@@ -270,6 +282,12 @@ public class Run {
 		return graph;
 	}
 
+	//only need this to run vered. the old version of lmoutput file does not have the ordering constrains.
+	public static void redoLandmarks(String rpgfile, String confile, ArrayList<String> critical, ArrayList<String> init, String lmout) {
+		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
+		rpgen.runLandmarkGenerator(rpgfile, confile, critical, init, lmout);
+	}
+	
 	public static void main(String[] args) {
 		int start = 1;
 		int mode = 1;

@@ -26,7 +26,7 @@ import plans.HSPFPlan;
 import plans.HSPPlanner;
 import plans.Plan;
 
-public class Run {
+public class RunRG {
 
 	//reads the observations corresponding to files in /data/decision
 	public static TreeSet<String> getFilesInPath(String filepath){
