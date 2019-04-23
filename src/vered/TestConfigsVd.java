@@ -12,8 +12,11 @@ public class TestConfigsVd {
 	public static final String planner = "jff/"; //javaff
 	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String instancedir="inst";
-	public static final String connectivityGraphFile = "/outs/attacker/connectivity-problem_a";
-	public static final String rpgFile = "/outs/attacker/rpg-problem_a";
+	public static final String a_out = "/outs/attacker/";
+	public static final String a_connectivityGraphFile = "connectivity-problem_a";
+	public static final String a_rpgFile = "rpg-problem_a";
+	public static final String u_connectivityGraphFile = "connectivity-problem_u";//con and rpg for desirable goal in attack domain
+	public static final String u_rpgFile = "rpg-problem_u";
 	public static final String instscenario="/scenarios/";
 	public static final String observationFiles = "/obs/";
 	public static final String observation50Files = "/obslm50/";
@@ -29,5 +32,6 @@ public class TestConfigsVd {
 	public static final String testedObservationFiles = "/data/decision/";
 	public static final String resultOutpath = "/data/";
 	public static final String logfilename = "/inst_"+planner.substring(0, planner.length()-1)+".log";
-	public static final String lmfile = "/outs/verifiedlm_full.txt";
+	public static final String atLmfile = "/outs/a_verifiedlm_full.txt";
+	public static final String uLmfile = "/outs/u_verifiedlm_full.txt";
 }

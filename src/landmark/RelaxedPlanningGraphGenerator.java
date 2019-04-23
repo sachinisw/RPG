@@ -92,28 +92,35 @@ public class RelaxedPlanningGraphGenerator {
 		return connectivities;
 	}
 
-	public void runLandmarkGenerator(String inputfilerpg, String inputfilecon, ArrayList<String> critical, ArrayList<String> init, String lmoutput) {
+	public void runLandmarkGenerator(String inputfilerpg, String inputfilecon, ArrayList<String> goalstate, ArrayList<String> init, String lmoutput) {
 		RelaxedPlanningGraphGenerator test = new RelaxedPlanningGraphGenerator();
 		test.readFFOutput(inputfilerpg);
 		ArrayList<ConnectivityGraph> cons = test.readConnectivityGraphs(inputfilecon);
 		LandmarkExtractor lm = new LandmarkExtractor(test.rpg, cons.get(0));
-		LGG lgg = lm.extractLandmarks(critical);
-		lm.verifyLandmarks(lgg, critical, init, lmoutput); //writes cleaned landmarks to lmoutput
+		LGG lgg = lm.extractLandmarks(goalstate);
+		lm.verifyLandmarks(lgg, goalstate, init, lmoutput); //writes cleaned landmarks to lmoutput
 	}
 	
 	public static void main(String[] args) {
 		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
-		String inputfilerpg = "/home/sachini/domains/BLOCKS/scenarios/test/testrpg";
-		String inputfilecon = "/home/sachini/domains/BLOCKS/scenarios/test/testcon";
-		String lmoutput = "/home/sachini/domains/BLOCKS/scenarios/test/verifiedlm.txt";
-		ArrayList<String> critical = new ArrayList<String>();
+		String inputfilerpg = "/home/sachini/domains/BLOCKS/scenarios/TEST0/inst1/scenarios/0/outs/attacker/rpg-problem_a";
+		String inputfilecon = "/home/sachini/domains/BLOCKS/scenarios/TEST0/inst1/scenarios/0/outs/attacker/connectivity-problem_a";
+		String lmoutput = "/home/sachini/domains/BLOCKS/scenarios/TEST0/inst1/scenarios/0/outs/attacker/verifiedlm.txt";
+		ArrayList<String> goal = new ArrayList<String>();
 		ArrayList<String> init = new ArrayList<String>();
-		critical.add("(ON A B)");
+		goal.add("(ON P A)");
+		goal.add("(ON A C)");//attacker PAC, user PAL
+
 		init.add("(HANDEMPTY)");
-		init.add("(CLEAR B)");
-		init.add("(ON B A)");
+		init.add("(CLEAR P)");
+		init.add("(CLEAR A)");
+		init.add("(CLEAR L)");
+		init.add("(CLEAR C)");
 		init.add("(ONTABLE A)");
-		
+		init.add("(ONTABLE P)");
+		init.add("(ONTABLE L)");
+		init.add("(ONTABLE C)");
+
 		
 		
 		
@@ -135,6 +142,6 @@ public class RelaxedPlanningGraphGenerator {
 //		init.add("(ADJ B C)");
 //		init.add("(ADJ C D)");
 //		init.add("(ADJ A D)");
-		rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, critical, init, lmoutput);
+		rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, goal, init, lmoutput);
 	}
 }
