@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -12,8 +13,6 @@ import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.TreeSet;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -79,22 +78,17 @@ public class RunVd {
 				}
 				if(start && !line.contains("LGG GREEDY NECESSARY ORDERS") && !line.isEmpty()) {
 					String parts [] = line.split(":");
-					String pattern = "\\([\\w\\s]+\\)";
-					Pattern r = Pattern.compile(pattern);
-					Matcher m = r.matcher(parts[0]);
-					Matcher m1 = r.matcher(parts[1]);
-					String key = "";
-					while (m.find()) {
-						if(!lms.containsKey(m.group()) && !parts[0].contains(",")) {
-							key = m.group();
-						}else if(!lms.containsKey(m.group()) && parts[0].contains(",")) {
-							key += m.group();
-						}
+					String key = parts[0].substring(parts[0].indexOf("[")+1,parts[0].indexOf("]"));
+					if(!lms.containsKey(key)) {
+						lms.put(key,new TreeSet<String>());
 					}
-					lms.put(key,new TreeSet<String>());
 					TreeSet<String> set = lms.get(key);
-					while(m1.find()) {
-						set.add(m1.group());
+					String val = parts[1].substring(2,parts[1].length()-1);
+					if(!val.isEmpty()) {
+						String valparts[] = val.split(",");
+						for (String s : valparts) {
+							set.add(s.substring(s.indexOf("[")+1,s.indexOf("]")));
+						}
 					}
 				}
 			}
@@ -102,6 +96,7 @@ public class RunVd {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+		System.out.println(lms);
 		return  lms;
 	}
 
@@ -196,7 +191,7 @@ public class RunVd {
 		ffp.runFF(3, out+TestConfigsVd.u_connectivityGraphFile);
 		ffp.runFF(2, out+TestConfigsVd.u_rpgFile);
 	}
-	
+
 	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> state, 
 			Domain dom, Problem pcri, Problem pdes, ConnectivityGraph a_con, ConnectivityGraph u_con, Hypotheses hyp, 
 			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, String outdir){ //prob comes from problem_a.txt
@@ -214,8 +209,7 @@ public class RunVd {
 			prefix.add(now);
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa); //attack landmarks
-			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //user landmarks
-
+			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //desirable landmarks
 			for (int j=1; j<hyp.getHyps().size(); j++) {
 			}
 			state.clear();
@@ -353,7 +347,7 @@ public class RunVd {
 		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
 		rpgen.runLandmarkGenerator(rpgfile, confile, critical, init, lmout);
 	}
-	
+
 	public static void main(String[] args) {
 		int start = 1;
 		int mode = 1;
