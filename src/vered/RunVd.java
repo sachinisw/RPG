@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -18,6 +17,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import con.ConnectivityGraph;
+import landmark.OrderedLMGraph;
+import landmark.OrderedLMNode;
 import landmark.RelaxedPlanningGraphGenerator;
 import log.EventLogger;
 import plans.FFPlanner;
@@ -96,10 +97,9 @@ public class RunVd {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		System.out.println(lms);
 		return  lms;
 	}
-
+	
 	//online goal recognition with landmarks - Vered 2017
 	public static void runVered(int start, int mode) {
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
@@ -142,6 +142,12 @@ public class RunVd {
 				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, runningstate, ulandmarkfile);
 				HashMap<String,TreeSet<String>> a_landmarks = readLandmarks(landmarkfile);
 				HashMap<String,TreeSet<String>> u_landmarks = readLandmarks(ulandmarkfile);
+				OrderedLMGraph aGraph = new OrderedLMGraph();
+				OrderedLMGraph uGraph = new OrderedLMGraph();
+				aGraph.produceOrders(a_landmarks, critical);
+				uGraph.produceOrders(u_landmarks, desirable);
+//				HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> alm_orders = produceOrders(a_landmarks,critical);
+//				HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> ulm_orders = produceOrders(u_landmarks,desirable);
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {//iterates over observation files in the current scenario in the current instance
 					String s = itr.next();
@@ -210,7 +216,12 @@ public class RunVd {
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa); //attack landmarks
 			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //desirable landmarks
-			for (int j=1; j<hyp.getHyps().size(); j++) {
+			for (int j=0; j<hyp.getHyps().size(); j++) {
+				String goal = hyp.getHyps().get(j);
+				if(goal.contains("desirable")) {
+					goal = goal.substring(goal.indexOf(":")+1);
+				}
+				System.out.println(goal);
 			}
 			state.clear();
 			state.addAll(obstate);
