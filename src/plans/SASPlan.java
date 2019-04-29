@@ -1,4 +1,4 @@
-package tkplan;
+package plans;
 
 import java.util.ArrayList;
 import java.util.Arrays;
