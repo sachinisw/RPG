@@ -1,4 +1,4 @@
-package tkplan;
+package plans;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -12,7 +12,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 //Generates a sampling set of K plans for a given problem and domain.
-public class TopKPlanner {
+public class TopKPlanner{
 	private final static String tkPath = "python /home/sachini/domains/Planners/top-k/";
 	private final static String tkoutpath = "/home/sachini/eclipse-workspace/IJCAI16/RPG/found_plans/";
 	private String domainfile;
@@ -98,7 +98,6 @@ public class TopKPlanner {
 			ArrayList<String> lines = readFile(p);
 			SASPlan sp = new SASPlan();
 			sp.setActions(lines);
-			sp.setLength(lines.size());
 			plans.add(sp);
 		}
 		removeOutputDir();
@@ -136,5 +135,4 @@ public class TopKPlanner {
 	public void setK(int k) {
 		this.k = k;
 	}
-
 }
