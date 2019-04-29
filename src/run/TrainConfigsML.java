@@ -1,6 +1,6 @@
 package run;
 
-public class TrainConfigs {
+public class TrainConfigsML {
 	public static final int scenario = 0;
 	public static final int runmode = 0;
 	public static final int cases = 20;

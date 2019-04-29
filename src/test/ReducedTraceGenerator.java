@@ -17,7 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import con.ConnectivityGraph;
-import igplan.Plan;
+import plans.InterventionPlan;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -78,9 +78,9 @@ public class ReducedTraceGenerator {
 	}
 
 	//read all full observation files and add them as plans
-	public static ArrayList<Plan> readRootPlans(String obs) {
+	public static ArrayList<InterventionPlan> readRootPlans(String obs) {
 		ArrayList<String> files = getDataFiles(obs);
-		ArrayList<Plan> pl = new ArrayList<Plan>();
+		ArrayList<InterventionPlan> pl = new ArrayList<InterventionPlan>();
 		Scanner reader;
 		try {
 			for (String path : files) {
@@ -90,7 +90,7 @@ public class ReducedTraceGenerator {
 					plansteps.add(reader.nextLine());
 				}
 				reader.close();
-				Plan p = new Plan(plansteps, path);
+				InterventionPlan p = new InterventionPlan(plansteps, path);
 				pl.add(p);
 			}
 
@@ -157,13 +157,13 @@ public class ReducedTraceGenerator {
 		return clearedLm;
 	}
 
-	public static ArrayList<Plan> reduceTraceByActiveLandmarkPercentage(ArrayList<ArrayList<String>> clm, ArrayList<String> init, 
+	public static ArrayList<InterventionPlan> reduceTraceByActiveLandmarkPercentage(ArrayList<ArrayList<String>> clm, ArrayList<String> init, 
 			String congraphpath, String planpath){
-		ArrayList<Plan> allplans = new ArrayList<>();
+		ArrayList<InterventionPlan> allplans = new ArrayList<>();
 		ConnectivityGraph con = new ConnectivityGraph(congraphpath);
 		con.readConGraphOutput(congraphpath);
-		ArrayList<Plan> rootplans = readRootPlans(planpath);
-		for (Plan plan : rootplans) {
+		ArrayList<InterventionPlan> rootplans = readRootPlans(planpath);
+		for (InterventionPlan plan : rootplans) {
 			int [] limits = new int [2];
 			ArrayList<String> steps = plan.getPlanSteps();
 			ArrayList<String> currentstate = new ArrayList<String>();
@@ -211,7 +211,7 @@ public class ReducedTraceGenerator {
 					}
 				}
 				String planid = plan.getPlanID()+"_"+HarnessConfigs.activeLMRatio[i]*100;
-				allplans.add(new Plan(lmplan,planid.substring(0, planid.length()-2)));
+				allplans.add(new InterventionPlan(lmplan,planid.substring(0, planid.length()-2)));
 			}
 		}
 
@@ -302,10 +302,10 @@ public class ReducedTraceGenerator {
 		}
 	}
 
-	public static void writeToFile(ArrayList<Plan> data, String outputpath){
+	public static void writeToFile(ArrayList<InterventionPlan> data, String outputpath){
 		PrintWriter writer = null;
 		try{
-			for (Plan p : data) {
+			for (InterventionPlan p : data) {
 				String idparts[] = p.getPlanID().split("/");
 				String fileid = idparts[idparts.length-1];
 				writer = new PrintWriter(outputpath+"/"+fileid.substring(0, fileid.indexOf("_")), "UTF-8");
@@ -320,9 +320,9 @@ public class ReducedTraceGenerator {
 		}
 	}
 
-	public static ArrayList<Plan> filterPlansByDelayPercentage(int percentage, ArrayList<Plan> clmactions){
-		ArrayList<Plan> filtered = new ArrayList<Plan>();
-		for (Plan plan : clmactions) {
+	public static ArrayList<InterventionPlan> filterPlansByDelayPercentage(int percentage, ArrayList<InterventionPlan> clmactions){
+		ArrayList<InterventionPlan> filtered = new ArrayList<InterventionPlan>();
+		for (InterventionPlan plan : clmactions) {
 			String id = plan.getPlanID();
 			if(id.contains("_"+String.valueOf(percentage))) {
 				filtered.add(plan);
@@ -349,9 +349,9 @@ public class ReducedTraceGenerator {
 				ArrayList<String> lmlines  = readLMData(lmoutpath);
 				HashMap<ArrayList<String>, ArrayList<String>> lms = extractVerifiedLM(lmlines);
 				ArrayList<ArrayList<String>> criticallm= getLMBeforeCritical(lms,critical.get(j));
-				ArrayList<Plan> clmactions = reduceTraceByActiveLandmarkPercentage(criticallm, inits, conpath, obspath);
-				ArrayList<Plan> delay50 = filterPlansByDelayPercentage(50, clmactions);
-				ArrayList<Plan> delay75 = filterPlansByDelayPercentage(75, clmactions);
+				ArrayList<InterventionPlan> clmactions = reduceTraceByActiveLandmarkPercentage(criticallm, inits, conpath, obspath);
+				ArrayList<InterventionPlan> delay50 = filterPlansByDelayPercentage(50, clmactions);
+				ArrayList<InterventionPlan> delay75 = filterPlansByDelayPercentage(75, clmactions);
 				writeToFile(delay50, obslm50path);//write reduced traces to file.
 				writeToFile(delay75, obslm75path);//write reduced traces to file.
 			}

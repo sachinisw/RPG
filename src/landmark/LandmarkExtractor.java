@@ -79,7 +79,10 @@ public class LandmarkExtractor {
 			lmCandidates.clear();
 			lmCandidates.addAll(cprime);
 		}
-															//				System.out.println("final======   \n"+lgg);
+//																			System.out.println("final======   \n"+lgg);
+//																			for (LGGEdge e : lgg.getEdges()) {
+//																				System.out.println(e.toString());
+//																			}
 		return lgg;
 	}
 
@@ -108,13 +111,13 @@ public class LandmarkExtractor {
 //																for (LGGNode lggNode : vlm) {
 //																	System.out.println(lggNode);
 //																}
-		removeUnverifiedLandmarksFromLGG(lgg, vlm); 
-		writeLandmarksToFile(lgg, vlm, lmoutputfilepath);
+		HashMap<LGGNode, TreeSet<LGGNode>> orders = removeUnverifiedLandmarksFromLGG(lgg, vlm); 
+		writeLandmarksToFile(lgg, vlm, orders, lmoutputfilepath);
 		return vlm; 
 	}
 
-	//Remove unverified lm from adjacency list of LGG
-	public void removeUnverifiedLandmarksFromLGG(LGG lgg, ArrayList<LGGNode> verified){
+	//Remove unverified lm from adjacency list of LGG and produce the greedy necessary orders
+	public  HashMap<LGGNode, TreeSet<LGGNode>> removeUnverifiedLandmarksFromLGG(LGG lgg, ArrayList<LGGNode> verified){
 		ArrayList<LGGNode> toRemove = new ArrayList<>();
 		Iterator<Entry<LGGNode, TreeSet<LGGNode>>> itr = lgg.getAdjacencyList().entrySet().iterator();
 		while(itr.hasNext()){
@@ -132,11 +135,33 @@ public class LandmarkExtractor {
 		for (LGGNode n : toRemove) {//remove
 			lgg.removeLGGNode(n);
 		}
-												//		System.out.println("CLEANED ADJ--------------");
-												//		System.out.println(lgg);
-												//		System.out.println(lgg.getEdges());
+		return buildOrders(lgg);
+//														System.out.println("CLEANED ADJ--------------");
+//														System.out.println(lgg);
+//														System.out.println(lgg.getEdges());
 	}
 
+	//merge edges to form a DAG indicating what LMs should be achieved together
+	public HashMap<LGGNode, TreeSet<LGGNode>> buildOrders(LGG lgg) {
+		HashMap<LGGNode, TreeSet<LGGNode>> groups = new HashMap<LGGNode, TreeSet<LGGNode>>();
+		Iterator<Entry<LGGNode, TreeSet<LGGNode>>> itr = lgg.getAdjacencyList().entrySet().iterator();
+		while(itr.hasNext()){
+			groups.put(itr.next().getKey(), new TreeSet<LGGNode>());
+		}
+		Iterator<Entry<LGGNode,TreeSet<LGGNode>>> itrg = groups.entrySet().iterator();
+		while(itrg.hasNext()) {
+			Entry<LGGNode, TreeSet<LGGNode>> e = itrg.next();
+			LGGNode cur = e.getKey();
+			TreeSet<LGGNode> curval = e.getValue();
+			for (LGGEdge edge : lgg.getEdges()) {
+				if(edge.getTo().isEqual(cur)) {
+					curval.add(edge.getFrom());
+				}
+			}
+		}
+		return groups;
+	}
+	
 	//build the relaxed plan graph layer by layer in the loop. if next state == cur state then stop. not solvable.
 	private boolean goalReachableWithoutLandmark(LGGNode lm, ArrayList<String> goals, ArrayList<String> inits){
 		RelaxedPlanningGraph temp_rpg = new RelaxedPlanningGraph();
@@ -232,7 +257,7 @@ public class LandmarkExtractor {
 		return commons;
 	}
 
-	private void writeLandmarksToFile(LGG lgg, ArrayList<LGGNode>vlm, String lmoutputfilepath){
+	private void writeLandmarksToFile(LGG lgg, ArrayList<LGGNode>vlm, HashMap<LGGNode, TreeSet<LGGNode>> order, String lmoutputfilepath){
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(lmoutputfilepath, "UTF-8");
@@ -244,6 +269,14 @@ public class LandmarkExtractor {
 				s+=lggNode.toString()+"\n";
 			}
 			writer.write(s+"\n");
+			writer.write(":LGG GREEDY NECESSARY ORDERS"+"\n");
+			String gn = "";
+			Iterator<Entry<LGGNode, TreeSet<LGGNode>>> itr=  order.entrySet().iterator();
+			while(itr.hasNext()){
+				Entry<LGGNode, TreeSet<LGGNode>> e = itr.next();
+				gn+=e.getKey()+": "+e.getValue()+"\n";
+			}
+			writer.write(gn+"\n");
 			writer.write(":LGG UNVERIFIED ACHIEVERS"+"\n");
 			Iterator<Entry<String, String>> its=  achievers.entrySet().iterator();
 			while(its.hasNext()){
@@ -256,6 +289,7 @@ public class LandmarkExtractor {
 			writer.close();
 		}
 	}
+	
 	public RelaxedPlanningGraph getRPG() {
 		return RPG;
 	}

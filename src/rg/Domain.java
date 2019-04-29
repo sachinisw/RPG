@@ -68,11 +68,11 @@ public class Domain implements Cloneable{
 				predicates.add(s);
 			}
 			if(acstart) {
-				Action ac = new Action(s.split(" ")[2]);
+				Action ac = new Action(s.split(" ")[1]);
 				actions.add(ac);
 				acstart = false;
 				accont = true;
-				acname = s.split(" ")[2];
+				acname = s.split(" ")[1];
 			}
 			if(accont) {
 				if(s.contains(":parameters")) {
@@ -129,6 +129,19 @@ public class Domain implements Cloneable{
 		}
 	}
 
+	public void addPredicate(String predicate) { //add a new predicate to the beginning if it doesn't already exist
+		boolean found = false;
+		for (String p : predicates) {
+			if(p.equalsIgnoreCase(predicate)) {
+				found = true;
+				break;
+			}
+		}
+		if(!found) {
+			predicates.add(1, predicate);
+		}
+	}
+	
 	public void writeDomainFile(String filename) {
 		FileWriter writer = null;
 		setDomainPath(filename);
@@ -166,10 +179,10 @@ public class Domain implements Cloneable{
 		for (int i=1; i<parts.length; i++) {
 			namesuffix+=parts[i]+"-";
 		}
-		return "(p"+parts[0]+namesuffix.substring(0,namesuffix.length()-1)+")";
+		return "(obp_"+parts[0]+namesuffix.substring(0,namesuffix.length()-1)+")";
 	}
 
-	//ramirez geffener 2009 (2010 compile observation method for a->b is not clear)
+	//ramirez geffener 2009 (2010 compile observation method for a->b is not clear. it's the same thing has 2009 with just that change)
 	public Domain compileObservation (String curO, String prevO) { //create a grounded action from this observation. when grounded no parameters
 		Domain domCopy = null;
 		try {
@@ -182,8 +195,9 @@ public class Domain implements Cloneable{
 				if(!prevO.isEmpty()) {
 					prevPred = createPrediateFromObservation(prevO);
 				}
-				String header_new = "(:action ob_"+predicate.substring(2,predicate.length()-1)+"\n";
-				domCopy.getPredicates().add(1,predicate); //add the new predicate for observation to domain
+				String header_new = "(:action ob_"+predicate.substring(4,predicate.length()-1)+"\n";
+				//domCopy.getPredicates().add(1,predicate); //add the new predicate for observation to domain
+				domCopy.addPredicate(predicate);
 				acCopyClone.setHeader(header_new);
 				HashMap<String, String> maps = new HashMap<>();
 				String pattern = "\\?([a-z,A-Z]{0,})";
@@ -256,13 +270,59 @@ public class Domain implements Cloneable{
 
 	public Action findAction(String ac) {
 		for (Action action : actions) {
-			if(action.getHeader().contains(ac)) {
+			if(action.getHeader().toLowerCase().contains(ac.toLowerCase())) {
 				return action;
 			}
 		}
 		return null;
 	}
 
+	public Action groundAction(String ob) { //apply objects in the observation to action
+		String obac = ob.split(" ")[0];
+		String obparams[] = ob.split(" "); //also contains action label
+		Action action = findAction(obac);
+		HashMap<String, String> parammatch = new HashMap<>();
+		Action copy = null;
+		try {
+			copy = (Action) action.clone();
+			AcParameters par = copy.getParams();
+			int index = 1;
+			for (String var : par.getParamlist()) {
+				String pattern = "\\?([a-z,A-Z]{0,})";
+				Pattern r = Pattern.compile(pattern);
+				Matcher m = r.matcher(var);
+				while (m.find()) {
+					parammatch.put(m.group(),obparams[index++]);
+				}
+			}
+			AcPrecondition pre = copy.getPreconds();
+			for (int i=0; i<pre.getPredicates().size(); i++) { //ground preconditions
+				String pattern = "\\?([a-z,A-Z]{0,})";
+				Pattern r = Pattern.compile(pattern);
+				Matcher m = r.matcher(pre.getPredicates().get(i));
+				while (m.find()) {
+					String value = parammatch.get(m.group());
+					String newpred = pre.getPredicates().get(i).replace(m.group(), value);
+					pre.getPredicates().set(i, newpred);
+				}
+			}
+			AcEffect eff = copy.getEffects();
+			for (int i=0; i<eff.getPredicates().size(); i++) { //ground effects
+				String pattern = "\\?([a-z,A-Z]{0,})";
+				Pattern r = Pattern.compile(pattern);
+				Matcher m = r.matcher(eff.getPredicates().get(i));
+				while (m.find()) {
+					String value = parammatch.get(m.group());
+					String newpred = eff.getPredicates().get(i).replace(m.group(), value);
+					eff.getPredicates().set(i, newpred);
+				}
+			} //need to clean paramlist now, since the action is grounded
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return copy;
+	}
+	
 	public ArrayList<String> getHeader() {
 		return header;
 	}

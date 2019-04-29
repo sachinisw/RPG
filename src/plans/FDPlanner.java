@@ -1,16 +1,20 @@
-package fdplan;
+package plans;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
 
-//Generates **one** plan from Fast Downward using lmcut() heuristic given problem and domain.
+import log.EventLogger;
+
+//Generates **one** plan from Fast Downward using lazy-greedy heuristic given problem and domain.
 public class FDPlanner {
 	private final static String fdPath = "python /home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
-	private final static String fdConfig = " --search astar(lmcut())";
+	private final static String fdConfigGreedy = " --evaluator hff=ff() --evaluator hcea=cea() --search lazy_greedy([hff,hcea],preferred=[hff,hcea])";
 	private final static String fdoutput = "/home/sachini/eclipse-workspace/IJCAI16/RPG/sas_plan";
+	private final static String fdoutputsub = "/home/sachini/eclipse-workspace/IJCAI16/RPG/output.sas";
+
 	private String domainfile;
 	private String problemfile;
 
@@ -21,14 +25,12 @@ public class FDPlanner {
 
 
 	public void runFDPlanner() {
-		String command =  fdPath + " " + domainfile + " " + problemfile + fdConfig;
+		String command =  fdPath + " " + domainfile + " " + problemfile + fdConfigGreedy;
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
-			proc.waitFor();			
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
+			proc.waitFor();
+		} catch (IOException | InterruptedException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR runFDPlaner():: " + e.getMessage());
 		}
 	}
 
@@ -45,34 +47,30 @@ public class FDPlanner {
 				}
 			}
 			bufferedReader.close();
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		}
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR readFile():: " + e.getMessage());
+		} 
 		return lines;
 	}
 
-	public void removeOutputDir() {
-		String command = "rm -rf "+ fdoutput ;
+	public void removeOutputFiles() {
+		String command = "rm "+ fdoutput + " " + fdoutputsub;
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR removeOutputFiles():: " + e.getMessage());
 		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR removeOutputFiles():: " + e.getMessage());
 		}
 	}
 	
-	//run planner, read output, delete the plan output file.
+	//run planner, read output
 	public FDPlan getFDPlan(){
 		runFDPlanner();
 		ArrayList<String> lines = readFile(fdoutput);
 		FDPlan fp = new FDPlan();
 		fp.setActions(lines);
-		System.out.println(fp);
-		removeOutputDir();
 		return fp;
 	}
 

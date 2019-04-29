@@ -13,8 +13,8 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
-import igplan.Plan;
-import igplan.PlanExtractor;
+import plans.InterventionPlan;
+import plans.InterventionPlanExtractor;
 
 public class Planner {
 	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
@@ -75,9 +75,9 @@ public class Planner {
 		}
 	}
 	
-	public static ArrayList<Plan> readPlans(String planpath){
+	public static ArrayList<InterventionPlan> readPlans(String planpath){
 		ArrayList<String> planFiles = getPlanFiles(planpath);
-		PlanExtractor px = new PlanExtractor();
+		InterventionPlanExtractor px = new InterventionPlanExtractor();
 		for(int i=0; i<planFiles.size(); i++){
 			px.readFFPlanOutput(planFiles.get(i));
 		}

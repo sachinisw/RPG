@@ -1,17 +1,17 @@
-package igplan;
+package plans;
 import java.util.ArrayList;
 
 import con.ConnectivityGraph;
 
 //Plan generated with Metric-FF
-public class Plan {
+public class InterventionPlan {
 
 	private ArrayList<String> planSteps;
 	private String planID;
 	private boolean solved;
 	private int stepCount;
 
-	public Plan(ArrayList<String> arr, String id){
+	public InterventionPlan(ArrayList<String> arr, String id){
 		this.setPlanSteps(arr);
 		this.setPlanID(id);
 		if(arr.size()==0){
@@ -23,7 +23,7 @@ public class Plan {
 		}
 	}
 
-	public Plan(Plan toCopy){
+	public InterventionPlan(InterventionPlan toCopy){
 		ArrayList<String> stepsCopy = new ArrayList<String>();
 		stepsCopy.addAll(toCopy.getPlanSteps());
 		

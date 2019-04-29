@@ -1,4 +1,4 @@
-package igplan;
+package plans;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -8,12 +8,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class PlanExtractor {
+public class InterventionPlanExtractor {
 
-	private ArrayList<Plan> planSet;
+	private ArrayList<InterventionPlan> planSet;
 	private int emptyLineCounter;
 	
-	public PlanExtractor (){
+	public InterventionPlanExtractor (){
 		this.planSet = new ArrayList<>();
 		this.emptyLineCounter = 0;
 	}
@@ -30,7 +30,7 @@ public class PlanExtractor {
 		try {
 			FileReader fileReader = new FileReader(filename);
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			Plan aPlan = new Plan(planSteps, filename);
+			InterventionPlan aPlan = new InterventionPlan(planSteps, filename);
 			this.emptyLineCounter = 0;
 			
 			while((outStr = bufferedReader.readLine()) != null) {
@@ -70,7 +70,7 @@ public class PlanExtractor {
 	
 	public void printPlans(){
 		for(int i=0; i<this.planSet.size(); i++){
-			Plan p = this.planSet.get(i);
+			InterventionPlan p = this.planSet.get(i);
 			System.out.println(p);
 		}
 	}
@@ -79,14 +79,14 @@ public class PlanExtractor {
 		ArrayList<String> ids = new ArrayList<>();
 		
 		for(int i=0; i<this.planSet.size(); i++){
-			Plan p = this.planSet.get(i);
+			InterventionPlan p = this.planSet.get(i);
 			ids.add(p.getPlanID());
 		}
 		
 		return ids;
 	}
 	
-	public ArrayList<Plan> getPlanSet(){
+	public ArrayList<InterventionPlan> getPlanSet(){
 		return this.planSet;
 	}
 }

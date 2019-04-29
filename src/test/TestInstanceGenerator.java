@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import igplan.Plan;
+import plans.InterventionPlan;
 
 import java.util.Scanner;
 
@@ -113,9 +113,9 @@ public class TestInstanceGenerator {
 		for (int i = 0; i < HarnessConfigs.testProblemCount; i++) {
 			Planner.runFF(1, domainpath, problemspath+"problem_"+i+".pddl", planspath); //just create a plan
 		}
-		ArrayList<Plan> plans = Planner.readPlans(planspath);
+		ArrayList<InterventionPlan> plans = Planner.readPlans(planspath);
 		HashMap<String, ArrayList<String>> traceset = new HashMap<>();
-		for (Plan plan : plans) {
+		for (InterventionPlan plan : plans) {
 			ArrayList<String> steps = plan.getPlanSteps();
 			String pid= plan.getPlanID().substring(plan.getPlanID().indexOf("_")+1).trim();
 			int index=0;

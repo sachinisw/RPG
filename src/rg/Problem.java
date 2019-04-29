@@ -12,7 +12,7 @@ public class Problem implements Cloneable{
 	private ArrayList<String> init;
 	private ArrayList<String> goal;
 	private String problemPath;
-	
+
 	public Problem() {
 		header = new ArrayList<>();
 		init = new ArrayList<>();
@@ -84,7 +84,7 @@ public class Problem implements Cloneable{
 			e.printStackTrace();
 		} 
 	}
-	
+
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 		Problem clone = null;
@@ -110,15 +110,32 @@ public class Problem implements Cloneable{
 		}
 		return clone;
 	}
-	
+
 	public Problem negateGoal() { //create a clone and negate the predicates added from observations.
 		Problem copy = null;
 		try {
 			copy = (Problem) clone();
 			for (String g : copy.getGoal()) {
-				if(g.contains("_")) {
-					String neg = "(not "+ g + ")";
-					copy.getGoal().set(copy.getGoal().indexOf(g), neg);
+				if(g.contains("_")) { //(obp_PICK-UP_A //ON P A //ON A C)
+					String parts [] = g.split("\\)\\(");
+					String neg = "";
+					for (String s : parts) {
+						if(s.contains("obp")) {
+							if(s.startsWith("(")) {
+								s = "( not " + s + "))";
+							}
+							else {
+								s = "( not (" + s + "))";
+							}
+						}else {
+							s = "("+s;
+							if(!s.contains(")")){
+								s += ")";
+							}
+						}
+						neg+= s;
+					}
+					copy.getGoal().set(copy.getGoal().indexOf(g), neg.replace(",", ""));
 				}
 			}
 		} catch (CloneNotSupportedException e) {
@@ -126,12 +143,33 @@ public class Problem implements Cloneable{
 		}
 		return copy;
 	}
-	
-	public Problem addPredicateToGoal(String pred) { //create a clone and negate the predicates added from observations.
+
+	public Problem addPredicateToGoal(String pred, String hyp) { 
+		//create a clone and negate the predicates added from observations.
 		Problem copy = null;
 		try {
 			copy = (Problem) clone();
-			copy.getGoal().add(copy.getGoal().size()-2,pred);
+			if(hyp.contains("desirable")) {
+				copy.getGoal().set(copy.getGoal().size()-3, pred+hyp.substring(hyp.indexOf(":")+1).replace(",", ""));
+			}else {
+				copy.getGoal().set(copy.getGoal().size()-3, (pred+hyp).replace(",", ""));
+			}
+		}catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return copy;
+	}
+
+	public Problem replaceGoal(String hyp) { 
+		//create a clone and replace the current goal with hyp
+		Problem copy = null;
+		try {
+			copy = (Problem) clone();
+			if(hyp.contains("desirable")) {
+				copy.getGoal().set(copy.getGoal().size()-3, hyp.substring(hyp.indexOf(":")+1).replace(",", ""));
+			}else {
+				copy.getGoal().set(copy.getGoal().size()-3, hyp.replace(",", ""));
+			}
 		}catch (CloneNotSupportedException e) {
 			e.printStackTrace();
 		}
