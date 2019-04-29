@@ -5,11 +5,14 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 
@@ -18,7 +21,6 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import con.ConnectivityGraph;
 import landmark.OrderedLMGraph;
-import landmark.OrderedLMNode;
 import landmark.RelaxedPlanningGraphGenerator;
 import log.EventLogger;
 import plans.FFPlanner;
@@ -99,7 +101,7 @@ public class RunVd {
 		}
 		return  lms;
 	}
-	
+
 	//online goal recognition with landmarks - Vered 2017
 	public static void runVered(int start, int mode) {
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
@@ -146,8 +148,6 @@ public class RunVd {
 				OrderedLMGraph uGraph = new OrderedLMGraph();
 				aGraph.produceOrders(a_landmarks, critical);
 				uGraph.produceOrders(u_landmarks, desirable);
-//				HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> alm_orders = produceOrders(a_landmarks,critical);
-//				HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> ulm_orders = produceOrders(u_landmarks,desirable);
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {//iterates over observation files in the current scenario in the current instance
 					String s = itr.next();
@@ -177,6 +177,7 @@ public class RunVd {
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
+					break; //just read one observation file. TODO: remove after debug
 				}
 				break;
 			}
@@ -211,17 +212,53 @@ public class RunVd {
 		i_k.add(producePlansJavaFF(dom, pcri)); //need to do it twice because I have two goals.
 		i_k.add(producePlansJavaFF(dom, pdes));
 		for (int i=0; i<obs.getObs().size(); i++) {
+			HashMap<String, Double> goalranks = new HashMap<String, Double>();
+			ArrayList<String> activeHypotheses = new ArrayList<>();
 			String now = obs.getObs().get(i);
 			prefix.add(now);
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
+			System.out.println(now);
+			System.out.println(obstate);
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa); //attack landmarks
 			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //desirable landmarks
-			for (int j=0; j<hyp.getHyps().size(); j++) {
+			for (int j=0; j<hyp.getHyps().size(); j++) { //wait until vered/ramon tells me how to prune hypotheses
 				String goal = hyp.getHyps().get(j);
-				if(goal.contains("desirable")) {
-					goal = goal.substring(goal.indexOf(":")+1);
+//				if(goal.contains("desirable")) {
+//					if(!achievedDFL.contains(goal.substring(goal.indexOf(":")+1))) {
+						activeHypotheses.add(goal);
+//					}
+//				}else if(!achievedAFL.contains(goal)) {
+//					activeHypotheses.add(goal);
+//				}
+			}
+			if(!activeHypotheses.isEmpty()) {
+				for (int j=0; j<activeHypotheses.size(); j++) {
+					ArrayList<String> curstate = new ArrayList<>();
+					Problem probC = new Problem(); //critical problem //use the problem for the attacker's definition.
+					probC.readProblemPDDL(pcri.getProblemPath()); 
+					Problem probD = probC.replaceGoal(activeHypotheses.get(j).substring(activeHypotheses.indexOf(":")+1)); //same attacker's problem with desirable goal added
+					curstate.add(0,"(:init");
+					curstate.addAll(obstate);
+					curstate.add("\n)");
+					probD.setInit(curstate);
+					probD.writeProblemFile(outdir+"/p_"+i+"_"+j+".pddl"); //don't have to write the domain 
+					JavaFFPlan suffix = producePlansJavaFF(dom,probD);
+					prefix.addAll(suffix.getActions()); // now this is m_k
+					if(activeHypotheses.get(j).contains("desirable")) {
+						goalranks.put(activeHypotheses.get(j),(double)prefix.size()/(double)i_k.get(1).getPlanCost());
+					}else {
+						goalranks.put(activeHypotheses.get(j),(double)prefix.size()/(double)i_k.get(0).getPlanCost());
+					}
+					prefix.removeAll(suffix.getActions());
 				}
-				System.out.println(goal);
+				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
+				if(ent != null) {
+					obsTolikelgoal.put(now, ent.getKey());
+				}else {
+					obsTolikelgoal.put(now, null);
+				}
+			}else { //all hypotheses are removed because of respective landmarks are active
+				obsTolikelgoal.put(now, null);
 			}
 			state.clear();
 			state.addAll(obstate);
@@ -229,6 +266,41 @@ public class RunVd {
 		return obsTolikelgoal;
 	}
 
+	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
+		//for each goal compute P(Gi|O) (i=1,2) using method above. highest P(Gi|O) is the most likely goal
+		double neta = computeNeta(map);
+		Entry<String, Double> e = null;
+		double max = Double.MIN_VALUE;
+		Iterator<Entry<String, Double>> itr = map.entrySet().iterator();
+		while(itr.hasNext()) {
+			Entry<String, Double> ent = itr.next();
+			ent.setValue(ent.getValue()*neta);
+			if(ent.getValue() > max) {
+				e = ent;
+				max = ent.getValue();
+			}
+		}
+		Collection<Double> valuesList = map.values();
+		Set<Double> valuesSet = new HashSet<Double>(map.values());
+		if(valuesList.size()!=valuesSet.size() && valuesSet.contains(max)) {//check if there are ties. if there is a tie, that means the agent can't decide whats the likely goal.
+			e = null;
+		}
+		return e;
+	}
+	
+	private static double computeNeta(HashMap<String, Double> goalranks) {
+		double rank = 0.0;
+		Iterator<String> itr = goalranks.keySet().iterator();
+		while(itr.hasNext()) {
+			rank += goalranks.get(itr.next());
+		}
+		if(rank>0) {
+			return 1/rank;
+		}else {
+			return 0.0;
+		}
+	}
+	
 	//observation is a state. 
 	//achievedFL=facts that were satisfied before but no longer satisfied
 	//activeFL = facts that are satisfied in current state
@@ -342,7 +414,7 @@ public class RunVd {
 	public static JavaFFPlan producePlansJavaFF(Domain dom, Problem prob) {
 		JavaFFPlanner ffp = new JavaFFPlanner(dom.getDomainPath(), prob.getProblemPath());
 		if(ffp.getJavaFFPlan().getActions().isEmpty()) {
-			EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: JavaFF Plan not found");
+			EventLogger.LOGGER.log(Level.WARNING, "JavaFF Plan not found");
 		}
 		return ffp.getJavaFFPlan();
 	}
