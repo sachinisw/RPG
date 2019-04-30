@@ -1,15 +1,17 @@
 package run;
 
-public class DebugConfigs {
+public class DebugConfigsML {
 	public static final int scenario = 0;
 	public static final int runmode = -1;
 	public static final boolean writeDOT = true;
-	public static final String domain = "PAG"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY,PAG
+	public static final String domain = "BLOCKS"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY,PAG
 	public static final String root = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
 	public static final String obsdir = "/obs/";
 	public static final String outsdir = "/outs/";
 	public static final String dotdir = "/dot/";
 	public static final String datadir = "/data/";
+	public static final String topkdir = "/topk/";
+	public static final String traindir = "train/cases/0";
 	public static final String domainFile = "/domain.pddl";
 	public static final String dstates = "/desirable.txt"; //attacker and user do not need separate files. the state graphs are generated from the observer's point of view
 	public static final String cstates = "/critical.txt";

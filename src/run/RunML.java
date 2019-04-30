@@ -206,20 +206,20 @@ public class RunML {
 	}
 
 	public static void runAsDebug(int mode) {
-		LOGGER.log(Level.INFO, "Run mode: DEBUG for scenario "+ DebugConfigs.scenario);
-		String domain = DebugConfigs.domain;
-		String domainfile = DebugConfigs.root+DebugConfigs.domainFile;
-		String desirablefile = DebugConfigs.root+DebugConfigs.dstates;
-		String criticalfile = DebugConfigs.root+DebugConfigs.cstates;
-		String dotpre = DebugConfigs.root+DebugConfigs.dotdir;
-		String a_prob = DebugConfigs.root+DebugConfigs.a_problemFile;
-		String a_out = DebugConfigs.root+DebugConfigs.outsdir+DebugConfigs.a_output;
-		String a_init = DebugConfigs.root+DebugConfigs.a_initFile;
-		String a_dotsuf = DebugConfigs.a_dotFileSuffix;
-		String ds_csv = DebugConfigs.root+DebugConfigs.datadir+DebugConfigs.decisionCSV;
-		String lm_out = DebugConfigs.root+DebugConfigs.datadir+DebugConfigs.lmoutputFile;
-		String obs = DebugConfigs.root+DebugConfigs.obsdir;
-		boolean writedot = DebugConfigs.writeDOT;
+		LOGGER.log(Level.INFO, "Run mode: DEBUG for scenario "+ DebugConfigsML.scenario);
+		String domain = DebugConfigsML.domain;
+		String domainfile = DebugConfigsML.root+DebugConfigsML.domainFile;
+		String desirablefile = DebugConfigsML.root+DebugConfigsML.dstates;
+		String criticalfile = DebugConfigsML.root+DebugConfigsML.cstates;
+		String dotpre = DebugConfigsML.root+DebugConfigsML.dotdir;
+		String a_prob = DebugConfigsML.root+DebugConfigsML.a_problemFile;
+		String a_out = DebugConfigsML.root+DebugConfigsML.outsdir+DebugConfigsML.a_output;
+		String a_init = DebugConfigsML.root+DebugConfigsML.a_initFile;
+		String a_dotsuf = DebugConfigsML.a_dotFileSuffix;
+		String ds_csv = DebugConfigsML.root+DebugConfigsML.datadir+DebugConfigsML.decisionCSV;
+		String lm_out = DebugConfigsML.root+DebugConfigsML.datadir+DebugConfigsML.lmoutputFile;
+		String obs = DebugConfigsML.root+DebugConfigsML.obsdir;
+		boolean writedot = DebugConfigsML.writeDOT;
 		run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
 				a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true);
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
@@ -262,7 +262,7 @@ public class RunML {
 
 	public static void main(String[] args) { 
 		int mode = -1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
-		if(mode==DebugConfigs.runmode){
+		if(mode==DebugConfigsML.runmode){
 			runAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {
 			runAsTraining(mode);

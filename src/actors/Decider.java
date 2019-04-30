@@ -30,6 +30,12 @@ public class Decider extends Agent{
 		this.initFile = ini;
 	}
 
+	public Decider(String dom, String domfile, String des, String pro, String out, String cri, String ini) {
+		super(dom, domfile, des, pro, out, cri);
+		this.attackerActionProbability = 0.1;
+		this.initFile = ini;
+	}
+	
 	public void setDesirableState(){
 		desirable = new DesirableState(this.desirableStateFile);
 		desirable.readStatesFromFile();

@@ -56,7 +56,7 @@ public class Problem implements Cloneable{
 				initstart = false;
 			}
 			if(!initstart && !headerstart && goalstart) {
-				goal.add(s);
+				goal.add(s.replace(",",""));
 			}
 		}
 	}

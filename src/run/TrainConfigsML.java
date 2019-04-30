@@ -12,6 +12,7 @@ public class TrainConfigsML {
 	public static final String outsdir = "/outs/";
 	public static final String dotdir = "/dot/";
 	public static final String datadir = "/data/";
+	public static final String topkdir = "/topk/";
 	public static final String domainFile = "/domain.pddl";
 	public static final String dstates = "/desirable.txt"; //attacker and user do not need separate files. the state graphs are generated from the observer's point of view
 	public static final String cstates = "/critical.txt";

@@ -90,7 +90,7 @@ public class TopKPlanner{
 	}
 
 	//run planner, read output, delete the output folder.
-	ArrayList<SASPlan> getPlans(){
+	public ArrayList<SASPlan> getPlans(){
 		ArrayList<SASPlan> plans = new ArrayList<>();
 		runTopKPlanner();
 		ArrayList<String> paths = getSASfiles(tkoutpath);
