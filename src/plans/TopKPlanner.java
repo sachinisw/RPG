@@ -100,7 +100,7 @@ public class TopKPlanner{
 			sp.setActions(lines);
 			plans.add(sp);
 		}
-		removeOutputDir();
+		//removeOutputDir();
 		return plans;
 	}
 
