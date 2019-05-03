@@ -149,9 +149,11 @@ public class RunIntervention {
 		curstate.remove(")");
 		ArrayList<String> a_refplan = new ArrayList<String>();
 		ArrayList<String> u_refplan = new ArrayList<String>();
-		a_refplan.addAll(obs);
+		for (String o : obs) {
+			a_refplan.add("(" + o.substring(o.indexOf(":")+1)+")");
+			u_refplan.add("(" + o.substring(o.indexOf(":")+1)+")");
+		}
 		a_refplan.addAll(a_optimal.getActions());
-		u_refplan.addAll(obs);
 		u_refplan.addAll(u_optimal.getActions());
 		refs.put(decider.critical.getCriticalStatePredicates(),a_refplan);
 		refs.put(decider.desirable.getDesirableStatePredicates(),u_refplan);
@@ -181,7 +183,7 @@ public class RunIntervention {
 				curstate.removeAll(dels);
 				curstate.addAll(adds);
 				generateAlternativePlans(decider, domainfile, curstate, a_prob, outpath);
-				generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j), a_prob, outpath);
+				generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
 			}
 			//				LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
 			//				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, 
