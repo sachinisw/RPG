@@ -3,17 +3,14 @@ package metrics;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class EditDistance {
-	public ArrayList<String> p1;
-	public ArrayList<String> p2;
+public class EditDistance extends Distance{
 	public int insertOps;
 	public int deleteOps;
 	public int replaceOps;
 	int[][] table;
 
 	public EditDistance(ArrayList<String> a, ArrayList<String> b) {
-		p1 = a;
-		p2 = b;
+		super(a,b);
 		table = new int [p2.size()+1][p1.size()+1];
 		insertOps = deleteOps = replaceOps = 0;
 	}
