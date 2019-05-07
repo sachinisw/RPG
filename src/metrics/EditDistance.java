@@ -11,7 +11,7 @@ public class EditDistance extends Distance{
 
 	public EditDistance(ArrayList<String> a, ArrayList<String> b) {
 		super(a,b);
-		table = new int [p2.size()+1][p1.size()+1];
+		table = new int [incoming.size()+1][ref.size()+1];
 		insertOps = deleteOps = replaceOps = 0;
 	}
 
@@ -23,9 +23,9 @@ public class EditDistance extends Distance{
 			table[i][0]=i;
 		}
 		for(int i=1; i<table.length; i++) {
-			String rowid = p2.get(i-1);
+			String rowid = incoming.get(i-1);
 			for(int j=1; j<table[i].length; j++) {
-				String colid = p1.get(j-1);
+				String colid = ref.get(j-1);
 				if(rowid.equalsIgnoreCase(colid)) {
 					table[i][j] = table[i-1][j-1];
 				}else {
@@ -46,8 +46,8 @@ public class EditDistance extends Distance{
 		int row = table.length-1;
 		int col = table[0].length-1;
 		while(row>0 && col>0) {
-			String rowid = p2.get(row-1);
-			String colid = p1.get(col-1);
+			String rowid = incoming.get(row-1);
+			String colid = ref.get(col-1);
 			int val = table[row][col];
 			if(!rowid.equalsIgnoreCase(colid)) {
 				if(val-1==table[row][col-1]) {
