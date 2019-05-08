@@ -114,10 +114,6 @@ public class CausalLinkDistance  extends Distance{
 			}
 		}
 		in_causal.addAll(goalLinks);
-		System.out.println("########## INCOMING ################");
-		for (CausalLink c : in_causal) {
-			System.out.println(c);
-		}
 	}
 	
 	public ArrayList<String> findConsumerofPredicate(String addPred, String producerac, ArrayList<String> plan) {
@@ -143,7 +139,17 @@ public class CausalLinkDistance  extends Distance{
 
 	//T Nguyen 2012
 	public double getCausalLinkDistance() {
-		return 0;
+		extractCausalLinks();
+		ArrayList<CausalLink> intersection = new ArrayList<CausalLink>();
+		TreeSet<CausalLink> union = new TreeSet<CausalLink>();
+		for (CausalLink cl : ref_causal) {
+			if(in_causal.contains(cl)) {
+				intersection.add(cl);
+			}
+		}
+		union.addAll(ref_causal);
+		union.addAll(in_causal);
+		return 1 - ((double) intersection.size()/(double) union.size());
 	}
 
 	public static ConnectivityGraph readConnectivityGraphs(){
@@ -170,8 +176,9 @@ public class CausalLinkDistance  extends Distance{
 		g.add("(R3)");
 		g.add("(R4)");
 		ConnectivityGraph con = readConnectivityGraphs();
-		CausalLinkDistance cld = new CausalLinkDistance(c, b, con, in, g);
-		cld.extractCausalLinks();
+		CausalLinkDistance cld = new CausalLinkDistance(a, b, con, in, g);
+		double d = cld.getCausalLinkDistance();
+		System.out.println(d);
 	}
 
 	public ArrayList<CausalLink> getIn_causal() {

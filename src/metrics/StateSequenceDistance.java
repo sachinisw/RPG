@@ -1,7 +1,8 @@
 package metrics;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeSet;
 
 import con.ConnectivityGraph;
@@ -9,8 +10,8 @@ import con.ConnectivityGraph;
 public class StateSequenceDistance extends Distance{
 	
 	public ConnectivityGraph con;
-	public ArrayList<TreeSet<String>> refseq;
-	public ArrayList<TreeSet<String>> inseq;
+	public ArrayList<State> refseq;
+	public ArrayList<State> inseq;
 	public ArrayList<String> init;
 	public ArrayList<String> goal;
 
@@ -25,14 +26,12 @@ public class StateSequenceDistance extends Distance{
 	}
 	
 	public void producePlanStateSeq() {
-		TreeSet<String> in = new TreeSet<String>();
-		in.addAll(init);
-		refseq.add(in);
-		inseq.add(in);
-		ArrayList<String> currentstate = new ArrayList<String>();
-		currentstate.addAll(init);
-		while(!stateContainsGoal(currentstate, goal)) {
-			ArrayList<String> applicables = con.findApplicableActionsInState(currentstate);
+		TreeSet<String> in = new TreeSet<String>(init);
+		refseq.add(new State(in));
+		inseq.add(new State(in));
+		TreeSet<String> currentstate = new TreeSet<String>(init);
+		while(!stateContainsGoal(new ArrayList<>(currentstate), goal)) {
+			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<>(currentstate));
 			for (int i=0; i<applicables.size(); i++) {
 				if(ref.contains(applicables.get(i))) {
 					ArrayList<String> adds = con.findStatesAddedByAction(applicables.get(i));
@@ -41,14 +40,13 @@ public class StateSequenceDistance extends Distance{
 					currentstate.addAll(adds);
 				}
 			}
-			TreeSet<String> st = new TreeSet<String>();
-			st.addAll(currentstate);
-			refseq.add(st);
+			TreeSet<String> st = new TreeSet<String>(currentstate);
+			refseq.add(new State(st));
 		}
 		currentstate.clear();
 		currentstate.addAll(init);
-		while(!stateContainsGoal(currentstate, goal)) {
-			ArrayList<String> applicables = con.findApplicableActionsInState(currentstate);
+		while(!stateContainsGoal(new ArrayList<>(currentstate), goal)) {
+			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<>(currentstate));
 			for (int i=0; i<applicables.size(); i++) {
 				if(incoming.contains(applicables.get(i))) {
 					ArrayList<String> adds = con.findStatesAddedByAction(applicables.get(i));
@@ -57,18 +55,47 @@ public class StateSequenceDistance extends Distance{
 					currentstate.addAll(adds);
 				}
 			}
-			TreeSet<String> st = new TreeSet<String>();
-			st.addAll(currentstate);
-			inseq.add(st);
+			TreeSet<String> st = new TreeSet<String>(currentstate);
+			inseq.add(new State(st));
 		}
-		
-		for (TreeSet<String> st : refseq) {
-			System.out.println(Arrays.toString(st.toArray()));
+	}
+	
+	//Nguyen 2012
+	public double getStateSequenceDistance() {
+		producePlanStateSeq();
+		int k = 0, kprime = 0;
+		double deltasum = 0.0;
+		if(inseq.size()<refseq.size()) {
+			k = refseq.size() - 1;
+			kprime = inseq.size() - 1;
+			for(int i=0; i<=kprime; i++) {
+				Set<String> s = new HashSet<String>(refseq.get(i).getPredicates());
+				Set<String> sprime = new HashSet<String>(inseq.get(i).getPredicates());
+				Set<String> union = new HashSet<String>();
+				Set<String> intersection = new HashSet<String>();
+				for (String st : s) {
+					if(sprime.contains(st)) {
+						intersection.add(st);
+					}
+				}
+				union.addAll(s);
+				union.addAll(sprime);
+				deltasum += 1.0 - ((double) intersection.size()/(double) union.size());
+			}
+		}else {
+			k = inseq.size() - 1;
+			kprime = refseq.size() - 1;
+			for(int i=0; i<=kprime; i++) {
+				Set<String> s = new HashSet<String>(inseq.get(i).getPredicates());
+				Set<String> sprime = new HashSet<String>(refseq.get(i).getPredicates());
+				Set<String> union = new HashSet<String>();
+				s.retainAll(sprime);
+				union.addAll(s);
+				union.addAll(sprime);
+				deltasum += ((double) s.size()/(double) union.size());
+			}
 		}
-		System.out.println("======================");
-		for (TreeSet<String> st : inseq) {
-			System.out.println(Arrays.toString(st.toArray()));
-		}
+		return (double)( (1/(double)(k) )*(deltasum + (double)(k-kprime)));
 	}
 	
 	public static ConnectivityGraph readConnectivityGraphs(){
@@ -88,11 +115,14 @@ public class StateSequenceDistance extends Distance{
 		b.add("A1");
 		b.add("A2");
 		b.add("A4");
+		ArrayList<String> c = new ArrayList<String>();
+		c.add("A5");
+		c.add("A6");
 		ArrayList<String> g = new ArrayList<String>();
 		g.add("(R3)");
 		g.add("(R4)");
-		ConnectivityGraph c = readConnectivityGraphs();
-		StateSequenceDistance ssd = new StateSequenceDistance(a, b, c, in, g);
-		ssd.producePlanStateSeq();
+		ConnectivityGraph con = readConnectivityGraphs();
+		StateSequenceDistance ssd = new StateSequenceDistance(a, c, con, in, g);
+		System.out.println(ssd.getStateSequenceDistance());
 	}
 }

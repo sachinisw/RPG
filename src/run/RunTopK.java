@@ -22,7 +22,7 @@ import plans.SASPlan;
 import plans.TopKPlanner;
 import rg.Problem;
 
-public class RunIntervention {
+public class RunTopK {
 	private static final Logger LOGGER = Logger.getLogger(RunML.class.getName());
 
 	public static TreeSet<String> getObservationFiles(String obsfiles){
