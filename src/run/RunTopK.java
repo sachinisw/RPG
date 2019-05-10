@@ -160,6 +160,11 @@ public class RunTopK {
 		return refs;
 	}
 
+	public static void computeFeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
+			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con) {
+		
+	}
+	
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, 
 			String a_out, String criticalfile, String a_init, String obs, 
 			String ds_csv, String lm_out, int delay, boolean full) {
@@ -182,9 +187,11 @@ public class RunTopK {
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
 				curstate.addAll(adds);
-				generateAlternativePlans(decider, domainfile, curstate, a_prob, outpath);
-				generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-			}
+				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, a_prob, outpath);
+				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
+				computeFeatureSet(altplans,refplans,a_con.get(0));
+			} //collect the feature set and write result to csv file for this observation file when this loop finishes
+			
 			//				LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
 			//				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, 
 			//						name[name.length-1], writedot, full);//generate graph for attacker and user

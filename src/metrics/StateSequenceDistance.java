@@ -15,14 +15,14 @@ public class StateSequenceDistance extends Distance{
 	public ArrayList<String> init;
 	public ArrayList<String> goal;
 
-	public StateSequenceDistance(ArrayList<String> a, ArrayList<String> b, ConnectivityGraph c, ArrayList<String> in,
-			ArrayList<String> g) {
+	public StateSequenceDistance(ArrayList<String> a, ArrayList<String> b, ConnectivityGraph c, ArrayList<String> inits,
+			ArrayList<String> goals) {
 		super(a,b);
 		refseq = new ArrayList<>();
 		inseq = new ArrayList<>();
 		con = c;
-		init = in;
-		goal = g;
+		init = inits;
+		goal = goals;
 	}
 	
 	public void producePlanStateSeq() {

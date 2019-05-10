@@ -2,6 +2,7 @@ package metrics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 //Sohrabi,Riabov, Udrea 2016, finding diverse high quality plans
 public class GeneralizedEditDistance extends Distance{
@@ -9,9 +10,9 @@ public class GeneralizedEditDistance extends Distance{
 	public int deleteOps;
 	public int replaceOps;
 	final int[][] table;
-	public ArrayList<String>refTokens;
+	public ArrayList<String>refTokens; //plans/state sequences
 	public ArrayList<String>inTokens;
-	
+
 	public GeneralizedEditDistance(ArrayList<String> a, ArrayList<String> b) {
 		super(a,b);
 		table = new int [incoming.size()+1][ref.size()+1];
@@ -29,7 +30,7 @@ public class GeneralizedEditDistance extends Distance{
 			inTokens.add(i,tokenmap.get(incoming.get(i)));
 		}
 	}
-	
+
 	public int[][] computeMinimumEditDistance() {
 		preprocess();
 		for(int j=0; j<table[0].length; j++) { //row=0 id is null. fill the row with number of additions each substring will need compared to null string
@@ -57,24 +58,66 @@ public class GeneralizedEditDistance extends Distance{
 		return table;
 	}
 
-	public int getGeneralizedEditSimilarity() {
+	public double getGeneralizedEditSimilarity() {
 		computeMinimumEditDistance();
 		ArrayList<ReplacementPair> rp = countOperations();
-		double insertCost = 1 * insertOps; //c_ins=1, weight of token=1 cost=c_ins * weight of token
-		double deleteCost = 1 * deleteOps;
-//		double replacementCost = (1 - sim) * insertOps;
+		double insertCost = 1.0 * insertOps; //c_ins=1, weight of token=1 cost=c_ins * weight of token
+		double deleteCost = 1.0 * deleteOps;
+		double replacementCost = 0.0;
+		for (ReplacementPair replacementPair : rp) {
+			replacementCost += (1.0 - getTokenSimilarity(replacementPair)) * insertOps;
+		}
+		double totalCostForThePair = insertCost + deleteCost + replacementCost;
+		double weightOfRef = (double)(ref.size() * 1.0);
 		print();
 		System.out.println(insertOps);
 		System.out.println(deleteOps);
 		System.out.println(replaceOps);
 		System.out.println(table[table.length-1][table[0].length-1]);
-		return 0;
+		return 1.0 - (Math.min(totalCostForThePair/weightOfRef, 1.0));
 	}
-	
+
+	public double getTokenSimilarity(ReplacementPair rp) {
+		int refid = ref.indexOf(rp.refTok);
+		int inid = incoming.indexOf(rp.inTok);
+		List<String> reflist = ref.subList(0, refid+1); //parents of token being edited in ref plan [0..t]
+		List<String> inlist = incoming.subList(0, inid+1); //parents of token being edited in Incoming plan [0..t']
+		if(rp.refTok.equalsIgnoreCase(rp.inTok)) {
+			return 1.0;
+		}else if(refid>=0 && inid >=0) {
+			if(hasRelationship(reflist, inlist)) { 		//find if reflist, inlist has a common parent, or one is a parent of the other
+				return 0.5;
+			}else {
+				return 0;
+			}
+		}else {
+			return 0;
+		}
+	}
+
+	private boolean hasRelationship(List<String> reflist, List<String> inlist) { 
+		boolean parentInReflist = false, parentInInlist = false, hasCommonAncestor = false;
+		for (int i=0; i<inlist.size()-1; i++) {
+			if(reflist.subList(0,reflist.size()-1).contains(inlist.get(i))) {//list size-1 will check all parents of last entry.
+				hasCommonAncestor = true;
+			}
+		}
+		if(reflist.subList(0,reflist.size()-1).contains(inlist.get(inlist.size()-1))){ //edited in node is in the ref node parents list.
+			parentInReflist = true;
+		}
+		if(inlist.subList(0,inlist.size()-1).contains(reflist.get(reflist.size()-1))){ //edited ref node is in the in node parents list.
+			parentInInlist = true;
+		}
+		if(hasCommonAncestor || parentInReflist || parentInInlist) {
+			return true;
+		}
+		return false;
+	}
+
 	public ArrayList<ReplacementPair> countOperations() {
 		ArrayList<ReplacementPair> rp = new ArrayList<ReplacementPair>();
-		int row = table.length-1;
-		int col = table[0].length-1;
+		int row = table.length-1;//incoming str
+		int col = table[0].length-1;//reference str
 		while(row>0 && col>0) {
 			String rowid = incoming.get(row-1);
 			String colid = ref.get(col-1);
@@ -88,7 +131,7 @@ public class GeneralizedEditDistance extends Distance{
 					row--;
 				}else {
 					replaceOps++;
-					rp.add(new ReplacementPair(rowid,colid));
+					rp.add(new ReplacementPair(colid,rowid));
 					row--;
 					col--;
 				}
@@ -109,21 +152,21 @@ public class GeneralizedEditDistance extends Distance{
 			System.out.println();
 		}
 	}
-	
+
 	class ReplacementPair{
-		public String tok1;
-		public String tok2;
-		
+		public String refTok;
+		public String inTok;
+
 		public ReplacementPair(String t1, String t2) {
-			tok1=t1;
-			tok2=t2;
+			refTok=t1;
+			inTok=t2;
 		}
-		
+
 		public String toString() {
-			return tok1 +","+tok2;
+			return refTok +","+inTok;
 		}
 	}
-	
+
 	public static void main(String[] args) {
 		ArrayList<String> p1 = new ArrayList<String>();
 		ArrayList<String> p2 = new ArrayList<String>();
@@ -143,6 +186,5 @@ public class GeneralizedEditDistance extends Distance{
 		p2.add("y");
 		p2.add("s");
 		GeneralizedEditDistance ed = new GeneralizedEditDistance(p1, p2);
-		ed.getGeneralizedEditSimilarity();
 	}
 }

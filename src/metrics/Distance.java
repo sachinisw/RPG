@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 //Sohrabi 2016
 public class Distance {
 	public ArrayList<String> ref; //observation prefix + optimal suffix plan ||| or state sequences
-	public ArrayList<String> incoming; //plan coming from sampled set of alternatives
+	public ArrayList<String> incoming; //plan/state sequences coming from sampled set of alternatives
 	public HashMap<String, String> tokenmap;
 
 	public Distance(ArrayList<String> a, ArrayList<String> b) {
