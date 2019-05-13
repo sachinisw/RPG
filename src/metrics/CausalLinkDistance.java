@@ -12,8 +12,8 @@ public class CausalLinkDistance  extends Distance{
 	private ArrayList<String> init;
 	private ArrayList<String> goal;
 
-	public CausalLinkDistance(ArrayList<String> a, ArrayList<String> b, ConnectivityGraph c, ArrayList<String> in, ArrayList<String> g) {
-		super(a,b);
+	public CausalLinkDistance(ArrayList<String> ref, ArrayList<String> inc, ConnectivityGraph c, ArrayList<String> in, ArrayList<String> g) {
+		super(ref,inc);
 		con = c;
 		init = in;
 		goal = g;

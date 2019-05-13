@@ -6,8 +6,8 @@ import java.util.Set;
 
 public class ActionSetDistance extends Distance{
 	
-	public ActionSetDistance(ArrayList<String> a, ArrayList<String> b) {
-		super(a,b);
+	public ActionSetDistance(ArrayList<String> ref, ArrayList<String> inc) {
+		super(ref,inc);
 	}
 	
 	//T Nguyen 2012

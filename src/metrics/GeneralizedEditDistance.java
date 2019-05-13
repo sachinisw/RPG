@@ -185,6 +185,6 @@ public class GeneralizedEditDistance extends Distance{
 		p2.add("a");
 		p2.add("y");
 		p2.add("s");
-		GeneralizedEditDistance ed = new GeneralizedEditDistance(p1, p2);
+//		GeneralizedEditDistance ed = new GeneralizedEditDistance(p1, p2);
 	}
 }

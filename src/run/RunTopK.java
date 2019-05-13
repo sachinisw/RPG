@@ -16,6 +16,8 @@ import actors.Agent;
 import actors.Decider;
 import con.ConnectivityGraph;
 import landmark.RelaxedPlanningGraph;
+import metrics.FeatureSet;
+import out.CSVGenerator;
 import plans.HSPFPlan;
 import plans.HSPPlanner;
 import plans.SASPlan;
@@ -160,9 +162,25 @@ public class RunTopK {
 		return refs;
 	}
 
-	public static void computeFeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
-			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con) {
-		
+	public static double[] computeFeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
+			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, ArrayList<String> init, ArrayList<String> critical, ArrayList<String> desirable) {
+		FeatureSet fs = new FeatureSet(altplans, refplans, con, init, critical, desirable);
+		fs.evaluateFeatureValuesForCurrentObservation();
+		return fs.getFeaturevals();
+	}
+	
+	public static void writeFeatureValsToFile(String outputfilename, ArrayList<double[]> featurevalsforfiles, Observation obs) {
+		ArrayList<String> data = new ArrayList<String>();
+		int index = 0;
+		for (String string : data) {
+			String d = string;
+			for (double v : featurevalsforfiles.get(index++)) {
+				d+=String.valueOf(v);
+			}
+			data.add(d);
+		}
+		CSVGenerator results = new CSVGenerator(outputfilename, data, 2);
+		results.writeOutput();
 	}
 	
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, 
@@ -179,6 +197,7 @@ public class RunTopK {
 			obFileLimit++;
 			String name[] = file.split("/");
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
+			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
 			curstate.addAll(decider.getInitialState().getState());
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
@@ -189,29 +208,11 @@ public class RunTopK {
 				curstate.addAll(adds);
 				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, a_prob, outpath);
 				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-				computeFeatureSet(altplans,refplans,a_con.get(0));
+				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), decider.getInitialState().getState(), 
+						decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates());
+				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
-			
-			//				LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
-			//				ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, 
-			//						name[name.length-1], writedot, full);//generate graph for attacker and user
-			//				if(full) {
-			//					LOGGER.log(Level.INFO, "Processing FULL observation file: "+ file);
-			//					computeMetricsForDecisionTree(domain, curobs, decider, attackerState, a_rpg.get(0), a_con.get(0), 
-			//							ds_csv+name[name.length-1]+".csv",lm_out); //rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state.
-			//				}else {
-			//					LOGGER.log(Level.INFO, "Processing PARTIAL observation file: "+ file);
-			//					Observation cleaned = new Observation();
-			//					ArrayList<String> cl = new ArrayList<>();
-			//					for (String o : curobs.getObservations()) {
-			//						if(!o.contains("*")) { //add observations that does not have a *. the others are the ones that can be skipped
-			//							cl.add(o);
-			//						}
-			//					}
-			//					cleaned.setObservations(cl);
-			//					computeMetricsForDecisionTree(domain, cleaned, decider, attackerState, a_rpg.get(0), a_con.get(0), 
-			//							ds_csv+name[name.length-1]+"lm"+String.valueOf(delay)+".csv",lm_out); //file path -- scenarios/x/data/decision/0_lm50.csv
-			//				}
+			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_new.csv", featurevalsforfile, curobs);
 		}
 	}
 
