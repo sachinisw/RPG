@@ -1,5 +1,6 @@
 package metrics;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.TreeSet;
 
@@ -19,6 +20,16 @@ public class State {
 		}
 		final State other = (State) st;
 		return other.getPredicates().equals(predicates);
+	}
+	
+	public boolean containsGoal(ArrayList<String> goal) {
+		int count=0;
+		for (String p : predicates) {
+			if(goal.contains(p)) {
+				count++;
+			}
+		}
+		return count==goal.size();
 	}
 	
 	public String toString() {

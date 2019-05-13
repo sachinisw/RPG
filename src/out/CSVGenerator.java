@@ -16,7 +16,7 @@ public class CSVGenerator {
 		data = dat;
 		type = t;
 	}
-
+	
 	public void writeOutput(){
 		PrintWriter writer = null;
 		try {
@@ -25,6 +25,8 @@ public class CSVGenerator {
 				writer.write("o,C,R,D,WC,WR,WD,WCo,WRo,W1-Do,Fo,Label");//Fo = WCo + WRo + W1-Do
 			}else if(type==0){
 				writer.write("o,C,R,D,Fo,DistToCritical,DistToDesirable,CurrentHasLM,Label");
+			}else if(type==2){
+				writer.write("o,R1,R2,R3,R4,R5,D1,D2,D3,D4,D5,DistToCritical,DistToDesirable,CurrentHasLM,Label");
 			}
 			writer.println();
 

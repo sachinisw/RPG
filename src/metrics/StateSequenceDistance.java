@@ -8,7 +8,7 @@ import java.util.TreeSet;
 import con.ConnectivityGraph;
 
 public class StateSequenceDistance extends Distance{
-	
+
 	public ConnectivityGraph con;
 	public ArrayList<State> refseq;
 	public ArrayList<State> inseq;
@@ -24,7 +24,7 @@ public class StateSequenceDistance extends Distance{
 		init = inits;
 		goal = goals;
 	}
-	
+
 	public void producePlanStateSeq() {
 		TreeSet<String> in = new TreeSet<String>(init);
 		refseq.add(new State(in));
@@ -59,7 +59,7 @@ public class StateSequenceDistance extends Distance{
 			inseq.add(new State(st));
 		}
 	}
-	
+
 	//Nguyen 2012
 	public double getStateSequenceDistance() {
 		producePlanStateSeq();
@@ -97,7 +97,19 @@ public class StateSequenceDistance extends Distance{
 		}
 		return (double)( (1/(double)(k) )*(deltasum + (double)(k-kprime)));
 	}
-	
+
+	public int minDsistanceToGoal() {
+		producePlanStateSeq();
+		int loc=0;
+		for (State st : inseq) {
+			loc++;
+			if(st.containsGoal(goal)) {
+				return loc;
+			}
+		}
+		return loc;
+	}
+
 	public static ConnectivityGraph readConnectivityGraphs(){
 		ConnectivityGraph graph = new ConnectivityGraph("/home/sachini/domains/TEST/testcon");
 		graph.readConGraphOutput("/home/sachini/domains/TEST/testcon");
