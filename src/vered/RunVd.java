@@ -65,7 +65,7 @@ public class RunVd {
 		return filtered;
 	}
 
-	public static HashMap<String,TreeSet<String>> readLandmarks(String lmfile){
+	public static HashMap<String,TreeSet<String>> readLandmarksGNOrders(String lmfile){
 		Scanner sc;
 		HashMap<String,TreeSet<String>> lms = new HashMap<String, TreeSet<String>>();	
 		boolean start = false;
@@ -142,8 +142,8 @@ public class RunVd {
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
 				redoLandmarks(a_out + TestConfigsVd.a_rpgFile, a_out + TestConfigsVd.a_connectivityGraphFile, critical, runningstate, landmarkfile);
 				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, runningstate, ulandmarkfile);
-				HashMap<String,TreeSet<String>> a_landmarks = readLandmarks(landmarkfile);
-				HashMap<String,TreeSet<String>> u_landmarks = readLandmarks(ulandmarkfile);
+				HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(landmarkfile);
+				HashMap<String,TreeSet<String>> u_landmarks = readLandmarksGNOrders(ulandmarkfile);
 				OrderedLMGraph aGraph = new OrderedLMGraph();
 				OrderedLMGraph uGraph = new OrderedLMGraph();
 				aGraph.produceOrders(a_landmarks, critical);

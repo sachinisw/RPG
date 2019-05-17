@@ -1,12 +1,15 @@
 package landmark;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Queue;
 import java.util.TreeSet;
 
 public class OrderedLMGraph {
-	HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj;
+	
+	private HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj;
 	
 	public OrderedLMGraph() {
 		adj = new HashMap<OrderedLMNode, TreeSet<OrderedLMNode>>();
@@ -16,9 +19,8 @@ public class OrderedLMGraph {
 		ArrayList<OrderedLMEdge> orders = new ArrayList<>();
 		ArrayList<OrderedLMNode> nodes = new ArrayList<>();
 		Iterator<String> itr = lms.keySet().iterator();
-		while(itr.hasNext()){
-			String key = itr.next();
-			nodes.add(new OrderedLMNode(key));
+		while(itr.hasNext()){ //add all nodes (key) in lms
+			nodes.add(new OrderedLMNode(itr.next()));
 		}
 		Iterator<String> itr2 = lms.keySet().iterator();
 		while(itr2.hasNext()){
@@ -27,12 +29,8 @@ public class OrderedLMGraph {
 			OrderedLMNode before = null, after = null;
 			after = nodes.get(nodes.indexOf(new OrderedLMNode(key)));
 			for (String s : val) {
-				OrderedLMNode dup = new OrderedLMNode(s);
-				int atF = nodes.indexOf(dup);
-				if(atF>=0) {
-					before = nodes.get(atF);
-					orders.add(new OrderedLMEdge(before, after));
-				}
+				before = nodes.get(nodes.indexOf(new OrderedLMNode(s)));
+				orders.add(new OrderedLMEdge(before, after));
 			}
 		}
 		produceOrderdLMGraph(nodes, orders);
@@ -63,5 +61,35 @@ public class OrderedLMGraph {
 			}
 		}
 		return last;
+	}
+
+	public ArrayList<OrderedLMNode> findAllSiblingsofNode(OrderedLMNode node){
+		ArrayList<OrderedLMNode> siblings = new ArrayList<OrderedLMNode>();
+		Queue<OrderedLMNode> queue = new ArrayDeque<OrderedLMNode>();
+		queue.add(node);
+		recursivelyFindSiblings(queue, siblings);
+		return siblings;
+	}
+
+	private void recursivelyFindSiblings(Queue<OrderedLMNode> queue, ArrayList<OrderedLMNode> siblings) {
+		if(queue.isEmpty()) {
+			return;
+		}
+		OrderedLMNode current = queue.poll();
+		for (OrderedLMNode child : adj.get(current)) {
+			if(!siblings.contains(child)) {
+				siblings.add(child);
+				queue.add(child);
+			}
+	        recursivelyFindSiblings(queue, siblings);
+		}
+	}
+	
+	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> getAdj() {
+		return adj;
+	}
+
+	public void setAdj(HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj) {
+		this.adj = adj;
 	}
 }

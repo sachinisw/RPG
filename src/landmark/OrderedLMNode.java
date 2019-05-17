@@ -6,12 +6,10 @@ import java.util.Objects;
 
 public class OrderedLMNode implements Comparable<OrderedLMNode>{	
 	private ArrayList<String> nodecontent;
-	private int order;
 	
 	public OrderedLMNode(String s) {
 		nodecontent = new ArrayList<String>();
 		nodecontent.add(s);
-		order = 0;
 	}
 
 	public boolean equals(Object o){
@@ -49,14 +47,6 @@ public class OrderedLMNode implements Comparable<OrderedLMNode>{
 	}
 	
 	public String toString() {
-		return Arrays.toString(nodecontent.toArray()) +"("+order+")";
-	}
-
-	public int getOrder() {
-		return order;
-	}
-
-	public void setOrder(int order) {
-		this.order = order;
+		return Arrays.toString(nodecontent.toArray()) ;
 	}
 }

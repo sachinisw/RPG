@@ -163,8 +163,9 @@ public class RunTopK {
 	}
 
 	public static double[] computeFeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
-			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, ArrayList<String> init, ArrayList<String> critical, ArrayList<String> desirable) {
-		FeatureSet fs = new FeatureSet(altplans, refplans, con, init, critical, desirable);
+			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph rpg, ArrayList<String> curstate,
+			ArrayList<String> init, ArrayList<String> critical, ArrayList<String> desirable, String lmo) {
+		FeatureSet fs = new FeatureSet(altplans, refplans, con, rpg, init, curstate, critical, desirable, lmo);
 		fs.evaluateFeatureValuesForCurrentObservation();
 		return fs.getFeaturevals();
 	}
@@ -189,6 +190,8 @@ public class RunTopK {
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init);
 		TreeSet<String> obFiles = getObservationFiles(obs);
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
+		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(decider, domain);
+		decider.generateVerifiedLandmarks(a_rpg.get(0), a_con.get(0), lm_out); //verified landmarks generated for this problem. file written to lmout
 		int obFileLimit = 1;
 		for (String file : obFiles) { 
 			if (restrict(mode, obFileLimit, domain)) {
@@ -205,11 +208,11 @@ public class RunTopK {
 				ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
-				curstate.addAll(adds);
+				curstate.addAll(adds); //effect of action is visible in the domain
 				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, a_prob, outpath);
 				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), decider.getInitialState().getState(), 
-						decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates());
+				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), curstate, decider.getInitialState().getState(), 
+						decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_new.csv", featurevalsforfile, curobs);

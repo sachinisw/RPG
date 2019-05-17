@@ -115,7 +115,7 @@ public class LandmarkExtractor {
 		writeLandmarksToFile(lgg, vlm, orders, lmoutputfilepath);
 		return vlm; 
 	}
-
+	
 	//Remove unverified lm from adjacency list of LGG and produce the greedy necessary orders
 	public  HashMap<LGGNode, TreeSet<LGGNode>> removeUnverifiedLandmarksFromLGG(LGG lgg, ArrayList<LGGNode> verified){
 		ArrayList<LGGNode> toRemove = new ArrayList<>();
