@@ -6,10 +6,12 @@ import java.util.Objects;
 
 public class OrderedLMNode implements Comparable<OrderedLMNode>{	
 	private ArrayList<String> nodecontent;
+	private int treeLevel;
 	
 	public OrderedLMNode(String s) {
 		nodecontent = new ArrayList<String>();
 		nodecontent.add(s);
+		treeLevel = -1;
 	}
 
 	public boolean equals(Object o){
@@ -47,6 +49,14 @@ public class OrderedLMNode implements Comparable<OrderedLMNode>{
 	}
 	
 	public String toString() {
-		return Arrays.toString(nodecontent.toArray()) ;
+		return Arrays.toString(nodecontent.toArray()) + "("+ treeLevel +")" ;
+	}
+
+	public int getTreeLevel() {
+		return treeLevel;
+	}
+
+	public void setTreeLevel(int treeLevel) {
+		this.treeLevel = treeLevel;
 	}
 }

@@ -167,15 +167,23 @@ public class RelaxedPlanningGraphGenerator {
 		init.add("(ONTABLE L)");
 		init.add("(ONTABLE C)");
 
-		currentstate.add("(HANDEMPTY)");
+//		currentstate.add("(HANDEMPTY)");
+//		currentstate.add("(CLEAR P)");
+//		currentstate.add("(CLEAR L)");
+//		currentstate.add("(CLEAR A)");
+//		currentstate.add("(ON A C)");
+//		currentstate.add("(ONTABLE P)");
+//		currentstate.add("(ONTABLE L)");
+//		currentstate.add("(ONTABLE C)");
+
+		currentstate.add("(HOLDING A)");
 		currentstate.add("(CLEAR P)");
 		currentstate.add("(CLEAR L)");
-		currentstate.add("(CLEAR A)");
-		currentstate.add("(ON A C)");
+		currentstate.add("(CLEAR C)");
 		currentstate.add("(ONTABLE P)");
 		currentstate.add("(ONTABLE L)");
 		currentstate.add("(ONTABLE C)");
-
+		
 		//		critical.add("(ON C A)"); //prob 30
 		//		critical.add("(ON B D)");
 		//		init.add("(HANDEMPTY)");
@@ -198,7 +206,10 @@ public class RelaxedPlanningGraphGenerator {
 		rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
 	}
 
-	public int computeAchievedLandmarks(ArrayList<String> goal, String lmout, ArrayList<String> currentstate) { //Karpaz,domshlak 2009 (cost optimal planning with landmarks)
+	//TODO: Karpaz,domshlak 2009 (cost optimal planning with landmarks)
+	//TODO: bryce 2014 (landmark distance metric). this paper is terrible :-( i don't understand it
+	//Landmark based goal completion heuristic (Meneguzzi 2017)
+	public double computeAchievedLandmarks(ArrayList<String> goal, String lmout, ArrayList<String> currentstate) { 
 		HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(lmout);
 		HashMap<OrderedLMNode, Boolean> active = new HashMap<OrderedLMNode, Boolean>();
 		OrderedLMGraph aGraph = new OrderedLMGraph();
@@ -220,34 +231,110 @@ public class RelaxedPlanningGraphGenerator {
 					active.put(key, true);
 				}
 			}
-		}
-		System.out.println("active===="+active);
-		System.out.println("gnorders====");
-		Iterator<OrderedLMNode> itrac = aGraph.getAdj().keySet().iterator();
-		while(itrac.hasNext()){
-			OrderedLMNode lmn = itrac.next();
-			System.out.println(lmn+"    :"+aGraph.getAdj().get(lmn));
-		}
-		return countAchievedLandmarks(aGraph, active);
-	}
-
-	private int countAchievedLandmarks(OrderedLMGraph aGraph, HashMap<OrderedLMNode, Boolean> active) {
-		int achievedcount = 0;
-		ArrayList<OrderedLMNode> subgoals = aGraph.findRoots();
-		System.out.println("******"+subgoals);
-		for (OrderedLMNode node : subgoals) {
-			ArrayList<OrderedLMNode> siblings = aGraph.findAllSiblingsofNode(node);
-			if(active.get(node)) {
-				System.out.println("node = "+ node + "  |>> "+siblings);
-			}
-
-		}
-
-		//this only counts the highest node in the tree. 
+		}//iterate over active nodes and find each node's all siblings. mark them as active.
 		//since landmarks are ordered, if higher node is true, all it's siblings must assume to be achieved
-		return achievedcount;
+		Iterator<OrderedLMNode> ac = active.keySet().iterator();
+		ArrayList<OrderedLMNode> allTrue = new ArrayList<OrderedLMNode>();
+		HashMap<OrderedLMNode, ArrayList<OrderedLMNode>> nodesiblngs = new HashMap<OrderedLMNode, ArrayList<OrderedLMNode>>();
+		while(ac.hasNext()){
+			OrderedLMNode key = ac.next();
+			ArrayList<OrderedLMNode> sib = aGraph.findAllSiblingsofNode(key);
+			if(active.get(key)) {
+				allTrue.addAll(sib);
+			}
+			nodesiblngs.put(key,sib);
+		}//mark everything in allTrue as active
+		Iterator<OrderedLMNode> acTrue = active.keySet().iterator();
+		while(acTrue.hasNext()){
+			OrderedLMNode key = acTrue.next();
+			if(allTrue.contains(key)) {
+				active.put(key, true);
+			}
+		}//mark everything in allTrue as active
+		aGraph.assignSiblingLevels();
+		HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels = aGraph.getLevelsPerSubgoal();
+//		System.out.println("active======="+active);
+		HashMap<OrderedLMNode, Integer> lmCompleteLevels = getMaxCompleteLevel(subgoallevels,active);
+		HashMap<OrderedLMNode, Integer> subGoalLevels = getSubgoalLevels(subgoallevels);
+		return computeLandmarkCompletionHeuristic(lmCompleteLevels, subGoalLevels);
+	}
+	
+	public double computeLandmarkCompletionHeuristic(HashMap<OrderedLMNode, Integer> lmcompletelevels, HashMap<OrderedLMNode, Integer> subgoallevels) {
+		double numofsubgoals = subgoallevels.size();
+		double sum = 0.0;
+		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode subgoal = itr.next();
+			double complete = lmcompletelevels.get(subgoal);
+			double levels = subgoallevels.get(subgoal);
+			sum += complete/levels;
+		}
+		return sum/numofsubgoals;
 	}
 
+	public HashMap<OrderedLMNode, Integer> getMaxCompleteLevel(HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels, 
+			HashMap<OrderedLMNode, Boolean> active) {
+		System.out.println("active====="+active);
+		HashMap<OrderedLMNode, Integer> lmCompletedLevel = new HashMap<>();
+		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode key = itr.next();
+			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
+			Iterator<OrderedLMNode> itrac = active.keySet().iterator();
+			OrderedLMNode minimumActive = null;
+			int l = Integer.MAX_VALUE;
+			while(itrac.hasNext()) { //find node at the highest point (level~0) in tree which is active 
+				OrderedLMNode keyac = itrac.next();
+				if(active.get(keyac)) {
+					if(keyac.getTreeLevel()<l && l>=0) {
+						l = keyac.getTreeLevel();
+						minimumActive = keyac;
+					}
+				}
+			}
+			System.out.println("MIN ACTIVE"+minimumActive);
+			if(l==0 && key.equals(minimumActive)) {
+				lmCompletedLevel.put(key, levels.size()+1);
+			}else {
+				int completeLevel = levels.size()-1;
+				for (int i=levels.size()-1; i>=0; i--) {
+					ArrayList<OrderedLMNode> level = levels.get(i);
+					int curlevelcompletenodes = 0;
+					for (OrderedLMNode node : level) {
+						if(active.get(node)) {
+							++curlevelcompletenodes;
+						}
+					}
+					if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
+						completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
+					}//half complete. if so, check if upper level is active. if yes, the upper level becomes the complete level
+				}
+				lmCompletedLevel.put(key, completeLevel);
+			}
+		}
+		System.out.println("***********************");
+		System.out.println(lmCompletedLevel);
+		return lmCompletedLevel;
+	}
+	
+	public HashMap<OrderedLMNode, Integer> getSubgoalLevels(HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels) {
+		HashMap<OrderedLMNode, Integer> lmLevels = new HashMap<>();
+		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode key = itr.next();
+			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
+			if(!levels.isEmpty()) {
+				lmLevels.put(key, levels.size()+1);
+			}else {
+				lmLevels.put(key, -1);
+
+			}
+		}
+		System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$");
+		System.out.println(lmLevels);
+		return lmLevels;
+	}
+	
 	public boolean nodeContainsPredicate(ArrayList<String> pred, OrderedLMNode node) {
 		String ss = "";
 		for (String s : node.getNodecontent()) {
