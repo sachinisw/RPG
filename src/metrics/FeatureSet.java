@@ -28,13 +28,15 @@ public class FeatureSet {
 	private ArrayList<String> currentstate;
 	private String lmout;
 
-	//new: min action distance*, min causal link distance*, min state seq distance* for good (desirability) and bad (risk)
-	//new: min generalized edit distance (state)*, min generalised edit distance (action)*
-	//old: mean distance to critical state*, mean distance to desirable state*
+	//new: median action distance*, median causal link distance*, median state seq distance* for good (desirability) and bad (risk)
+	//new: median generalized edit distance (state)*, median generalised edit distance (action)*
+	//old: median distance to critical state*, median distance to desirable state*
 	//comment: not all plans are optimal because of k value in top-k. mean distances (used in previous version) will push the value
-	//closer to non optimal lengths. if I assume the agent to be optimal this movement is counterproductive. So use the min here also on the assumption of optimality?
-	//(why does the agent have to be optimal? how would non-optimal agency change things?)
-	//old: modified completed landmark percentage, modified landmark distance (domshlak/bryce)
+	//closer to non optimal lengths. if I assume the agent to be optimal this movement is counterproductive. 
+	//If i assumed the minimum, even if there is just one identical plan (distance=0) i will be saying the ref is matching the good/bad goal plan.
+	//what I want is to identify when most of the sample is producing identical plans to my ref (good/bad) plan. in this case i am somewhat confident about the risk/desirablity of the ref.plan
+	//So use the median	//(why does the agent have to be optimal? how would non-optimal agency change things?)
+	//old: modified completed landmark percentage (meneguzzi2017), modified landmark distance (domshlak/bryce)
 	public FeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
 			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph pg, ArrayList<String> current, 
 			ArrayList<String> inits, ArrayList<String> c, ArrayList<String> d, String lmo) {
@@ -50,7 +52,15 @@ public class FeatureSet {
 		featurevals = new double[14]; 
 	}
 
-	public double getMinActionSetDistanceFromAltPlans(ArrayList<String> goal) {
+	private double findMedianDistance(double [] dists) {
+		Arrays.sort(dists);
+        if(dists.length % 2 != 0) { 		// check for even case 
+        	return (double)dists[dists.length/2]; 
+        }
+        return (double)(dists[(dists.length-1)/2] + dists[dists.length/2]) / 2.0; 
+	}
+	
+	public double getMedianActionSetDistanceFromAltPlans(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
 		double[] dists = new double[alts.size()];
@@ -59,11 +69,10 @@ public class FeatureSet {
 			ActionSetDistance acd = new ActionSetDistance(ref, sp.getActions());
 			dists[index++] = acd.getActionSetDistance();
 		}
-		Arrays.sort(dists);
-		return dists[0];
+		return findMedianDistance(dists);
 	}
 	
-	public double getMinCausalLinkDistanceFromAltPlans(ArrayList<String> goal) {
+	public double getMedianCausalLinkDistanceFromAltPlans(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
 		double[] dists = new double[alts.size()];
@@ -72,11 +81,10 @@ public class FeatureSet {
 			CausalLinkDistance cld = new CausalLinkDistance(ref, sp.getActions(), connectivity, init, goal);
 			dists[index++] = cld.getCausalLinkDistance();
 		}
-		Arrays.sort(dists);
-		return dists[0];
+		return findMedianDistance(dists);
 	}
 	
-	public double getMinStateSequenceDistanceFromAltPlans(ArrayList<String> goal) {
+	public double getMedianStateSequenceDistanceFromAltPlans(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
 		double[] dists = new double[alts.size()];
@@ -85,8 +93,7 @@ public class FeatureSet {
 			StateSequenceDistance ssd = new StateSequenceDistance(ref, sp.getActions(), connectivity, init, goal);
 			dists[index++] = ssd.getStateSequenceDistance();
 		}
-		Arrays.sort(dists);
-		return dists[0];
+		return findMedianDistance(dists);
 	}
 	
 	public double getMinDistanceToState(ArrayList<String> goal) {
@@ -122,6 +129,7 @@ public class FeatureSet {
 		int index = 0;
 		for (SASPlan sp : alts) {
 			StateSequenceDistance ssd = new StateSequenceDistance(ref, sp.getActions(), connectivity, init, goal);
+			ssd.producePlanStateSeq();
 			ArrayList<String> reftoks = new ArrayList<String>();
 			ArrayList<String> intoks = new ArrayList<String>();
 			for (State s : ssd.refseq) {
@@ -302,12 +310,14 @@ public class FeatureSet {
 	}
 	
 	public void evaluateFeatureValuesForCurrentObservation() {
-		double r_actionsetdistance = getMinActionSetDistanceFromAltPlans(criticalstate);
-		double d_actionsetdistance = getMinActionSetDistanceFromAltPlans(desirablestate);
-		double r_causallinkdistance = getMinCausalLinkDistanceFromAltPlans(criticalstate);
-		double d_causallinkdistance = getMinCausalLinkDistanceFromAltPlans(desirablestate);
-		double r_stateseqdistance = getMinStateSequenceDistanceFromAltPlans(criticalstate);
-		double d_stateseqdistance = getMinStateSequenceDistanceFromAltPlans(desirablestate);
+		System.out.println(alternativePlanSet);
+		System.out.println(referencePlans);
+		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
+		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
+		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate);
+		double d_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(desirablestate);
+		double r_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(criticalstate);
+		double d_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(desirablestate);
 		double r_minDistToCritical = getMinDistanceToState(criticalstate);
 		double d_minDistToDesirable = getMinDistanceToState(desirablestate);
 		double r_minEditDistanceAc = getActionGED(criticalstate);
@@ -316,6 +326,21 @@ public class FeatureSet {
 		double d_minEditDistanceSt = getStateGED(desirablestate);
 		double r_achievedLandmarks = computeAchievedLandmarks(criticalstate,currentstate);
 		double d_achievedLandmarks = computeAchievedLandmarks(desirablestate,currentstate);
+		featurevals[0] = r_actionsetdistance;
+		featurevals[1] = d_actionsetdistance;
+		featurevals[2] = r_causallinkdistance;
+		featurevals[3] = d_causallinkdistance;
+		featurevals[4] = r_stateseqdistance;
+		featurevals[5] = d_stateseqdistance;
+		featurevals[6] = r_minDistToCritical;
+		featurevals[7] = d_minDistToDesirable;
+		featurevals[8] = r_minEditDistanceAc;
+		featurevals[9] = d_minEditDistanceAc;
+		featurevals[10] = r_minEditDistanceSt;
+		featurevals[11] = d_minEditDistanceSt;
+		featurevals[12] = r_achievedLandmarks;
+		featurevals[13] = d_achievedLandmarks;
+		System.out.println(Arrays.toString(featurevals));
 	}
 	
 	public HashMap<ArrayList<String>, ArrayList<SASPlan>> getAlternativePlanSet() {

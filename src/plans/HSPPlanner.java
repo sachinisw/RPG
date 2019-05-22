@@ -49,7 +49,7 @@ public class HSPPlanner {
 		ArrayList<String> lines = runHSPPlanner();
 		ArrayList<String> cleaned = new ArrayList<>();
 		for (String s : lines) {
-			cleaned.add(s.substring(s.indexOf("("), s.indexOf(")")+1).toUpperCase());
+			cleaned.add(s.substring(s.indexOf("(")+1, s.indexOf(")")).toUpperCase()); //lose the paranthesis around actions
 		}
 		HSPFPlan hsp = new HSPFPlan();
 		hsp.setActions(cleaned);

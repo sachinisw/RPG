@@ -66,21 +66,6 @@ public class RunTopK {
 		return cons;
 	}
 
-	//		public static void computeMetricsForDecisionTree(String domain, Observation ob, Decider decider, ArrayList<StateGraph> trees, 
-	//				RelaxedPlanningGraph arpg, ConnectivityGraph con, String outputfilename, String lmoutput){
-	//			ArrayList<String> items = new ArrayList<String>();
-	//			for (int i=1; i<trees.size(); i++) { //skip the first one. It's the initial state or in the case of half traces, it's the state before I start making decisions
-	//				decider.setState(trees.get(i)); //add stategraphs to user, attacker objects
-	//				Metrics metrics = new Metrics(decider, domain, lmoutput, arpg, con); //compute features for decision tree
-	//				metrics.computeFeatureSet();
-	//				DecisionDataLine data = new DecisionDataLine(ob.getObservations().get(i-1), metrics);
-	//				data.computeObjectiveFunctionValue();
-	//				items.add(data.toString());
-	//			}
-	//			CSVGenerator results = new CSVGenerator(outputfilename, items, 0);
-	//			results.writeOutput();
-	//		}
-
 	private static boolean restrict(int mode, int limit, String domain) {
 		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ||
 				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) || 
@@ -97,7 +82,8 @@ public class RunTopK {
 	}
 
 	public static HashMap<ArrayList<String>, ArrayList<SASPlan>> generateAlternativePlans(Decider decider, String domainfile, 
-			ArrayList<String> currentstate, String at_probfile, String ouputpath) {
+			ArrayList<String> currentstate, List<String> obs, String at_probfile, String ouputpath) {
+		//alt plan = prefix (observations made thus far) + suffix (topK plans from current state to hypotheses
 		HashMap<ArrayList<String>, ArrayList<SASPlan>> alts = new HashMap<>();
 		Problem probA = new Problem(); //critical problem always the same. //use the problem for the attacker's definition.
 		probA.readProblemPDDL(at_probfile);
@@ -111,14 +97,25 @@ public class RunTopK {
 		probA.setInit(currentstate);
 		probU.writeProblemFile(ouputpath+"_u.pddl"); //don't have to write the domain 
 		probA.writeProblemFile(ouputpath+"_a.pddl");
-		TopKPlanner tka = new TopKPlanner(domainfile, probA.getProblemPath(), 100);
+		TopKPlanner tka = new TopKPlanner(domainfile, probA.getProblemPath(), 3);
 		ArrayList<SASPlan> atplans = tka.getPlans();
-		TopKPlanner tku = new TopKPlanner(domainfile, probU.getProblemPath(), 100);
+		TopKPlanner tku = new TopKPlanner(domainfile, probU.getProblemPath(), 3);
 		ArrayList<SASPlan> uplans = tku.getPlans();
 		alts.put(decider.critical.getCriticalStatePredicates(),atplans);
 		alts.put(decider.desirable.getDesirableStatePredicates(),uplans);
 		if(atplans.isEmpty()|| uplans.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "Possible attacker/user topK plans generation failed.");
+		}
+		System.out.println(obs+"---------------------");
+		int index = 0;
+		for (String o : obs) {//add the observation prefix to topK plans
+			for (SASPlan sasPlan : uplans) {
+				sasPlan.getActions().add(index,o.substring(o.indexOf(":")+1));
+			}
+			for (SASPlan sasPlan : atplans) {
+				sasPlan.getActions().add(index,o.substring(o.indexOf(":")+1));
+			}
+			index++;
 		}
 		currentstate.remove("(:init");
 		currentstate.remove(")");
@@ -144,16 +141,16 @@ public class RunTopK {
 		HSPFPlan a_optimal = hspfa.getHSPPlan();
 		HSPPlanner hspfu = new HSPPlanner(domainfile, probU.getProblemPath());
 		HSPFPlan u_optimal = hspfu.getHSPPlan();
-		if(a_optimal.getActions().isEmpty()|| u_optimal.getActions().isEmpty()) {
-			LOGGER.log(Level.SEVERE, "Possible attacker/user HSP plan generation failed.");
-		}
+//		if(a_optimal.getActions().isEmpty()|| u_optimal.getActions().isEmpty()) { //plan can be empty if observations thus far satisfy the goal
+//			LOGGER.log(Level.SEVERE, "Possible attacker/user HSP plan generation failed.");
+//		}
 		curstate.remove("(:init");
 		curstate.remove(")");
 		ArrayList<String> a_refplan = new ArrayList<String>();
 		ArrayList<String> u_refplan = new ArrayList<String>();
 		for (String o : obs) {
-			a_refplan.add("(" + o.substring(o.indexOf(":")+1)+")");
-			u_refplan.add("(" + o.substring(o.indexOf(":")+1)+")");
+			a_refplan.add(o.substring(o.indexOf(":")+1));
+			u_refplan.add(o.substring(o.indexOf(":")+1));
 		}
 		a_refplan.addAll(a_optimal.getActions());
 		u_refplan.addAll(u_optimal.getActions());
@@ -173,12 +170,15 @@ public class RunTopK {
 	public static void writeFeatureValsToFile(String outputfilename, ArrayList<double[]> featurevalsforfiles, Observation obs) {
 		ArrayList<String> data = new ArrayList<String>();
 		int index = 0;
-		for (String string : data) {
-			String d = string;
-			for (double v : featurevalsforfiles.get(index++)) {
-				d+=String.valueOf(v);
+		for (double[] arr : featurevalsforfiles) {
+			String d = "";
+			for (double v : arr) {
+				d+=String.valueOf(v)+",";
 			}
-			data.add(d);
+			String ob = obs.getObservations().get(index).substring(2);
+			String label = obs.getObservations().get(index).substring(0,1);
+			data.add(ob+","+d+label+"\n");
+			index++;
 		}
 		CSVGenerator results = new CSVGenerator(outputfilename, data, 2);
 		results.writeOutput();
@@ -188,6 +188,8 @@ public class RunTopK {
 			String a_out, String criticalfile, String a_init, String obs, 
 			String ds_csv, String lm_out, int delay, boolean full) {
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init);
+		decider.setDesirableState();
+		decider.setUndesirableState();
 		TreeSet<String> obFiles = getObservationFiles(obs);
 		ArrayList<ConnectivityGraph> a_con = getConnectivityGraph(decider, domain);
 		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(decider, domain);
@@ -209,13 +211,15 @@ public class RunTopK {
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
 				curstate.addAll(adds); //effect of action is visible in the domain
-				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, a_prob, outpath);
+				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
 				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
+				System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
 				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), curstate, decider.getInitialState().getState(), 
 						decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
-			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_new.csv", featurevalsforfile, curobs);
+			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
+			break; //remove after debug
 		}
 	}
 

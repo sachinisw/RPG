@@ -134,17 +134,17 @@ public class OrderedLMGraph {
 			}
 			subgoallevels.put(r,levels); //goal1 == [level 1, level2...]
 		}
-		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
-		while(itr.hasNext()) {
-			OrderedLMNode key = itr.next();
-			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
-			System.out.println(key);
-			for (ArrayList<OrderedLMNode> level : levels) {
-				System.out.println(level);
-				System.out.println();
-			}
-			System.out.println("-------------------------------------------");
-		}
+//		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
+//		while(itr.hasNext()) {
+//			OrderedLMNode key = itr.next();
+//			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
+//			System.out.println(key);
+//			for (ArrayList<OrderedLMNode> level : levels) {
+//				System.out.println(level);
+//				System.out.println();
+//			}
+//			System.out.println("-------------------------------------------");
+//		}
 		return subgoallevels;
 	}
 

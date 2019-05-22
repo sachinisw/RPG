@@ -69,11 +69,11 @@ public class GeneralizedEditDistance extends Distance{
 		}
 		double totalCostForThePair = insertCost + deleteCost + replacementCost;
 		double weightOfRef = (double)(ref.size() * 1.0);
-		print();
-		System.out.println(insertOps);
-		System.out.println(deleteOps);
-		System.out.println(replaceOps);
-		System.out.println(table[table.length-1][table[0].length-1]);
+//		print();
+//		System.out.println(insertOps);
+//		System.out.println(deleteOps);
+//		System.out.println(replaceOps);
+//		System.out.println(table[table.length-1][table[0].length-1]);
 		return 1.0 - (Math.min(totalCostForThePair/weightOfRef, 1.0));
 	}
 

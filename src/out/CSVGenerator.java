@@ -26,7 +26,7 @@ public class CSVGenerator {
 			}else if(type==0){
 				writer.write("o,C,R,D,Fo,DistToCritical,DistToDesirable,CurrentHasLM,Label");
 			}else if(type==2){
-				writer.write("o,R1,R2,R3,R4,R5,D1,D2,D3,D4,D5,DistToCritical,DistToDesirable,CurrentHasLM,Label");
+				writer.write("o,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,D7,Label");
 			}
 			writer.println();
 
