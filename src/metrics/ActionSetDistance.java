@@ -1,8 +1,6 @@
 package metrics;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 public class ActionSetDistance extends Distance{
 	
@@ -12,15 +10,14 @@ public class ActionSetDistance extends Distance{
 	
 	//T Nguyen 2012
 	public double getActionSetDistance() {
-		Set<String> s1 = new HashSet<String>();
-		Set<String> s2 = new HashSet<String>();
-		Set<String> s3 = new HashSet<String>();
-		s1.addAll(ref);
-		s2.addAll(incoming);
-		s1.retainAll(s2);
-		s3.addAll(ref);
-		s3.addAll(incoming);
-		return 1 - ((double) s1.size()/(double) s3.size());
+		int intersectionsize = 0, unionsize = 0;
+		for (String in : incoming) {
+			if(ref.contains(in)) {
+				intersectionsize++;
+			}
+		}
+		unionsize = incoming.size()+ref.size() - intersectionsize;
+		return 1 - ((double) intersectionsize/(double) unionsize);
 	}
 		
 	public static void main(String[] args) {

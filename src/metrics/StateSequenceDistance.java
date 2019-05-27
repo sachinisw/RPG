@@ -1,8 +1,6 @@
 package metrics;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.TreeSet;
 
 import con.ConnectivityGraph;
@@ -25,42 +23,36 @@ public class StateSequenceDistance extends Distance{
 		goal = goals;
 	}
 
-	public void producePlanStateSeq() {
+	public void producePlanStateSeq() { //i have the plans ref/incoming. These two are in sequence. so All i have to do is find the state sequence that occurs when the planner is in execution
 		TreeSet<String> in = new TreeSet<String>(init);
 		refseq.add(new State(in));
 		inseq.add(new State(in));
 		TreeSet<String> currentstate = new TreeSet<String>(init);
 		while(!stateContainsGoal(new ArrayList<>(currentstate), goal)) {
-			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<>(currentstate));
-			for (int i=0; i<applicables.size(); i++) {
-				if(ref.contains(applicables.get(i))) {
-					ArrayList<String> adds = con.findStatesAddedByAction(applicables.get(i));
-					ArrayList<String> dels = con.findStatesDeletedByAction(applicables.get(i));
-					currentstate.removeAll(dels);
-					currentstate.addAll(adds);
-				}
+			for (int i=0; i<ref.size(); i++) {
+				ArrayList<String> adds = con.findStatesAddedByAction(ref.get(i));
+				ArrayList<String> dels = con.findStatesDeletedByAction(ref.get(i));
+				currentstate.removeAll(dels);
+				currentstate.addAll(adds);
+				TreeSet<String> st = new TreeSet<String>(currentstate);
+				refseq.add(new State(st));
 			}
-			TreeSet<String> st = new TreeSet<String>(currentstate);
-			refseq.add(new State(st));
 		}
 		currentstate.clear();
 		currentstate.addAll(init);
 		while(!stateContainsGoal(new ArrayList<>(currentstate), goal)) {
-			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<>(currentstate));
-			for (int i=0; i<applicables.size(); i++) {
-				if(incoming.contains(applicables.get(i))) {
-					ArrayList<String> adds = con.findStatesAddedByAction(applicables.get(i));
-					ArrayList<String> dels = con.findStatesDeletedByAction(applicables.get(i));
-					currentstate.removeAll(dels);
-					currentstate.addAll(adds);
-				}
+			for (int i=0; i<incoming.size(); i++) {
+				ArrayList<String> adds = con.findStatesAddedByAction(incoming.get(i));
+				ArrayList<String> dels = con.findStatesDeletedByAction(incoming.get(i));
+				currentstate.removeAll(dels);
+				currentstate.addAll(adds);
+				TreeSet<String> st = new TreeSet<String>(currentstate);
+				inseq.add(new State(st));
 			}
-			TreeSet<String> st = new TreeSet<String>(currentstate);
-			inseq.add(new State(st));
 		}
 	}
 
-	//Nguyen 2012
+	//Nguyen 2012 equation 6
 	public double getStateSequenceDistance() {
 		producePlanStateSeq();
 		int k = 0, kprime = 0;
@@ -68,32 +60,19 @@ public class StateSequenceDistance extends Distance{
 		if(inseq.size()<refseq.size()) {
 			k = refseq.size() - 1;
 			kprime = inseq.size() - 1;
-			for(int i=0; i<=kprime; i++) {
-				Set<String> s = new HashSet<String>(refseq.get(i).getPredicates());
-				Set<String> sprime = new HashSet<String>(inseq.get(i).getPredicates());
-				Set<String> union = new HashSet<String>();
-				Set<String> intersection = new HashSet<String>();
-				for (String st : s) {
-					if(sprime.contains(st)) {
-						intersection.add(st);
-					}
-				}
-				union.addAll(s);
-				union.addAll(sprime);
-				deltasum += 1.0 - ((double) intersection.size()/(double) union.size());
-			}
 		}else {
 			k = inseq.size() - 1;
 			kprime = refseq.size() - 1;
-			for(int i=0; i<=kprime; i++) {
-				Set<String> s = new HashSet<String>(inseq.get(i).getPredicates());
-				Set<String> sprime = new HashSet<String>(refseq.get(i).getPredicates());
-				Set<String> union = new HashSet<String>();
-				s.retainAll(sprime);
-				union.addAll(s);
-				union.addAll(sprime);
-				deltasum += ((double) s.size()/(double) union.size());
+		}
+		for(int i=0; i<=kprime; i++) {
+			int intersectionCount = 0, unionCount = 0;
+			for (String rp : refseq.get(i).getPredicates()) {
+				if(inseq.get(i).getPredicates().contains(rp)) {
+					intersectionCount++;
+				}
 			}
+			unionCount = refseq.get(i).getPredicates().size()+inseq.get(i).getPredicates().size()-intersectionCount;
+			deltasum += 1.0 - ((double) intersectionCount/(double) unionCount);
 		}
 		return (double)( (1/(double)(k) )*(deltasum + (double)(k-kprime)));
 	}

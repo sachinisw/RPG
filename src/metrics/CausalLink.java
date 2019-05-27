@@ -21,13 +21,34 @@ public class CausalLink implements Comparable<CausalLink>{
 			return false;
 		}
 		final CausalLink other = (CausalLink) cl;
-		if(proposition.equalsIgnoreCase(other.getProposition()) && 
+		if(compareProposition(other) && 
 				acAdding.equalsIgnoreCase(other.getActionAdding()) && acNeeding.equalsIgnoreCase(other.getActionNeeding())) {
 			return true;
 		}
 		return false;
 	}
 
+	public boolean compareProposition(CausalLink in) {
+		String thisparts [ ]= proposition.split(",");
+		String inparts [] = in.getProposition().split(",");
+		if(thisparts.length==inparts.length) {
+			for (String s : inparts) {
+				boolean found = false;
+				for (String t : thisparts) {
+					if(s.equalsIgnoreCase(t)) {
+						found = true;
+						break;
+					}
+				}
+				if(!found) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+		
 	public String toString() {
 		return acAdding + " ->"+ proposition +" - " + acNeeding;
 	}

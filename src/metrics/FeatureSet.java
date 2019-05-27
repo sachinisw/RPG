@@ -38,8 +38,8 @@ public class FeatureSet {
 	//So use the median	//(why does the agent have to be optimal? how would non-optimal agency change things?)
 	//old: modified completed landmark percentage (meneguzzi2017), modified landmark distance (domshlak/bryce)
 	public FeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
-			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph pg, ArrayList<String> current, 
-			ArrayList<String> inits, ArrayList<String> c, ArrayList<String> d, String lmo) {
+			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph pg, 
+			ArrayList<String> inits, ArrayList<String> current, ArrayList<String> c, ArrayList<String> d, String lmo) {
 		alternativePlanSet = altplans;
 		referencePlans = refplans;
 		connectivity = con;
@@ -314,12 +314,12 @@ public class FeatureSet {
 		System.out.println(referencePlans);
 		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
 		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
-		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate);
-		double d_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(desirablestate);
-		double r_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(criticalstate);
-		double d_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(desirablestate);
-		double r_minDistToCritical = getMinDistanceToState(criticalstate);
-		double d_minDistToDesirable = getMinDistanceToState(desirablestate);
+		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate); //ok
+		double d_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(desirablestate); //ok
+		double r_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(criticalstate); //ok
+		double d_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(desirablestate); //ok
+		double r_minDistToCritical = getMinDistanceToState(criticalstate); //ok
+		double d_minDistToDesirable = getMinDistanceToState(desirablestate); //ok
 		double r_minEditDistanceAc = getActionGED(criticalstate);
 		double d_minEditDistanceAc = getActionGED(desirablestate);
 		double r_minEditDistanceSt = getStateGED(criticalstate);

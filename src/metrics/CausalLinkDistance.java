@@ -1,7 +1,13 @@
 package metrics;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.TreeSet;
+import static java.util.stream.Collectors.*;
+import static java.util.Map.Entry.*;
 
 import con.ConnectivityGraph;
 
@@ -26,96 +32,205 @@ public class CausalLinkDistance  extends Distance{
 		extractCausalLinksFromIncomingPlan();
 	}
 
-	public void extractCausalLinksFromReferencePlan() {
-		TreeSet<String> currentstate =  new TreeSet<String>();
-		ArrayList<CausalLink> goalLinks = new ArrayList<>();
-		currentstate.addAll(init);
-		ArrayList<String> initApplicables = con.findApplicableActionsInState(new ArrayList<String>(currentstate));
-		for (String ia : initApplicables) { //adding init connections
-			if(ref.contains(ia)) {
-				ArrayList<String> pre = con.findPreconditionsofAction(ia);
-				String propositions = "";
-				for (String b : pre) {
-					propositions += b;
-				}
-				CausalLink l = new CausalLink(propositions,"A_I", ia); 
-				ref_causal.add(l);
-			}
+	public HashMap<String, Integer> getApplicableActionPriority(ArrayList<String> plan, ArrayList<String> applicables) {
+		HashMap<String,Integer> priority = new HashMap<>();
+		for (String app : applicables) {
+			priority.put(app, plan.indexOf(app)); //will give me the first occurrence of this action. I think it will be ok. make sure TODO:::
 		}
-		while(!stateContainsGoal(new ArrayList<String>(currentstate))) {
-			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<String>(currentstate));
-			for (String ap : applicables) {
-				if(ref.contains(ap)) {
-					ArrayList<String> adds = con.findStatesAddedByAction(ap);
-					ArrayList<String> dels = con.findStatesDeletedByAction(ap);
+		return priority;
+	}
+
+	public ArrayList<State> producePlanStateSeq(ArrayList<String> plan) {
+		TreeSet<String> in = new TreeSet<String>(init);
+		ArrayList<State> seq = new ArrayList<>();
+		seq.add(new State(in));
+		TreeSet<String> currentstate = new TreeSet<String>(init);
+		while(!stateContainsGoal(new ArrayList<>(currentstate), goal)) {
+			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<>(currentstate));
+			for (int i=0; i<applicables.size(); i++) {
+				if(plan.contains(applicables.get(i))) {
+					ArrayList<String> adds = con.findStatesAddedByAction(applicables.get(i));
+					ArrayList<String> dels = con.findStatesDeletedByAction(applicables.get(i));
 					currentstate.removeAll(dels);
 					currentstate.addAll(adds);
-					for (String ad : adds) {
-						ArrayList<String> consumers = findConsumerofPredicate(ad, ap, ref);
-						for (String c : consumers) {
-							CausalLink cl = new CausalLink (ad,ap,c);
-							if(!ref_causal.contains(cl)) {
-								ref_causal.add(cl);
-							}
+				}
+			}
+			TreeSet<String> st = new TreeSet<String>(currentstate);
+			seq.add(new State(st));
+		}
+		return seq;
+	}
+
+	public ArrayList<String> filterNonConcurrentActions(ArrayList<String> applicables, TreeSet<String> currentstate, HashMap<String, Integer> priority,
+			ArrayList<TreeSet<String>> alreadyseen) {
+		ArrayList<String> filtered = new ArrayList<String>();
+		TreeSet<String> curstatecopy = new TreeSet<String>();
+		curstatecopy.addAll(currentstate);
+		HashMap<String, Integer> sorted = priority.entrySet().stream().sorted(comparingByValue()).
+				collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2, LinkedHashMap::new));
+		Iterator<String> itr = sorted.keySet().iterator();
+		while (itr.hasNext()) {
+			String ac = (String) itr.next();
+			if(sorted.get(ac)>=0) {
+				ArrayList<String> adds = con.findStatesAddedByAction(ac);
+				ArrayList<String> dels = con.findStatesDeletedByAction(ac);
+				ArrayList<String> pre = con.findPreconditionsofAction(ac);
+				TreeSet<String> effect = new TreeSet<String>(curstatecopy);
+				effect.removeAll(dels);
+				effect.addAll(adds);
+				if(canExecuteInCurrentState(pre, curstatecopy) && !alreadySeenState(alreadyseen, effect)) {
+					curstatecopy.removeAll(dels);
+					curstatecopy.addAll(adds);
+					filtered.add(ac);//added in the acending order of priority
+					alreadyseen.add(curstatecopy);
+				}
+			}	
+		}
+		return filtered;
+	}
+
+	public boolean alreadySeenState(ArrayList<TreeSet<String>> history, TreeSet<String> state) {
+		TreeSet<String> prevstate = history.get(history.size()-1);
+		for (String s : prevstate) {
+			if(!state.contains(s)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public boolean canExecuteInCurrentState(ArrayList<String> pre, TreeSet<String> current) {
+		for (String p : pre) {
+			if(!current.contains(p)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	class SpecialAction{
+		public String name;
+		public ArrayList<String> adds;
+		public ArrayList<String> dels;
+		public ArrayList<String> pres;
+
+		public SpecialAction(String nm) {
+			name = nm;
+			adds = new ArrayList<String>();
+			dels = new ArrayList<String>();
+			pres = new ArrayList<String>();
+		}
+	}
+
+	//source: https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume15/ambite01a-html/node21.html FIGURE 17 whoopee!!
+	public void extractCausalLinksFromReferencePlan() {
+		SpecialAction ini = new SpecialAction("A_I");
+		ini.adds.addAll(init);
+		SpecialAction go = new SpecialAction("A_G");
+		go.pres.addAll(goal);
+		ArrayList<String> refdummy = new ArrayList<>(ref);
+		refdummy.add(0,ini.name);
+		refdummy.add(go.name);
+		for (int i=refdummy.size()-1; i>=0; i--) {
+			String ai = refdummy.get(i);
+			ArrayList<String> pre = null;
+//			ArrayList<String> del = null;
+			if(i==refdummy.size()-1) {
+				pre = go.pres;
+//				del = new ArrayList<String>();
+			}else {
+				pre = con.findPreconditionsofAction(ai);
+//				del = con.findStatesDeletedByAction(ai);
+			}
+			for (String p : pre) {
+				for (int k=i-1; k>=0; k--) {
+					String ak = refdummy.get(k);
+					ArrayList<String> adds = null;
+					if(k==0) {
+						adds = ini.adds;
+					}
+					else{
+						adds = con.findStatesAddedByAction(ak);
+					}
+					boolean pinadd = adds.contains(p); //predicate added by some action coming before
+					boolean foundL = false;
+					for (int l=k-1; l>=0; l--) {
+						ArrayList<String> dels = con.findStatesDeletedByAction(refdummy.get(l));
+						if(dels.contains(p)) {
+							foundL = true;
 						}
-						if(goal.contains(ad)) {
-							CausalLink gl = new CausalLink(ad,ap, "A_G");
-							if(!goalLinks.contains(gl)) {
-								goalLinks.add(gl);
-							}
-						}
+					}
+					if(pinadd && !foundL) {
+						ref_causal.add(new CausalLink(p, ak, ai));
 					}
 				}
 			}
+			//			for (String d : del) { //FYI: I don't have to do this part because the relaxed version of the problem (which I use) ignores the negative effects.
+			//				for (int j=i-1; j>=1; j--) {
+			//					String aj = refdummy.get(j);
+			//					ArrayList<String> ajpre = con.findPreconditionsofAction(aj);
+			//					if(ajpre.contains(d)) {
+			//						ref_causal.add(new CausalLink(d, aj, ai));
+			//					}
+			//				}
+			//			}
 		}
-		ref_causal.addAll(goalLinks);
 	}
 
 	public void extractCausalLinksFromIncomingPlan() {
-		TreeSet<String> currentstate =  new TreeSet<String>();
-		ArrayList<CausalLink> goalLinks = new ArrayList<>();
-		currentstate.addAll(init);
-		ArrayList<String> initApplicables = con.findApplicableActionsInState(new ArrayList<String>(currentstate));
-		for (String ia : initApplicables) { //adding init connections
-			if(incoming.contains(ia)) {
-				ArrayList<String> pre = con.findPreconditionsofAction(ia);
-				String propositions = "";
-				for (String b : pre) {
-					propositions += b;
-				}
-				CausalLink l = new CausalLink(propositions,"A_I", ia); 
-				in_causal.add(l);
+		SpecialAction ini = new SpecialAction("A_I");
+		ini.adds.addAll(init);
+		SpecialAction go = new SpecialAction("A_G");
+		go.pres.addAll(goal);
+		ArrayList<String> incomingdummy = new ArrayList<>(incoming);
+		incomingdummy.add(0,ini.name);
+		incomingdummy.add(go.name);
+		for (int i=incomingdummy.size()-1; i>=0; i--) {
+			String ai = incomingdummy.get(i);
+			ArrayList<String> pre = null;
+//			ArrayList<String> del = null;
+			if(i==incomingdummy.size()-1) {
+				pre = go.pres;
+//				del = new ArrayList<String>();
+			}else {
+				pre = con.findPreconditionsofAction(ai);
+//				del = con.findStatesDeletedByAction(ai);
 			}
-		}
-		while(!stateContainsGoal(new ArrayList<String>(currentstate))) {
-			ArrayList<String> applicables = con.findApplicableActionsInState(new ArrayList<String>(currentstate));
-			for (String ap : applicables) {
-				if(incoming.contains(ap)) {
-					ArrayList<String> adds = con.findStatesAddedByAction(ap);
-					ArrayList<String> dels = con.findStatesDeletedByAction(ap);
-					currentstate.removeAll(dels);
-					currentstate.addAll(adds);
-					for (String ad : adds) {
-						ArrayList<String> consumers = findConsumerofPredicate(ad, ap, incoming);
-						for (String c : consumers) {
-							CausalLink cl = new CausalLink (ad,ap,c);
-							if(!in_causal.contains(cl)) {
-								in_causal.add(cl);
-							}
+			for (String p : pre) {
+				for (int k=i-1; k>=0; k--) {
+					String ak = incomingdummy.get(k);
+					ArrayList<String> adds = null;
+					if(k==0) {
+						adds = ini.adds;
+					}
+					else{
+						adds = con.findStatesAddedByAction(ak);
+					}
+					boolean pinadd = adds.contains(p); //predicate added by some action coming before
+					boolean foundL = false;
+					for (int l=k-1; l>=0; l--) {
+						ArrayList<String> dels = con.findStatesDeletedByAction(incomingdummy.get(l));
+						if(dels.contains(p)) {
+							foundL = true;
 						}
-						if(goal.contains(ad)) {
-							CausalLink gl = new CausalLink(ad,ap, "A_G");
-							if(!goalLinks.contains(gl)) {
-								goalLinks.add(gl);
-							}
-						}
+					}
+					if(pinadd && !foundL) {
+						in_causal.add(new CausalLink(p, ak, ai));
 					}
 				}
 			}
+//			for (String d : del) { //FYI: I don't have to do this part because the relaxed version of the problem (which I use) ignores the negative effects.
+//				for (int j=i-1; j>=1; j--) {
+//					String aj = incomingdummy.get(j);
+//					ArrayList<String> ajpre = con.findPreconditionsofAction(aj);
+//					if(ajpre.contains(d)) {
+//						ref_causal.add(new CausalLink(d, aj, ai));
+//					}
+//				}
+//			}
 		}
-		in_causal.addAll(goalLinks);
 	}
-	
+
 	public ArrayList<String> findConsumerofPredicate(String addPred, String producerac, ArrayList<String> plan) {
 		int index = plan.indexOf(producerac);
 		ArrayList<String> consumers = new ArrayList<String>();
@@ -176,9 +291,8 @@ public class CausalLinkDistance  extends Distance{
 		g.add("(R3)");
 		g.add("(R4)");
 		ConnectivityGraph con = readConnectivityGraphs();
-		CausalLinkDistance cld = new CausalLinkDistance(a, b, con, in, g);
-		double d = cld.getCausalLinkDistance();
-		System.out.println(d);
+		CausalLinkDistance cld = new CausalLinkDistance(c, b, con, in, g);
+		System.out.println(cld.getCausalLinkDistance());
 	}
 
 	public ArrayList<CausalLink> getIn_causal() {

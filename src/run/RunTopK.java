@@ -121,7 +121,7 @@ public class RunTopK {
 		currentstate.remove(")");
 		return alts;
 	}
-	
+
 	public static HashMap<ArrayList<String>, ArrayList<String>> generateReferencePlans(Decider decider, String domainfile, ArrayList<String> curstate, 
 			List<String> obs, String at_probfile, String outputpath) { //ref plan = prefix (observations made thus far) + suffix (optimal plan from current state to hypotheses
 		HashMap<ArrayList<String>, ArrayList<String>> refs = new HashMap<>();
@@ -141,9 +141,9 @@ public class RunTopK {
 		HSPFPlan a_optimal = hspfa.getHSPPlan();
 		HSPPlanner hspfu = new HSPPlanner(domainfile, probU.getProblemPath());
 		HSPFPlan u_optimal = hspfu.getHSPPlan();
-//		if(a_optimal.getActions().isEmpty()|| u_optimal.getActions().isEmpty()) { //plan can be empty if observations thus far satisfy the goal
-//			LOGGER.log(Level.SEVERE, "Possible attacker/user HSP plan generation failed.");
-//		}
+		//		if(a_optimal.getActions().isEmpty()|| u_optimal.getActions().isEmpty()) { //plan can be empty if observations thus far satisfy the goal
+		//			LOGGER.log(Level.SEVERE, "Possible attacker/user HSP plan generation failed.");
+		//		}
 		curstate.remove("(:init");
 		curstate.remove(")");
 		ArrayList<String> a_refplan = new ArrayList<String>();
@@ -160,13 +160,13 @@ public class RunTopK {
 	}
 
 	public static double[] computeFeatureSet(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
-			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph rpg, ArrayList<String> curstate,
-			ArrayList<String> init, ArrayList<String> critical, ArrayList<String> desirable, String lmo) {
+			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph rpg, 
+			ArrayList<String> init, ArrayList<String> curstate, ArrayList<String> critical, ArrayList<String> desirable, String lmo) {
 		FeatureSet fs = new FeatureSet(altplans, refplans, con, rpg, init, curstate, critical, desirable, lmo);
 		fs.evaluateFeatureValuesForCurrentObservation();
 		return fs.getFeaturevals();
 	}
-	
+
 	public static void writeFeatureValsToFile(String outputfilename, ArrayList<double[]> featurevalsforfiles, Observation obs) {
 		ArrayList<String> data = new ArrayList<String>();
 		int index = 0;
@@ -183,7 +183,7 @@ public class RunTopK {
 		CSVGenerator results = new CSVGenerator(outputfilename, data, 2);
 		results.writeOutput();
 	}
-	
+
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, 
 			String a_out, String criticalfile, String a_init, String obs, 
 			String ds_csv, String lm_out, int delay, boolean full) {
@@ -201,25 +201,27 @@ public class RunTopK {
 			}
 			obFileLimit++;
 			String name[] = file.split("/");
-			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
-			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
-			ArrayList<String> curstate = new ArrayList<String>();
-			curstate.addAll(decider.getInitialState().getState());
-			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
-				String outpath = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.topkdir+name[name.length-1]+"_"+j;
-				ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
-				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
-				curstate.removeAll(dels);
-				curstate.addAll(adds); //effect of action is visible in the domain
-				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-				System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
-				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), curstate, decider.getInitialState().getState(), 
-						decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
-				featurevalsforfile.add(featureval);
-			} //collect the feature set and write result to csv file for this observation file when this loop finishes
-			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-			break; //remove after debug
+			if(name[name.length-1].equals("2")) {//remove after debug
+				Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
+				ArrayList<double[]> featurevalsforfile = new ArrayList<>();
+				ArrayList<String> curstate = new ArrayList<String>();
+				curstate.addAll(decider.getInitialState().getState());
+				System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
+				for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
+					String outpath = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.topkdir+name[name.length-1]+"_"+j;
+					ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
+					ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
+					curstate.removeAll(dels);
+					curstate.addAll(adds); //effect of action is visible in the domain
+					HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
+					HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
+					System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
+					double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
+							curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
+					featurevalsforfile.add(featureval);
+				} //collect the feature set and write result to csv file for this observation file when this loop finishes
+				writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
+			}
 		}
 	}
 
