@@ -2,6 +2,7 @@ package metrics;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -116,7 +117,7 @@ public class FeatureSet {
 		int index = 0;
 		for (SASPlan sp : alts) {
 			GeneralizedEditDistance ged = new GeneralizedEditDistance(ref, sp.getActions());
-			dists[index++] = ged.getGeneralizedEditSimilarity();
+			dists[index++] = ged.getGeneralizedEditSimilarity(1);
 		}
 		Arrays.sort(dists);
 		return dists[0];
@@ -147,7 +148,7 @@ public class FeatureSet {
 				intoks.add(tok);
 			}
 			GeneralizedEditDistance ged = new GeneralizedEditDistance(reftoks, intoks);
-			dists[index++] = ged.getGeneralizedEditSimilarity();
+			dists[index++] = ged.getGeneralizedEditSimilarity(2);
 		}
 		Arrays.sort(dists);
 		return dists[0];
@@ -320,10 +321,10 @@ public class FeatureSet {
 		double d_stateseqdistance = getMedianStateSequenceDistanceFromAltPlans(desirablestate); //ok
 		double r_minDistToCritical = getMinDistanceToState(criticalstate); //ok
 		double d_minDistToDesirable = getMinDistanceToState(desirablestate); //ok
-		double r_minEditDistanceAc = getActionGED(criticalstate);
-		double d_minEditDistanceAc = getActionGED(desirablestate);
-		double r_minEditDistanceSt = getStateGED(criticalstate);
-		double d_minEditDistanceSt = getStateGED(desirablestate);
+		double r_minEditDistanceAc = getActionGED(criticalstate); //on paper definition ok. could improve
+		double d_minEditDistanceAc = getActionGED(desirablestate);//on paper definition ok.
+		double r_minEditDistanceSt = getStateGED(criticalstate); //ok
+		double d_minEditDistanceSt = getStateGED(desirablestate);//ok
 		double r_achievedLandmarks = computeAchievedLandmarks(criticalstate,currentstate);
 		double d_achievedLandmarks = computeAchievedLandmarks(desirablestate,currentstate);
 		featurevals[0] = r_actionsetdistance;
@@ -340,6 +341,12 @@ public class FeatureSet {
 		featurevals[11] = d_minEditDistanceSt;
 		featurevals[12] = r_achievedLandmarks;
 		featurevals[13] = d_achievedLandmarks;
+		DecimalFormat df = new DecimalFormat("#.##");
+		int index = 0;
+		for (double d : featurevals) {
+			String formatted = df.format(d);
+			featurevals[index++] = Double.valueOf(formatted);
+		}
 		System.out.println(Arrays.toString(featurevals));
 	}
 	
