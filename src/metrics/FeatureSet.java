@@ -303,8 +303,7 @@ public class FeatureSet {
 			if(!levels.isEmpty()) {
 				lmLevels.put(key, levels.size()+1);
 			}else {
-				lmLevels.put(key, -1);
-
+				lmLevels.put(key, 1);
 			}
 		}
 		return lmLevels;

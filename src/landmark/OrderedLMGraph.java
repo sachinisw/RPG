@@ -61,7 +61,7 @@ public class OrderedLMGraph {
 			while(itr.hasNext()){
 				OrderedLMNode key = itr.next();
 				if(key.equals(lmn)) {
-					last.add(lmn);
+					last.add(key);
 				}
 			}
 		}
@@ -113,6 +113,16 @@ public class OrderedLMGraph {
 			}
 			explored.add(cur);
 		}
+		//update all objects in adj with the treelevel values in explored[]. explored has correct values. adj is not updated if we skip this step
+		for (OrderedLMNode orderedLMNode : explored) {
+			Iterator<OrderedLMNode> itr = adj.keySet().iterator(); 
+			while(itr.hasNext()) {
+				OrderedLMNode lmn = itr.next();
+				if(lmn.equals(orderedLMNode)) {
+					lmn.setTreeLevel(orderedLMNode.getTreeLevel());
+				}
+			}
+		}
 	}
 
 	public HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> getLevelsPerSubgoal() {
@@ -139,17 +149,6 @@ public class OrderedLMGraph {
 			}
 			subgoallevels.put(r,levels); //goal1 == [level 1, level2...]
 		}
-//		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
-//		while(itr.hasNext()) {
-//			OrderedLMNode key = itr.next();
-//			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
-//			System.out.println(key);
-//			for (ArrayList<OrderedLMNode> level : levels) {
-//				System.out.println(level);
-//				System.out.println();
-//			}
-//			System.out.println("-------------------------------------------");
-//		}
 		return subgoallevels;
 	}
 

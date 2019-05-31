@@ -227,7 +227,8 @@ public class RelaxedPlanningGraphGenerator {
 		currentstate.add("(ON D B)");
 
 				rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, goal, init, lmoutput);
-				rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
+				double x = rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
+				System.out.println(x);
 	}
 
 	//TODO: Karpaz,domshlak 2009 (cost optimal planning with landmarks)
@@ -350,12 +351,10 @@ public class RelaxedPlanningGraphGenerator {
 			if(!levels.isEmpty()) {
 				lmLevels.put(key, levels.size()+1);
 			}else {
-				lmLevels.put(key, -1);
+				lmLevels.put(key, 1);
 
 			}
 		}
-		System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$");
-		System.out.println(lmLevels);
 		return lmLevels;
 	}
 
