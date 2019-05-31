@@ -144,8 +144,8 @@ public class RunVd {
 				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, runningstate, ulandmarkfile);
 				HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(landmarkfile);
 				HashMap<String,TreeSet<String>> u_landmarks = readLandmarksGNOrders(ulandmarkfile);
-				OrderedLMGraph aGraph = new OrderedLMGraph();
-				OrderedLMGraph uGraph = new OrderedLMGraph();
+				OrderedLMGraph aGraph = new OrderedLMGraph(critical);
+				OrderedLMGraph uGraph = new OrderedLMGraph(desirable);
 				aGraph.produceOrders(a_landmarks, critical);
 				uGraph.produceOrders(u_landmarks, desirable);
 				Iterator<String> itr = obfiles.iterator();

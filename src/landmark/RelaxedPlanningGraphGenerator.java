@@ -147,63 +147,87 @@ public class RelaxedPlanningGraphGenerator {
 
 	public static void main(String[] args) {
 		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
-		String inputfilerpg = "/home/sachini/domains/BLOCKS/scenarios/TEST0/inst1/scenarios/0/outs/attacker/rpg-problem_a";
-		String inputfilecon = "/home/sachini/domains/BLOCKS/scenarios/TEST0/inst1/scenarios/0/outs/attacker/connectivity-problem_a";
-		String lmoutput = "/home/sachini/domains/BLOCKS/scenarios/TEST0/inst1/scenarios/0/outs/attacker/verifiedlm.txt";
+		String inputfilerpg = "/home/sachini/domains/BLOCKS/scenarios/test1/rpg";
+		String inputfilecon = "/home/sachini/domains/BLOCKS/scenarios/test1/con";
+		String lmoutput = "/home/sachini/domains/BLOCKS/scenarios/test1/verifiedlm.txt";
 		ArrayList<String> goal = new ArrayList<String>();
 		ArrayList<String> init = new ArrayList<String>();
 		ArrayList<String> currentstate = new ArrayList<String>();
 
-		goal.add("(ON P A)");
-		goal.add("(ON A C)");//attacker PAC, user PAL
-
-		init.add("(HANDEMPTY)");
-		init.add("(CLEAR P)");
-		init.add("(CLEAR A)");
-		init.add("(CLEAR L)");
-		init.add("(CLEAR C)");
-		init.add("(ONTABLE A)");
-		init.add("(ONTABLE P)");
-		init.add("(ONTABLE L)");
-		init.add("(ONTABLE C)");
-
-//		currentstate.add("(HANDEMPTY)");
-//		currentstate.add("(CLEAR P)");
-//		currentstate.add("(CLEAR L)");
-//		currentstate.add("(CLEAR A)");
-//		currentstate.add("(ON A C)");
-//		currentstate.add("(ONTABLE P)");
-//		currentstate.add("(ONTABLE L)");
-//		currentstate.add("(ONTABLE C)");
-
-		currentstate.add("(HOLDING A)");
-		currentstate.add("(CLEAR P)");
-		currentstate.add("(CLEAR L)");
-		currentstate.add("(CLEAR C)");
-		currentstate.add("(ONTABLE P)");
-		currentstate.add("(ONTABLE L)");
-		currentstate.add("(ONTABLE C)");
-		
-		//		critical.add("(ON C A)"); //prob 30
-		//		critical.add("(ON B D)");
+		goal.add("(CLEAR R)");
+		goal.add("(ON E D)");//attacker PAC, user PAL
+		goal.add("(ON R E)");
+		goal.add("(ONTABLE D)");
 		//		init.add("(HANDEMPTY)");
+		//		init.add("(CLEAR P)");
 		//		init.add("(CLEAR A)");
+		//		init.add("(CLEAR L)");
+		//		init.add("(CLEAR C)");
 		//		init.add("(ONTABLE A)");
-		//		init.add("(CLEAR B)");
-		//		init.add("(ONTABLE B)");
+		//		init.add("(ONTABLE P)");
+		//		init.add("(ONTABLE L)");
 		//		init.add("(ONTABLE C)");
-		//		init.add("(ON D C)");
-		//		init.add("(CLEAR D)");
 
-		//		critical.add("(AT D)"); //prob 31. Give these with paranthesis
-		//		init.add("(AT A)");
-		//		init.add("(ADJ A B)");
-		//		init.add("(ADJ A E)");
-		//		init.add("(ADJ B C)");
-		//		init.add("(ADJ C D)");
-		//		init.add("(ADJ A D)");
-		rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, goal, init, lmoutput);
-		rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
+		init.add("(CLEAR S)");
+		init.add("(CLEAR R)");
+		init.add("(CLEAR D)");
+		init.add("(CLEAR E)");
+		init.add("(HANDEMPTY)");
+		init.add("(ONTABLE S)");
+		init.add("(ONTABLE R)");
+		init.add("(ONTABLE B)");
+		init.add("(ONTABLE A)");
+		init.add("(ON D B)");
+		init.add("(ON E A)");
+				//		currentstate.add("(HANDEMPTY)");
+				//		currentstate.add("(CLEAR P)");
+				//		currentstate.add("(CLEAR L)");
+				//		currentstate.add("(CLEAR A)");
+				//		currentstate.add("(ON A C)");
+				//		currentstate.add("(ONTABLE P)");
+				//		currentstate.add("(ONTABLE L)");
+				//		currentstate.add("(ONTABLE C)");
+
+//				currentstate.add("(HOLDING A)");
+//				currentstate.add("(CLEAR P)");
+//				currentstate.add("(CLEAR L)");
+//				currentstate.add("(CLEAR C)");
+//				currentstate.add("(ONTABLE P)");
+//				currentstate.add("(ONTABLE L)");
+//				currentstate.add("(ONTABLE C)");
+
+				//		critical.add("(ON C A)"); //prob 30
+				//		critical.add("(ON B D)");
+				//		init.add("(HANDEMPTY)");
+				//		init.add("(CLEAR A)");
+				//		init.add("(ONTABLE A)");
+				//		init.add("(CLEAR B)");
+				//		init.add("(ONTABLE B)");
+				//		init.add("(ONTABLE C)");
+				//		init.add("(ON D C)");
+				//		init.add("(CLEAR D)");
+
+				//		critical.add("(AT D)"); //prob 31. Give these with paranthesis
+				//		init.add("(AT A)");
+				//		init.add("(ADJ A B)");
+				//		init.add("(ADJ A E)");
+				//		init.add("(ADJ B C)");
+				//		init.add("(ADJ C D)");
+				//		init.add("(ADJ A D)");
+		currentstate.add("(CLEAR S)");
+		currentstate.add("(CLEAR R)");
+		currentstate.add("(CLEAR E)");
+		currentstate.add("(CLEAR A)");
+		currentstate.add("(HANDEMPTY)");
+		currentstate.add("(ONTABLE S)");
+		currentstate.add("(ONTABLE R)");
+		currentstate.add("(ONTABLE B)");
+		currentstate.add("(ONTABLE A)");
+		currentstate.add("(ON E D)");
+		currentstate.add("(ON D B)");
+
+				rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, goal, init, lmoutput);
+				rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
 	}
 
 	//TODO: Karpaz,domshlak 2009 (cost optimal planning with landmarks)
@@ -212,7 +236,7 @@ public class RelaxedPlanningGraphGenerator {
 	public double computeAchievedLandmarks(ArrayList<String> goal, String lmout, ArrayList<String> currentstate) { 
 		HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(lmout);
 		HashMap<OrderedLMNode, Boolean> active = new HashMap<OrderedLMNode, Boolean>();
-		OrderedLMGraph aGraph = new OrderedLMGraph();
+		OrderedLMGraph aGraph = new OrderedLMGraph(goal);
 		aGraph.produceOrders(a_landmarks, goal);
 		//when counting landmarks, predicates that need to be together should be counted together. if not that landmark is not achieved
 		//if i am seeing a higher-order predicate, also assume all predicates below it has been achieved. (ordered landmarks principle)
@@ -253,12 +277,12 @@ public class RelaxedPlanningGraphGenerator {
 		}//mark everything in allTrue as active
 		aGraph.assignSiblingLevels();
 		HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels = aGraph.getLevelsPerSubgoal();
-//		System.out.println("active======="+active);
+		//		System.out.println("active======="+active);
 		HashMap<OrderedLMNode, Integer> lmCompleteLevels = getMaxCompleteLevel(subgoallevels,active);
-		HashMap<OrderedLMNode, Integer> subGoalLevels = getSubgoalLevels(subgoallevels);
+		HashMap<OrderedLMNode, Integer> subGoalLevels = getSubgoalLevels(subgoallevels);//this is wrong
 		return computeLandmarkCompletionHeuristic(lmCompleteLevels, subGoalLevels);
 	}
-	
+
 	public double computeLandmarkCompletionHeuristic(HashMap<OrderedLMNode, Integer> lmcompletelevels, HashMap<OrderedLMNode, Integer> subgoallevels) {
 		double numofsubgoals = subgoallevels.size();
 		double sum = 0.0;
@@ -316,7 +340,7 @@ public class RelaxedPlanningGraphGenerator {
 		System.out.println(lmCompletedLevel);
 		return lmCompletedLevel;
 	}
-	
+
 	public HashMap<OrderedLMNode, Integer> getSubgoalLevels(HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels) {
 		HashMap<OrderedLMNode, Integer> lmLevels = new HashMap<>();
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
@@ -334,7 +358,7 @@ public class RelaxedPlanningGraphGenerator {
 		System.out.println(lmLevels);
 		return lmLevels;
 	}
-	
+
 	public boolean nodeContainsPredicate(ArrayList<String> pred, OrderedLMNode node) {
 		String ss = "";
 		for (String s : node.getNodecontent()) {

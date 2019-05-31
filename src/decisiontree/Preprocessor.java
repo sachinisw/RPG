@@ -19,13 +19,21 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 public class Preprocessor {
 	private static final Logger LOGGER = Logger.getLogger(Preprocessor.class.getName());
 
-	public ArrayList<String> getDataFiles(String filedir){		
+	public ArrayList<String> getDataFiles(String filedir, int algorithm){		
 		ArrayList<String> dataFilePaths = new ArrayList<String>(); 
 		try {
 			File dir = new File(filedir);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				dataFilePaths.add(fileItem.getCanonicalPath());
+				if(algorithm==0) { //state space enumeration. only take files not having _tk tag 
+					if(!fileItem.getCanonicalPath().contains("_tk")) {
+						dataFilePaths.add(fileItem.getCanonicalPath());
+					}
+				}else if(algorithm==1) { //topk planner option
+					if(fileItem.getCanonicalPath().contains("_tk")) {
+						dataFilePaths.add(fileItem.getCanonicalPath());
+					}
+				}
 			}
 		}
 		catch (IOException e) {
@@ -110,6 +118,22 @@ public class Preprocessor {
 		}
 	}
 
+	public void writeToFileTK(String outpath, ArrayList<String> data){
+		PrintWriter writer = null;
+		try {
+			writer = new PrintWriter(outpath, "UTF-8");
+			String header = "ob,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,D7,label"+"\n";
+			writer.write(header);
+			for (int i=0; i<data.size(); i++) {		//write values
+				writer.write(data.get(i)+"\n");
+			}
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} finally{
+			writer.close();
+		}
+	}
+
 	public void writeToFileFull(String outpath, ArrayList<DataFile> binned, double[] minmax){
 		PrintWriter writer = null;
 		try {
@@ -147,8 +171,8 @@ public class Preprocessor {
 		return bins;
 	}
 
-	public ArrayList<DataFile> preprocessTrainingData(String datadir, String out, String outFull) {
-		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir));
+	public ArrayList<DataFile> preprocessTrainingData(String datadir, String out, String outFull, int algorithm) {
+		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir, algorithm));
 		double [] minmax = findObjectiveFunctionValueMinMax(dataFile);
 		ArrayList<DataFile> binned = preprocess(dataFile);
 		for (DataFile outfile : binned) {
@@ -156,6 +180,16 @@ public class Preprocessor {
 		}
 		writeToFileFull(outFull, binned, minmax);//put all in one file.
 		return binned;
+	}
+
+	public void preprocessTopKTrainingData(String datadir, String outFull, int algorithm) {
+		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir, algorithm));
+		ArrayList<String> allobs = new ArrayList<String>();
+		for (DataFile df : dataFile) {
+			ArrayList<String> lines = df.getDataline();
+			allobs.addAll(lines);
+		}
+		writeToFileTK(outFull, allobs);
 	}
 
 	//aggeregate data with only ob R D dCri dDes remLM hasLM Label
@@ -200,8 +234,52 @@ public class Preprocessor {
 		}
 	}
 
-	public ArrayList<DataFile> preprocessTestingData(String datadir, String out, String outFull, int testtype) {
-		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir));
+	//callect all tk_full.csv from 20 cases and put it in /home/sachini/domains/BLOCKS/scenarios/0/train/cases/data directory
+	public void aggeregateTopKData(String inroot, String aggfile, int cases, String outpath) {
+		ArrayList<String> lines = new ArrayList<>();
+		String header = "";
+		PrintWriter writer = null;
+		for(int i=0; i<cases; i++) {
+			String infile = inroot+i+aggfile;
+			try {
+				Scanner scanner = new Scanner (new File(infile));
+				if(i==0) {
+					String s[] = scanner.nextLine().split(",");
+					for (String string : s) {
+						header += string + ",";
+					}
+				}else {
+					scanner.nextLine();//lose the header
+				}
+				while(scanner.hasNextLine()){
+					String t [] = scanner.nextLine().split(",");
+					String line = "";
+					for (String string : t) {
+						line += string + ",";
+					}
+					lines.add(line.substring(0, line.length()-1));
+				}
+				scanner.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			writer = new PrintWriter(outpath, "UTF-8");
+			writer.write(header.substring(0,header.length()-1)+"\n");
+			for (String l : lines) {
+				writer.write(l);
+				writer.write("\n");
+			}
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} finally{
+			writer.close();
+		}
+	}
+
+	public ArrayList<DataFile> preprocessTestingData(String datadir, String out, String outFull, int testtype, int algorithm) {
+		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir, algorithm));
 		ArrayList<DataFile> cleaned = new ArrayList<DataFile>();
 		ArrayList<DataFile> binned = null;
 		if(testtype==1) {//full trace
@@ -235,6 +313,17 @@ public class Preprocessor {
 		return binned;
 	}
 
+	public ArrayList<DataFile> preprocessTopKTestingData(String datadir, String outFull, int algorithm) {
+		ArrayList<DataFile> dataFile = readDataFiles(getDataFiles(datadir, algorithm));
+		ArrayList<String> allobs = new ArrayList<String>();
+		for (DataFile df : dataFile) {
+			ArrayList<String> lines = df.getDataline();
+			allobs.addAll(lines);
+		}
+		writeToFileTK(outFull, allobs);
+		return dataFile;
+	}
+
 	//generate instance specific csv with ob-c-r-d-fo-dc-dd-lm-haslm-label only.
 	//train the model WITHOUT bin columns. bin columns change from problem to problem. cant use that kind of a model to predict unseen data
 	//README: change indices in values variable when new feature is added.
@@ -262,38 +351,72 @@ public class Preprocessor {
 		}
 	}
 
+	public static void writeInstanceSpecificTopKOutput(ArrayList<ArrayList<DataFile>> df, String out) {
+		PrintWriter writer = null;
+		try {
+			writer = new PrintWriter(out, "UTF-8");
+			String header = "ob,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,D7,Label" +"\n";
+			writer.write(header);
+			for (ArrayList<DataFile> curinst : df) {
+				for (DataFile file : curinst) {
+					for (int i=0; i<file.getDataline().size(); i++) {		//write values
+						writer.write(file.getDataline().get(i)+"\n");
+					}
+				}
+			}
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} finally{
+			writer.close();
+			LOGGER.log(Level.INFO, "File: " + out  + " CSV written");
+		}
+	}
+
 	//Creates input.csv for the decision tree
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
-		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
+		int mode = 0; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
 		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int alg  = 1; //0-full state space, 1-topk planner
 		int instances  = 1;
 		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();
 		if(mode==-1) {
-			LOGGER.log(Level.CONFIG, "Preprocessing for DEBUG mode. DOMAIN======"+ domain);
+			LOGGER.log(Level.INFO, "Preprocessing for DEBUG mode. DOMAIN======"+ domain);
 			String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
 			String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
 			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
-			pre.preprocessTrainingData(inputfilepath, out, outFull);
+			pre.preprocessTrainingData(inputfilepath, out, outFull, alg);
 			String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
 			String aggfile = "/data/inputdecisiontree/full.csv";
 			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/aggregate.csv";
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
 			for(int currentCase=0; currentCase<cases; currentCase++) {
-				LOGGER.log(Level.CONFIG, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
-				LOGGER.log(Level.CONFIG, "CASE = "+ currentCase);
+				LOGGER.log(Level.INFO, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
+				LOGGER.log(Level.INFO, "CASE = "+ currentCase);
 				String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
 				String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+				String outTKFullforcase = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/tk_full.csv";
 				String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
-				pre.preprocessTrainingData(inputfilepath, out, outFull);
+				if(alg==0) { //state space enumeration
+					pre.preprocessTrainingData(inputfilepath, out, outFull, alg);
+				}else if(alg==1) { //top k planner
+					pre.preprocessTopKTrainingData(inputfilepath, outTKFullforcase, alg);
+				}
 			}
-			String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
-			String aggfile = "/data/inputdecisiontree/full.csv";
-			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
-			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
+			if(alg==0) {
+				String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+				String aggfile = "/data/inputdecisiontree/full.csv";
+				String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
+				pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
+			}else if(alg==1) {
+				String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+				String aggfile = "/data/inputdecisiontree/tk_full.csv";
+				String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/tk_aggregate.csv";
+				pre.aggeregateTopKData(aggroot, aggfile, cases, outpath);
+			}
 		}else if (mode==1){
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode DOMAIN======"+ domain);
 			for (int instance = 1; instance <= instances; instance++) {
@@ -301,25 +424,37 @@ public class Preprocessor {
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
 				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
 				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";
+				String instout_fulltk=prefix+String.valueOf(instance)+"/data/tk_instfull.csv";
 				ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
+				ArrayList<ArrayList<DataFile>> inst_tkfull = new ArrayList<>();
 				ArrayList<ArrayList<DataFile>> inst_lm50 = new ArrayList<>();
 				ArrayList<ArrayList<DataFile>> inst_lm75 = new ArrayList<>();
 				for(int instcase = 0; instcase<casePerInstance; instcase++) {
 					String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
 					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
 					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
+					String outFulltkforcase = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/tk_full.csv";
 					String outFull_lm50 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_50lm.csv";
 					String outFull_lm75 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_75lm.csv";
-					ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1);
-					ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2);
-					ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3);
-					inst_full.add(df);
-					inst_lm50.add(dlm50);
-					inst_lm75.add(dlm75);
+					if(alg==0) {
+						ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1, alg);
+						ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2, alg);
+						ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3, alg);
+						inst_full.add(df);
+						inst_lm50.add(dlm50);
+						inst_lm75.add(dlm75);
+					}else if(alg==1) {
+						ArrayList<DataFile> tk = pre.preprocessTopKTestingData(inputfilepath, outFulltkforcase, alg); //collect all observation file outputs and produce 1 csv for the scenario 0-20
+						inst_tkfull.add(tk); //collect the _tk.csv result files for this instance
+					}
 				}
-				writeInstanceSpecificOutput(inst_full, instout_full);
-				writeInstanceSpecificOutput(inst_lm50, instout_lm50);
-				writeInstanceSpecificOutput(inst_lm75, instout_lm75);
+				if(alg==0) {
+					writeInstanceSpecificOutput(inst_full, instout_full);
+					writeInstanceSpecificOutput(inst_lm50, instout_lm50);
+					writeInstanceSpecificOutput(inst_lm75, instout_lm75);
+				}else if(alg==1) {
+					writeInstanceSpecificTopKOutput(inst_tkfull, instout_fulltk); //write the collected _tk_csv files for all 3 instances to one file in insti/data directory
+				}
 				LOGGER.log(Level.INFO, "Instance: " + instance  + " complete");
 			}
 		}

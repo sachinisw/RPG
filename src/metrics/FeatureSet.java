@@ -194,7 +194,7 @@ public class FeatureSet {
 	public double computeAchievedLandmarks(ArrayList<String> goal, ArrayList<String> currentstate) {  //Meneguzzi 2017 landmark based goal completion heuristic
 		HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(lmout);
 		HashMap<OrderedLMNode, Boolean> active = new HashMap<OrderedLMNode, Boolean>();
-		OrderedLMGraph aGraph = new OrderedLMGraph();
+		OrderedLMGraph aGraph = new OrderedLMGraph(goal);
 		aGraph.produceOrders(a_landmarks, goal);
 		//when counting landmarks, predicates that need to be together should be counted together. if not that landmark is not achieved
 		//if i am seeing a higher-order predicate, also assume all predicates below it has been achieved. (ordered landmarks principle)
@@ -246,8 +246,8 @@ public class FeatureSet {
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
 		while(itr.hasNext()) {
 			OrderedLMNode subgoal = itr.next();
-			double complete = lmcompletelevels.get(subgoal);
-			double levels = subgoallevels.get(subgoal);
+			double levels = subgoallevels.get(subgoal); //lmcompletelevels gives me the ID of the current complete level
+			double complete = lmcompletelevels.get(subgoal) - levels;
 			sum += complete/levels;
 		}
 		return sum/numofsubgoals;
@@ -283,7 +283,7 @@ public class FeatureSet {
 						if(active.get(node)) {
 							++curlevelcompletenodes;
 						}
-					}
+					}//TODO: CHECK HERE AGAIN. POSSIBLE BUG
 					if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
 						completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
 					}//half complete. if so, check if upper level is active. if yes, the upper level becomes the complete level
@@ -327,27 +327,27 @@ public class FeatureSet {
 		double d_minEditDistanceSt = getStateGED(desirablestate);//ok
 		double r_achievedLandmarks = computeAchievedLandmarks(criticalstate,currentstate);
 		double d_achievedLandmarks = computeAchievedLandmarks(desirablestate,currentstate);
-		featurevals[0] = r_actionsetdistance;
-		featurevals[1] = d_actionsetdistance;
-		featurevals[2] = r_causallinkdistance;
-		featurevals[3] = d_causallinkdistance;
-		featurevals[4] = r_stateseqdistance;
-		featurevals[5] = d_stateseqdistance;
-		featurevals[6] = r_minDistToCritical;
-		featurevals[7] = d_minDistToDesirable;
-		featurevals[8] = r_minEditDistanceAc;
-		featurevals[9] = d_minEditDistanceAc;
-		featurevals[10] = r_minEditDistanceSt;
-		featurevals[11] = d_minEditDistanceSt;
-		featurevals[12] = r_achievedLandmarks;
-		featurevals[13] = d_achievedLandmarks;
+		featurevals[0] = r_actionsetdistance; //R1
+		featurevals[1] = d_actionsetdistance; //D1 *BLOCK
+		featurevals[2] = r_causallinkdistance; //R2
+		featurevals[3] = d_causallinkdistance; //D2
+		featurevals[4] = r_stateseqdistance; //R3
+		featurevals[5] = d_stateseqdistance; //D3
+		featurevals[6] = r_minDistToCritical; //R4
+		featurevals[7] = d_minDistToDesirable; //D4
+		featurevals[8] = r_minEditDistanceAc; //R5
+		featurevals[9] = d_minEditDistanceAc; //D5
+		featurevals[10] = r_minEditDistanceSt; //R6 *BLOCK
+		featurevals[11] = d_minEditDistanceSt; //D6 *BLOCK
+		featurevals[12] = r_achievedLandmarks;//R7
+		featurevals[13] = d_achievedLandmarks; //D7
 		DecimalFormat df = new DecimalFormat("#.##");
 		int index = 0;
 		for (double d : featurevals) {
 			String formatted = df.format(d);
 			featurevals[index++] = Double.valueOf(formatted);
 		}
-		System.out.println(Arrays.toString(featurevals));
+//		System.out.println(Arrays.toString(featurevals));
 	}
 	
 	public HashMap<ArrayList<String>, ArrayList<SASPlan>> getAlternativePlanSet() {

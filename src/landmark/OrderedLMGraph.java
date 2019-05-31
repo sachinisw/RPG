@@ -10,9 +10,11 @@ import java.util.TreeSet;
 public class OrderedLMGraph {
 
 	private HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj; //child --> {parent1, parent2...}
-
-	public OrderedLMGraph() {
+	private ArrayList<String> goal;
+	
+	public OrderedLMGraph(ArrayList<String> g) {
 		adj = new HashMap<OrderedLMNode, TreeSet<OrderedLMNode>>();
+		goal = g;
 	}
 
 	public void produceOrders(HashMap<String,TreeSet<String>> lms, ArrayList<String> goal){
@@ -53,11 +55,14 @@ public class OrderedLMGraph {
 
 	public ArrayList<OrderedLMNode> findRoots(){
 		ArrayList<OrderedLMNode> last = new ArrayList<OrderedLMNode>();
-		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
-		while(itr.hasNext()){
-			OrderedLMNode key = itr.next();
-			if(adj.get(key).isEmpty()) {
-				last.add(key);
+		for (String g : goal) {
+			OrderedLMNode lmn = new OrderedLMNode(g);
+			Iterator<OrderedLMNode> itr = adj.keySet().iterator();
+			while(itr.hasNext()){
+				OrderedLMNode key = itr.next();
+				if(key.equals(lmn)) {
+					last.add(lmn);
+				}
 			}
 		}
 		return last;
@@ -167,5 +172,13 @@ public class OrderedLMGraph {
 
 	public void setAdj(HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj) {
 		this.adj = adj;
+	}
+
+	public ArrayList<String> getGoal() {
+		return goal;
+	}
+
+	public void setGoal(ArrayList<String> goal) {
+		this.goal = goal;
 	}
 }

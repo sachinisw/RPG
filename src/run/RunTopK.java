@@ -26,6 +26,7 @@ import rg.Problem;
 
 public class RunTopK {
 	private static final Logger LOGGER = Logger.getLogger(RunML.class.getName());
+	private static final int K = 50;
 
 	public static TreeSet<String> getObservationFiles(String obsfiles){
 		TreeSet<String> obFiles = new TreeSet<String>();
@@ -97,16 +98,16 @@ public class RunTopK {
 		probA.setInit(currentstate);
 		probU.writeProblemFile(ouputpath+"_u.pddl"); //don't have to write the domain 
 		probA.writeProblemFile(ouputpath+"_a.pddl");
-		TopKPlanner tka = new TopKPlanner(domainfile, probA.getProblemPath(), 3);
+		TopKPlanner tka = new TopKPlanner(domainfile, probA.getProblemPath(), K);
 		ArrayList<SASPlan> atplans = tka.getPlans();
-		TopKPlanner tku = new TopKPlanner(domainfile, probU.getProblemPath(), 3);
+		TopKPlanner tku = new TopKPlanner(domainfile, probU.getProblemPath(), K);
 		ArrayList<SASPlan> uplans = tku.getPlans();
 		alts.put(decider.critical.getCriticalStatePredicates(),atplans);
 		alts.put(decider.desirable.getDesirableStatePredicates(),uplans);
 		if(atplans.isEmpty()|| uplans.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "Possible attacker/user topK plans generation failed.");
 		}
-		System.out.println(obs+"---------------------");
+		//		System.out.println(obs+"---------------------");
 		int index = 0;
 		for (String o : obs) {//add the observation prefix to topK plans
 			for (SASPlan sasPlan : uplans) {
@@ -201,34 +202,40 @@ public class RunTopK {
 			}
 			obFileLimit++;
 			String name[] = file.split("/");
-			if(name[name.length-1].equals("2")) {//remove after debug
-				Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
-				ArrayList<double[]> featurevalsforfile = new ArrayList<>();
-				ArrayList<String> curstate = new ArrayList<String>();
-				curstate.addAll(decider.getInitialState().getState());
-				System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
-				for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
-					String outpath = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.topkdir+name[name.length-1]+"_"+j;
-					ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
-					ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
-					curstate.removeAll(dels);
-					curstate.addAll(adds); //effect of action is visible in the domain
-					HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-					HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-					System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
-					double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
-							curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
-					featurevalsforfile.add(featureval);
-				} //collect the feature set and write result to csv file for this observation file when this loop finishes
-				writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-			}
+			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
+			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
+			ArrayList<String> curstate = new ArrayList<String>();
+			curstate.addAll(decider.getInitialState().getState());
+			System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
+			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
+				String outpath = "";
+				if(mode==TrainConfigsML.runmode) {
+					outpath = TrainConfigsML.root+name[name.length-3]+TrainConfigsML.topkdir+name[name.length-1]+"_"+j;
+				}else if(mode==TestConfigsML.runmode) {
+					outpath = TestConfigsML.prefix+TestConfigsML.instancedir+name[name.length-5].substring(4)+TestConfigsML.instscenario+
+							name[name.length-1]+TestConfigsML.topkdir+name[name.length-1]+"_"+j;
+				}
+				ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
+				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
+				curstate.removeAll(dels);
+				curstate.addAll(adds); //effect of action is visible in the domain
+				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
+				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
+				System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
+				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
+						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
+				featurevalsforfile.add(featureval);
+			} //collect the feature set and write result to csv file for this observation file when this loop finishes
+			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
+			break;
 		}
 	}
 
-	public static void runAsTraining(int mode) {
+	public static void runTopKAsTraining(int mode) {
 		LOGGER.log(Level.INFO, "Run mode: TRAINING with "+ TrainConfigsML.cases + " cases");
 		String domain = TrainConfigsML.domain;
 		for (int casenum=0; casenum<TrainConfigsML.cases; casenum++) {
+			LOGGER.log(Level.INFO, "Current case: "+ casenum);
 			String domainfile = TrainConfigsML.root+casenum+TrainConfigsML.domainFile;
 			String desirablefile = TrainConfigsML.root+casenum+TrainConfigsML.dstates;
 			String criticalfile = TrainConfigsML.root+casenum+TrainConfigsML.cstates;
@@ -240,11 +247,12 @@ public class RunTopK {
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
 			run(mode, domain, domainfile, desirablefile, a_prob, 
 					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, true);
+			break;
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
-	public static void runAsDebug(int mode) {
+	public static void runTopKAsDebug(int mode) {
 		LOGGER.log(Level.INFO, "Run mode: DEBUG for scenario "+ DebugConfigsML.scenario);
 		String domain = DebugConfigsML.domain;
 		String domainfile = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.domainFile;
@@ -260,11 +268,12 @@ public class RunTopK {
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
-	public static void runAsTesting(int mode, int start) {
+	public static void runTopKAsTesting(int mode, int start) {
 		String domain = TestConfigsML.domain;
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
 		for (int instance=start; instance<=TestConfigsML.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			for (int x=0; x<TestConfigsML.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				LOGGER.log(Level.INFO, "Current case: "+ x);
 				String domainfile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.domainFile;
 				String desirablefile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.desirableStateFile;
 				String criticalfile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.criticalStateFile;
@@ -273,31 +282,31 @@ public class RunTopK {
 				String a_init = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_initFile;
 				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
 				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
-				String lm_out_short50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort50;
-				String lm_out_short75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort75;
+				//				String lm_out_short50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort50;
+				//				String lm_out_short75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort75;
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
-				String obslm50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles50;
-				String obslm75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles75; 
+				//				String obslm50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles50;
+				//				String obslm75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles75;
 				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
-				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obslm50, ds_csv, lm_out_short50, 50, false);
-				LOGGER.log(Level.INFO, "Finished 50% reduced case: "+ x +" for test instance:" +instance );
-				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obslm75, ds_csv, lm_out_short75, 75, false);
-				LOGGER.log(Level.INFO, "Finished 75% reduced case: "+ x +" for test instance:" +instance );
+				//				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obslm50, ds_csv, lm_out_short50, 50, false);
+				//				LOGGER.log(Level.INFO, "Finished 50% reduced case: "+ x +" for test instance:" +instance );
+				//				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obslm75, ds_csv, lm_out_short75, 75, false);
+				//				LOGGER.log(Level.INFO, "Finished 75% reduced case: "+ x +" for test instance:" +instance );
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
 		}
 	}
 
 	public static void main(String[] args) { 
-		int mode = -1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigsML.runmode){
-			runAsDebug(mode);
+			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {
-			runAsTraining(mode);
+			runTopKAsTraining(mode);
 		}else if(mode==TestConfigsML.runmode){
 			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
-			runAsTesting(mode,start);
+			runTopKAsTesting(mode,start); //TODO: only running the full trace for now. add the observation limited trace if needed later
 		}
 	}
 

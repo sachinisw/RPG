@@ -37,24 +37,26 @@ public class RelaxedPlanningGraph {
 
 	//returns true if graph contains all goal predicates
 	public boolean containsGoal(ArrayList<String> goalpredicates){
-		int [] check = new int [goalpredicates.size()];
+		boolean [] check = new boolean [goalpredicates.size()];
+		int index = 0;
 		for (String g : goalpredicates) {
-			int index = 0;
 			for (GraphLevel l : levels) {
 				ArrayList<String> facts = l.getPropositionLayer();
 				for (String f : facts) {
 					if(f.equalsIgnoreCase(g)){
-						check[index]=1;
-						index++;
+						check[index]=true;
+						break;
 					}
 				}
 			}
+			index++;
 		}
-		int checksum = 0;
-		for (int i : check) {
-			checksum+=i;
+		for (boolean b : check) {
+			if(!b) {
+				return false;
+			}
 		}
-		return (checksum==goalpredicates.size());
+		return true;
 	}
 
 	public ArrayList<GraphLevel> getLevels() {

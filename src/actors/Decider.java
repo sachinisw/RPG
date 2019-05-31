@@ -398,12 +398,12 @@ public class Decider extends Agent{
 		for (String st : root.getStates()) {
 			for (ArrayList<String> lm : cleanedlm) {
 				if(listContainsState(lm, st)) {	
-					System.out.println(lm);
+//					System.out.println(lm);
 					count++;
 				}
 			}
 		}
-		System.out.println("========>>>"+count+ "/"+ cleanedlm.size());
+//		System.out.println("========>>>"+count+ "/"+ cleanedlm.size());
 		DecimalFormat decimalFormat = new DecimalFormat("##.##");
 		String format = decimalFormat.format(Double.valueOf(count)/Double.valueOf(cleanedlm.size()));
 		return Double.valueOf(format);
