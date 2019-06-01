@@ -4,9 +4,9 @@ public class TrainConfigsML {
 	public static final int scenario = 0;
 	public static final int runmode = 0;
 	public static final int cases = 20;
-	public static final int fileLimit = 10;//100;
+	public static final int fileLimit = 100;
 	public static final boolean writeDOT = false;
-	public static final String domain = "BLOCKS"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
+	public static final String domain = "EASYIPC"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY
 	public static final String root = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
 	public static final String traindir = "train/cases/";
 	public static final String obsdir = "/obs/";

@@ -122,7 +122,7 @@ public class Preprocessor {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(outpath, "UTF-8");
-			String header = "ob,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,D7,label"+"\n";
+			String header = "ob,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,Label"+"\n";
 			writer.write(header);
 			for (int i=0; i<data.size(); i++) {		//write values
 				writer.write(data.get(i)+"\n");
@@ -355,7 +355,7 @@ public class Preprocessor {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(out, "UTF-8");
-			String header = "ob,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,D7,Label" +"\n";
+			String header = "ob,R1,D1,R2,D2,R3,D3,R4,D4,R5,D5,R6,D6,R7,Label" +"\n";
 			writer.write(header);
 			for (ArrayList<DataFile> curinst : df) {
 				for (DataFile file : curinst) {
@@ -376,10 +376,10 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
-		int mode = 0; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
+		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int alg  = 1; //0-full state space, 1-topk planner
-		int instances  = 1;
+		int instances  = 3;
 		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();
 		if(mode==-1) {

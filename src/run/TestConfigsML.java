@@ -4,7 +4,7 @@ public class TestConfigsML {
 	public static final boolean writeDOT = false;
 	public static final int runmode = 1; 
 	public static final int trainedscenario = 0;
-	public static final int instances = 1; //from start arg. run test for this many instances
+	public static final int instances = 3; //from start arg. run test for this many instances
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
 	public static final int [] limitRatio = {50,75};

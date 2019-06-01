@@ -50,7 +50,7 @@ public class FeatureSet {
 		lmout = lmo;
 		rpg = pg;
 		currentstate = current;
-		featurevals = new double[14]; 
+		featurevals = new double[13]; 
 	}
 
 	private double findMedianDistance(double [] dists) {
@@ -240,14 +240,14 @@ public class FeatureSet {
 		return computeLandmarkCompletionHeuristic(lmCompleteLevels, subGoalLevels);
 	}
 	
-	public double computeLandmarkCompletionHeuristic(HashMap<OrderedLMNode, Integer> lmcompletelevels, HashMap<OrderedLMNode, Integer> subgoallevels) {
-		double numofsubgoals = subgoallevels.size();
+	public double computeLandmarkCompletionHeuristic(HashMap<OrderedLMNode, Integer> lmcompletelevels, HashMap<OrderedLMNode, Integer> subgoallevels) {	
+		double numofsubgoals = subgoallevels.size(); 
 		double sum = 0.0;
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
 		while(itr.hasNext()) {
-			OrderedLMNode subgoal = itr.next();
-			double levels = subgoallevels.get(subgoal); //lmcompletelevels gives me the ID of the current complete level
-			double complete = lmcompletelevels.get(subgoal) - levels;
+			OrderedLMNode subgoal = itr.next(); //lmcompletelevels gives me the ID of the current complete level
+			double complete = lmcompletelevels.get(subgoal);
+			double levels = subgoallevels.get(subgoal);
 			sum += complete/levels;
 		}
 		return sum/numofsubgoals;
@@ -310,8 +310,8 @@ public class FeatureSet {
 	}
 	
 	public void evaluateFeatureValuesForCurrentObservation() {
-		System.out.println(alternativePlanSet);
-		System.out.println(referencePlans);
+//		System.out.println(alternativePlanSet);
+//		System.out.println(referencePlans);
 		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
 		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
 		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate); //ok
@@ -324,8 +324,7 @@ public class FeatureSet {
 		double d_minEditDistanceAc = getActionGED(desirablestate);//on paper definition ok.
 		double r_minEditDistanceSt = getStateGED(criticalstate); //ok
 		double d_minEditDistanceSt = getStateGED(desirablestate);//ok
-		double r_achievedLandmarks = computeAchievedLandmarks(criticalstate,currentstate);
-		double d_achievedLandmarks = computeAchievedLandmarks(desirablestate,currentstate);
+		double r_achievedLandmarks = computeAchievedLandmarks(criticalstate,currentstate);//ok
 		featurevals[0] = r_actionsetdistance; //R1
 		featurevals[1] = d_actionsetdistance; //D1 *BLOCK
 		featurevals[2] = r_causallinkdistance; //R2
@@ -339,14 +338,12 @@ public class FeatureSet {
 		featurevals[10] = r_minEditDistanceSt; //R6 *BLOCK
 		featurevals[11] = d_minEditDistanceSt; //D6 *BLOCK
 		featurevals[12] = r_achievedLandmarks;//R7
-		featurevals[13] = d_achievedLandmarks; //D7
 		DecimalFormat df = new DecimalFormat("#.##");
 		int index = 0;
 		for (double d : featurevals) {
 			String formatted = df.format(d);
 			featurevals[index++] = Double.valueOf(formatted);
 		}
-//		System.out.println(Arrays.toString(featurevals));
 	}
 	
 	public HashMap<ArrayList<String>, ArrayList<SASPlan>> getAlternativePlanSet() {

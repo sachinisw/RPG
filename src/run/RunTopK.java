@@ -206,7 +206,7 @@ public class RunTopK {
 			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
 			curstate.addAll(decider.getInitialState().getState());
-			System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
+//			System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
 				String outpath = "";
 				if(mode==TrainConfigsML.runmode) {
@@ -221,13 +221,13 @@ public class RunTopK {
 				curstate.addAll(adds); //effect of action is visible in the domain
 				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
 				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-				System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
+//				System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
 				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
 						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-			break;
+//			break;
 		}
 	}
 
@@ -247,7 +247,7 @@ public class RunTopK {
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
 			run(mode, domain, domainfile, desirablefile, a_prob, 
 					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, true);
-			break;
+//			break;
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
@@ -299,13 +299,13 @@ public class RunTopK {
 	}
 
 	public static void main(String[] args) { 
-		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {
 			runTopKAsTraining(mode);
 		}else if(mode==TestConfigsML.runmode){
-			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
+			int start = 3; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runTopKAsTesting(mode,start); //TODO: only running the full trace for now. add the observation limited trace if needed later
 		}
 	}
