@@ -55,12 +55,12 @@ public class FeatureSet {
 
 	private double findMedianDistance(double [] dists) {
 		Arrays.sort(dists);
-        if(dists.length % 2 != 0) { 		// check for even case 
-        	return (double)dists[dists.length/2]; 
-        }
-        return (double)(dists[(dists.length-1)/2] + dists[dists.length/2]) / 2.0; 
+		if(dists.length % 2 != 0) { 		// check for even case 
+			return (double)dists[dists.length/2]; 
+		}
+		return (double)(dists[(dists.length-1)/2] + dists[dists.length/2]) / 2.0; 
 	}
-	
+
 	public double getMedianActionSetDistanceFromAltPlans(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
@@ -72,7 +72,7 @@ public class FeatureSet {
 		}
 		return findMedianDistance(dists);
 	}
-	
+
 	public double getMedianCausalLinkDistanceFromAltPlans(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
@@ -84,7 +84,7 @@ public class FeatureSet {
 		}
 		return findMedianDistance(dists);
 	}
-	
+
 	public double getMedianStateSequenceDistanceFromAltPlans(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
@@ -96,7 +96,7 @@ public class FeatureSet {
 		}
 		return findMedianDistance(dists);
 	}
-	
+
 	public double getMinDistanceToState(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
@@ -109,7 +109,7 @@ public class FeatureSet {
 		Arrays.sort(dists);
 		return dists[0];
 	}
-	
+
 	public double getActionGED(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
@@ -122,7 +122,7 @@ public class FeatureSet {
 		Arrays.sort(dists);
 		return dists[0];
 	}
-	
+
 	public double getStateGED(ArrayList<String> goal) {
 		ArrayList<SASPlan> alts = alternativePlanSet.get(goal);
 		ArrayList<String> ref = referencePlans.get(goal);
@@ -153,7 +153,7 @@ public class FeatureSet {
 		Arrays.sort(dists);
 		return dists[0];
 	}
-	
+
 	public HashMap<String,TreeSet<String>> readLandmarksGNOrders(String lmfile){
 		Scanner sc;
 		HashMap<String,TreeSet<String>> lms = new HashMap<String, TreeSet<String>>();	
@@ -190,7 +190,7 @@ public class FeatureSet {
 		}
 		return  lms;
 	}
-	
+
 	public double computeAchievedLandmarks(ArrayList<String> goal, ArrayList<String> currentstate) {  //Meneguzzi 2017 landmark based goal completion heuristic
 		HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(lmout);
 		HashMap<OrderedLMNode, Boolean> active = new HashMap<OrderedLMNode, Boolean>();
@@ -239,14 +239,14 @@ public class FeatureSet {
 		HashMap<OrderedLMNode, Integer> subGoalLevels = getSubgoalLevels(subgoallevels);
 		return computeLandmarkCompletionHeuristic(lmCompleteLevels, subGoalLevels);
 	}
-	
+
 	public double computeLandmarkCompletionHeuristic(HashMap<OrderedLMNode, Integer> lmcompletelevels, HashMap<OrderedLMNode, Integer> subgoallevels) {	
 		double numofsubgoals = subgoallevels.size(); 
 		double sum = 0.0;
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
 		while(itr.hasNext()) {
 			OrderedLMNode subgoal = itr.next(); //lmcompletelevels gives me the ID of the current complete level
-			double complete = lmcompletelevels.get(subgoal);
+			double complete = lmcompletelevels.get(subgoal); //complete can be negative, it's ok. that means the levels are not complete
 			double levels = subgoallevels.get(subgoal);
 			sum += complete/levels;
 		}
@@ -263,10 +263,10 @@ public class FeatureSet {
 			Iterator<OrderedLMNode> itrac = active.keySet().iterator();
 			OrderedLMNode minimumActive = null;
 			int l = Integer.MAX_VALUE;
-			while(itrac.hasNext()) { //find node at the highest point (level~0) in tree which is active 
+			while(itrac.hasNext()) { //find node at the highest point (level~0) in tree which is active, if a node level = -1 then ignore it. because at this point all nodes in the graph must have a level. if not that means the graph is disjoint.
 				OrderedLMNode keyac = itrac.next();
 				if(active.get(keyac)) {
-					if(keyac.getTreeLevel()<l && l>=0) {
+					if(keyac.getTreeLevel()!= -1 && keyac.getTreeLevel()<l && l>=0) {
 						l = keyac.getTreeLevel();
 						minimumActive = keyac;
 					}
@@ -275,25 +275,39 @@ public class FeatureSet {
 			if(l==0 && key.equals(minimumActive)) {
 				lmCompletedLevel.put(key, levels.size()+1);
 			}else {
-				int completeLevel = levels.size()-1;
-				for (int i=levels.size()-1; i>=0; i--) {
-					ArrayList<OrderedLMNode> level = levels.get(i);
-					int curlevelcompletenodes = 0;
-					for (OrderedLMNode node : level) {
-						if(active.get(node)) {
-							++curlevelcompletenodes;
+				if(levels.size()>0) {
+					int completeLevel = levels.size()-1; //TODO: When a key doesn't have children, this becomes -1. CHECK HERE AGAIN. POSSIBLE BUG
+					for (int i=levels.size()-1; i>=0; i--) {
+						ArrayList<OrderedLMNode> level = levels.get(i);
+						int curlevelcompletenodes = 0;
+						for (OrderedLMNode node : level) {
+							if(active.get(node)) {
+								++curlevelcompletenodes;
+							}
 						}
-					}//TODO: CHECK HERE AGAIN. POSSIBLE BUG
-					if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
-						completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
-					}//half complete. if so, check if upper level is active. if yes, the upper level becomes the complete level
+						if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
+							completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
+						}else { //half complete. if so, check if upper level (key) is active. 
+							if(active.get(key)) { //if yes, the upper level becomes the complete level
+								completeLevel = key.getTreeLevel();
+							}else { //half complete but parent is not active. (-1)
+								completeLevel = -1;
+							}
+						}
+					}
+					lmCompletedLevel.put(key, completeLevel); //if completeLevel=-1 that means key doesnt have any children
+				}else { //1 node landmark graph
+					if(active.get(key)) {
+						lmCompletedLevel.put(key, 0); 
+					}else {
+						lmCompletedLevel.put(key, -1); 
+					}
 				}
-				lmCompletedLevel.put(key, completeLevel);
 			}
 		}
 		return lmCompletedLevel;
 	}
-	
+
 	public HashMap<OrderedLMNode, Integer> getSubgoalLevels(HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels) {
 		HashMap<OrderedLMNode, Integer> lmLevels = new HashMap<>();
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
@@ -308,10 +322,9 @@ public class FeatureSet {
 		}
 		return lmLevels;
 	}
-	
+
 	public void evaluateFeatureValuesForCurrentObservation() {
-//		System.out.println(alternativePlanSet);
-//		System.out.println(referencePlans);
+		//		System.out.println(alternativePlanSet);System.out.println(referencePlans);
 		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
 		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
 		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate); //ok
@@ -337,7 +350,7 @@ public class FeatureSet {
 		featurevals[9] = d_minEditDistanceAc; //D5
 		featurevals[10] = r_minEditDistanceSt; //R6 *BLOCK
 		featurevals[11] = d_minEditDistanceSt; //D6 *BLOCK
-		featurevals[12] = r_achievedLandmarks;//R7
+		featurevals[12] = r_achievedLandmarks;//R7 *EASY-IPC
 		DecimalFormat df = new DecimalFormat("#.##");
 		int index = 0;
 		for (double d : featurevals) {
@@ -345,7 +358,7 @@ public class FeatureSet {
 			featurevals[index++] = Double.valueOf(formatted);
 		}
 	}
-	
+
 	public HashMap<ArrayList<String>, ArrayList<SASPlan>> getAlternativePlanSet() {
 		return alternativePlanSet;
 	}
@@ -401,7 +414,7 @@ public class FeatureSet {
 	public void setLmout(String lmout) {
 		this.lmout = lmout;
 	}
-	
+
 	public RelaxedPlanningGraph getRpg() {
 		return rpg;
 	}
@@ -409,7 +422,7 @@ public class FeatureSet {
 	public void setRpg(RelaxedPlanningGraph rpg) {
 		this.rpg = rpg;
 	}
-	
+
 	public HashMap<ArrayList<String>, ArrayList<String>> getReferencePlans() {
 		return referencePlans;
 	}

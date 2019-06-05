@@ -24,6 +24,7 @@ public class OrderedLMGraph {
 		while(itr.hasNext()){ //add all nodes (key) in lms
 			nodes.add(new OrderedLMNode(itr.next()));
 		}
+		//In some domains (ferry) aGraph may contain cycles (e.g. L -> L' -> L). If a goal node has outgoing edges, remove them
 		Iterator<String> itr2 = lms.keySet().iterator();
 		while(itr2.hasNext()){
 			String key = itr2.next();
@@ -37,7 +38,7 @@ public class OrderedLMGraph {
 		}
 		produceOrderdLMGraph(nodes, orders);
 	}
-
+	
 	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> produceOrderdLMGraph(ArrayList<OrderedLMNode> nodes, ArrayList<OrderedLMEdge> orders) {
 		for (OrderedLMNode n : nodes) {
 			if(!adj.containsKey(n)) {
@@ -93,6 +94,9 @@ public class OrderedLMGraph {
 		recursivelyFindAllSiblings(queue, siblings);
 	}
 
+	//some LGGs (e.g., easy ipc) may produce disjointed graphs. this means that the graph may contain unsound orders. this is normal
+	//see p.15 in https://www.aaai.org/Papers/JAIR/Vol22/JAIR-2208.pdf
+	//same paper also says in some domains (ferry) aGraph may contain cycles (e.g. L -> L' -> L). If a node has outgoing edges to higher value node, remove them
 	public void assignSiblingLevels() {
 		ArrayList<OrderedLMNode> roots = findRoots();
 		for (OrderedLMNode r : roots) { //put roots at level 0;
@@ -120,6 +124,19 @@ public class OrderedLMGraph {
 				OrderedLMNode lmn = itr.next();
 				if(lmn.equals(orderedLMNode)) {
 					lmn.setTreeLevel(orderedLMNode.getTreeLevel());
+				}
+			}
+		}
+		//remove connections where key has children with levels lower than itself (node is going into a higher node (cycle))
+		Iterator<OrderedLMNode> itr = adj.keySet().iterator(); 
+		while(itr.hasNext()) {
+			OrderedLMNode lmn = itr.next();
+			TreeSet<OrderedLMNode> nbrs = adj.get(lmn);
+			Iterator<OrderedLMNode> it = nbrs.iterator();
+			while(it.hasNext()) {
+				OrderedLMNode n = it.next();
+				if(n.getTreeLevel()>lmn.getTreeLevel()) {
+					it.remove();
 				}
 			}
 		}

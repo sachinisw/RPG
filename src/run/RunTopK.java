@@ -123,6 +123,8 @@ public class RunTopK {
 		return alts;
 	}
 
+	//this decision is made by the intervening agent, who has the full visibility of the domain. so can use the domainfile that has everything in it
+	//observations may or may not have harmful actions. Could be executed by the attacker or the user. the goal is to detect the harmful actions as correctly as possible.
 	public static HashMap<ArrayList<String>, ArrayList<String>> generateReferencePlans(Decider decider, String domainfile, ArrayList<String> curstate, 
 			List<String> obs, String at_probfile, String outputpath) { //ref plan = prefix (observations made thus far) + suffix (optimal plan from current state to hypotheses
 		HashMap<ArrayList<String>, ArrayList<String>> refs = new HashMap<>();
@@ -206,6 +208,7 @@ public class RunTopK {
 			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
 			curstate.addAll(decider.getInitialState().getState());
+//			System.out.println(Arrays.toString(name));
 //			System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
 				String outpath = "";
@@ -213,8 +216,9 @@ public class RunTopK {
 					outpath = TrainConfigsML.root+name[name.length-3]+TrainConfigsML.topkdir+name[name.length-1]+"_"+j;
 				}else if(mode==TestConfigsML.runmode) {
 					outpath = TestConfigsML.prefix+TestConfigsML.instancedir+name[name.length-5].substring(4)+TestConfigsML.instscenario+
-							name[name.length-1]+TestConfigsML.topkdir+name[name.length-1]+"_"+j;
+							name[name.length-3]+TestConfigsML.topkdir+name[name.length-1]+"_"+j;
 				}
+				System.out.println(outpath);
 				ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
@@ -245,9 +249,9 @@ public class RunTopK {
 			String ds_csv = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.decisionCSV;
 			String lm_out = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.lmoutputFile;
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
+//			if(casenum==10)
 			run(mode, domain, domainfile, desirablefile, a_prob, 
 					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, true);
-//			break;
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
@@ -282,30 +286,24 @@ public class RunTopK {
 				String a_init = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_initFile;
 				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
 				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
-				//				String lm_out_short50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort50;
-				//				String lm_out_short75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort75;
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
-				//				String obslm50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles50;
-				//				String obslm75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles75;
 				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
-				//				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obslm50, ds_csv, lm_out_short50, 50, false);
-				//				LOGGER.log(Level.INFO, "Finished 50% reduced case: "+ x +" for test instance:" +instance );
-				//				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obslm75, ds_csv, lm_out_short75, 75, false);
-				//				LOGGER.log(Level.INFO, "Finished 75% reduced case: "+ x +" for test instance:" +instance );
+//				break;
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
 		}
 	}
 
 	public static void main(String[] args) { 
-		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		//TODO README:: CHANGE CONFIGS HERE FIRST, CHECK K=50 at the top of this file
+		int mode = 0; //-1=debug train 0=train, 1=test 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {
 			runTopKAsTraining(mode);
 		}else if(mode==TestConfigsML.runmode){
-			int start = 3; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
+			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runTopKAsTesting(mode,start); //TODO: only running the full trace for now. add the observation limited trace if needed later
 		}
 	}

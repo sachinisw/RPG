@@ -10,24 +10,26 @@ import java.util.logging.Logger;
 public class AccuracyCalculator {
 	private static final Logger LOGGER = Logger.getLogger(AccuracyCalculator.class.getName());
 
-	public static void producePredictionAccuracyFile() {
+	public static void producePredictionAccuracyFile(String domain) {
 		int scenario = 0;
-		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 3;
 		for (int instance = 1; instance <= instances; instance++) {
 			String out = "";
 			String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 			String outfile = prefix+String.valueOf(instance)+"/data/acc.txt";
-			String inst_fulla=prefix+String.valueOf(instance)+"/data/instfull.arff";
-			String inst_lm50a=prefix+String.valueOf(instance)+"/data/instlm50.arff";
-			String inst_lm75a=prefix+String.valueOf(instance)+"/data/instlm75.arff";
-			String inst_fullp=prefix+String.valueOf(instance)+"/data/predictions_full.csv";
-			String inst_lm50p=prefix+String.valueOf(instance)+"/data/predictions_lm50.csv";
-			String inst_lm75p=prefix+String.valueOf(instance)+"/data/predictions_lm75.csv";
+			String inst_fulla=prefix+String.valueOf(instance)+"/data/instfull.arff"; //actuals
+			String inst_lm50a=prefix+String.valueOf(instance)+"/data/instlm50.arff"; //actuals
+			String inst_lm75a=prefix+String.valueOf(instance)+"/data/instlm75.arff"; //actuals
+			String inst_tka=prefix+String.valueOf(instance)+"/data/tk_instfull.arff";   //actuals
+			String inst_fullp=prefix+String.valueOf(instance)+"/data/predictions_full.csv"; //predicted by weka
+			String inst_lm50p=prefix+String.valueOf(instance)+"/data/predictions_lm50.csv"; //predicted by weka
+			String inst_lm75p=prefix+String.valueOf(instance)+"/data/predictions_lm75.csv"; //predicted by weka
+			String inst_tkp=prefix+String.valueOf(instance)+"/data/predictions_tk.csv"; //predicted by weka
 			String f = computeAccuracy(inst_fullp, inst_fulla, "full");
 			String l50 = computeAccuracy(inst_lm50p, inst_lm50a, "lm50");
 			String l75 = computeAccuracy(inst_lm75p, inst_lm75a, "lm75");
-			out += f+l50+l75;
+			String tk = computeAccuracy(inst_tkp, inst_tka, "tk");
+			out += f+l50+l75+tk;
 			writeLineToFile(out, outfile);
 		}
 	}
@@ -63,6 +65,9 @@ public class AccuracyCalculator {
 		return sb.toString();
 	}
 	public static void main(String args[]){
-		producePredictionAccuracyFile(); //run after prediction_xxx files are manually created and weka output is copied to them
+		//run second, after running preprocess.java.
+		//read predictions_***.csv and inst**.arff files. produces acc.txt with TNR,TPR,FPR,FNR values.
+		String domain = "FERRY";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //TODO: change here first
+		producePredictionAccuracyFile(domain); 
 	}
 }

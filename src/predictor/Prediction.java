@@ -55,7 +55,8 @@ public class Prediction {
 		ArrayList<DataItem> actual = new ArrayList<>();
 		for (int i=0; i<this.actualLines.size(); i++){
 			String line = this.actualLines.get(i);
-			String val = line.split(",")[4];
+			String lineparts [] = line.split(",");
+			String val = lineparts[lineparts.length-1]; //actual label is the last element in the array
 			DataItem di = new DataItem(i+1, val);
 			actual.add(di);
 		}
@@ -118,4 +119,5 @@ public class Prediction {
 	public void setActualLines(ArrayList<String> actualLines) {
 		this.actualLines = actualLines;
 	}
+
 }

@@ -256,15 +256,13 @@ public class CausalLinkDistance  extends Distance{
 	public double getCausalLinkDistance() {
 		extractCausalLinks();
 		ArrayList<CausalLink> intersection = new ArrayList<CausalLink>();
-		TreeSet<CausalLink> union = new TreeSet<CausalLink>();
 		for (CausalLink cl : ref_causal) {
 			if(in_causal.contains(cl)) {
 				intersection.add(cl);
 			}
 		}
-		union.addAll(ref_causal);
-		union.addAll(in_causal);
-		return 1 - ((double) intersection.size()/(double) union.size());
+		double union = (double) ref_causal.size()+in_causal.size()-intersection.size();
+		return 1 - ((double) intersection.size()/union);
 	}
 
 	public static ConnectivityGraph readConnectivityGraphs(){
