@@ -204,6 +204,7 @@ public class RunTopK {
 			}
 			obFileLimit++;
 			String name[] = file.split("/");
+//			if(name[name.length-1].equalsIgnoreCase("15")) { //navigator=5, 0=easyipc,blocks ferry=15
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
 			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
@@ -232,6 +233,7 @@ public class RunTopK {
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
 //			break;
+//			}
 		}
 	}
 
@@ -249,7 +251,7 @@ public class RunTopK {
 			String ds_csv = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.decisionCSV;
 			String lm_out = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.lmoutputFile;
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
-//			if(casenum==10)
+//			if(casenum==1)//5 navigator, 0 blocks, easyipc, 1 ferry
 			run(mode, domain, domainfile, desirablefile, a_prob, 
 					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, true);
 		}
@@ -289,7 +291,6 @@ public class RunTopK {
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
 				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
-//				break;
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
 		}

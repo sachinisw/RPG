@@ -31,27 +31,23 @@ public class LandmarkExtractor {
 		lgg.addLGGNode(goalpredicates);
 		while(!lmCandidates.isEmpty()){
 			TreeSet<String> cprime = new TreeSet<String>();
-															//						System.err.println("LMCANDIDATES=="+ Arrays.toString(lmCandidates.toArray()));
 			for (String lprime : lmCandidates) {
 				int level = RPG.getLevelofEffect(lprime);
-															//								System.err.println("---------------------current candidate---->"+ lprime + " level------ "+level);
-				if(level>0){
-//					GraphLevel glevel = RPG.getLevel(level-1);//level-1 doesn't produce proved landmarks. if this condition is ignored then the resulting LGG contains only (greedy) necessary landmarks. 
-//					ArrayList<String> acLevelBefore = glevel.getActionLayer();
-					int earliestLevel = level-1;
-					for (int i=level-1; i>=0; i--) {//to find greedy necessary, find the action that adds the predicate earliest in the graph. not only from the level before.
-						GraphLevel glevel = RPG.getLevel(i);
-						ArrayList<String> acLevelBefore = glevel.getActionLayer();
-						for (String ac : acLevelBefore) {
-							ArrayList<String> adds = con.findStatesAddedByAction(ac);
-							if(listContainsPredicate(adds, lprime)){
-								if(i<earliestLevel) {
-									earliestLevel = i;
-								}
-							}
-						}
-					}
-					GraphLevel glevel = RPG.getLevel(earliestLevel);
+				if(level>0){ //this version picks the actions that adds the predicate from level before . method used in landmark heuristic meneguzzi paper.
+					int earliestLevel = level-1; //level-1 doesn't produce proved landmarks. if this condition is ignored then the resulting LGG contains only (greedy) necessary landmarks.
+//					for (int i=level-1; i>=0; i--) {//to find greedy necessary uncomment this loop. It finds the action that adds the predicate earliest in the graph. not only from the level before.
+////						GraphLevel glevel = RPG.getLevel(i);
+////						ArrayList<String> acLevelBefore = glevel.getActionLayer();
+//						for (String ac : acLevelBefore) {
+//							ArrayList<String> adds = con.findStatesAddedByAction(ac);
+//							if(listContainsPredicate(adds, lprime)){
+//								if(i<earliestLevel) {
+//									earliestLevel = i;
+//								}
+//							}
+//						}
+//					}
+					GraphLevel glevel = RPG.getLevel(earliestLevel); 
 					ArrayList<String> acLevelBefore = glevel.getActionLayer();
 					//										System.out.println("actions level before ====  "+ Arrays.toString(acLevelBefore.toArray()));
 					TreeSet<String> A = new TreeSet<String>();

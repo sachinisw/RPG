@@ -243,60 +243,50 @@ public class FeatureSet {
 	public double computeLandmarkCompletionHeuristic(HashMap<OrderedLMNode, Integer> lmcompletelevels, HashMap<OrderedLMNode, Integer> subgoallevels) {	
 		double numofsubgoals = subgoallevels.size(); 
 		double sum = 0.0;
+//		System.out.println("$$  "+lmcompletelevels);System.out.println("@@   "+subgoallevels);
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
 		while(itr.hasNext()) {
-			OrderedLMNode subgoal = itr.next(); //lmcompletelevels gives me the ID of the current complete level
-			double complete = lmcompletelevels.get(subgoal); //complete can be negative, it's ok. that means the levels are not complete
+			OrderedLMNode subgoal = itr.next(); //lmcompletelevels shows for each subgoal, how many of it's subtree levels are complete
+			double complete = lmcompletelevels.get(subgoal); //complete can be negative. That means the levels are not complete. reset to zero
 			double levels = subgoallevels.get(subgoal);
-			sum += complete/levels;
+//			System.out.println(subgoal +"   "+complete + "|"+ levels);
+			sum += (levels-complete)/levels;
 		}
 		return sum/numofsubgoals;
 	}
 
 	public HashMap<OrderedLMNode, Integer> getMaxCompleteLevel(HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels, 
 			HashMap<OrderedLMNode, Boolean> active) {
-		HashMap<OrderedLMNode, Integer> lmCompletedLevel = new HashMap<>();
+		HashMap<OrderedLMNode, Integer> lmCompletedLevel = new HashMap<>();//contains the highest fully complete tree level
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
 		while(itr.hasNext()) {
 			OrderedLMNode key = itr.next();
 			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
-			Iterator<OrderedLMNode> itrac = active.keySet().iterator();
-			OrderedLMNode minimumActive = null;
-			int l = Integer.MAX_VALUE;
-			while(itrac.hasNext()) { //find node at the highest point (level~0) in tree which is active, if a node level = -1 then ignore it. because at this point all nodes in the graph must have a level. if not that means the graph is disjoint.
-				OrderedLMNode keyac = itrac.next();
-				if(active.get(keyac)) {
-					if(keyac.getTreeLevel()!= -1 && keyac.getTreeLevel()<l && l>=0) {
-						l = keyac.getTreeLevel();
-						minimumActive = keyac;
-					}
-				}
-			}
-			if(l==0 && key.equals(minimumActive)) {
-				lmCompletedLevel.put(key, levels.size()+1);
-			}else {
-				if(levels.size()>0) {
-					int completeLevel = levels.size()-1; //TODO: When a key doesn't have children, this becomes -1. CHECK HERE AGAIN. POSSIBLE BUG
-					for (int i=levels.size()-1; i>=0; i--) {
+//			System.out.println("current subgoal=="+key);
+			if(active.get(key)) { //subgoal root is active. assume everything below is also active. why? Landmarks are partial orders
+//				System.out.println("goal complete");
+				lmCompletedLevel.put(key, 0);
+			}else { //subgoal tree is half complete. first find that half complete level. go from top to bottom in the current subtree
+//				System.out.println("half tree complete");
+				if(levels.size()>0) { //subtree has a few levels. one of these levels is half complete
+					int completeLevel =  levels.size()-1;
+					for (int i=levels.size()-1; i>=0; i--) { //move from bottom up. when this loop finishes, I will have the highest level with all active nodes
 						ArrayList<OrderedLMNode> level = levels.get(i);
 						int curlevelcompletenodes = 0;
 						for (OrderedLMNode node : level) {
 							if(active.get(node)) {
-								++curlevelcompletenodes;
+								curlevelcompletenodes++;
 							}
 						}
+//						System.out.println("curlevelcompletenodes="+curlevelcompletenodes);
 						if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
-							completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
-						}else { //half complete. if so, check if upper level (key) is active. 
-							if(active.get(key)) { //if yes, the upper level becomes the complete level
-								completeLevel = key.getTreeLevel();
-							}else { //half complete but parent is not active. (-1)
-								completeLevel = -1;
-							}
+//							System.out.println("current level is fully complete ");
+							completeLevel = i;
 						}
 					}
-					lmCompletedLevel.put(key, completeLevel); //if completeLevel=-1 that means key doesnt have any children
-				}else { //1 node landmark graph
+					lmCompletedLevel.put(key, completeLevel+1); //i+1 subgoallevels structure doesn't have the 0th (goal) level.
+				}else { //this subgoal doesn't have children
+//					System.out.println("no children subgoal");
 					if(active.get(key)) {
 						lmCompletedLevel.put(key, 0); 
 					}else {
@@ -304,6 +294,7 @@ public class FeatureSet {
 					}
 				}
 			}
+//			System.out.println("......."+lmCompletedLevel);
 		}
 		return lmCompletedLevel;
 	}
@@ -324,7 +315,7 @@ public class FeatureSet {
 	}
 
 	public void evaluateFeatureValuesForCurrentObservation() {
-		//		System.out.println(alternativePlanSet);System.out.println(referencePlans);
+//				System.out.println(alternativePlanSet);System.out.println(referencePlans);
 		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
 		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
 		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate); //ok

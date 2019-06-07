@@ -135,7 +135,7 @@ public class OrderedLMGraph {
 			Iterator<OrderedLMNode> it = nbrs.iterator();
 			while(it.hasNext()) {
 				OrderedLMNode n = it.next();
-				if(n.getTreeLevel()>lmn.getTreeLevel()) {
+				if(n.getTreeLevel()>=lmn.getTreeLevel()) {
 					it.remove();
 				}
 			}
