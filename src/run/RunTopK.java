@@ -298,7 +298,7 @@ public class RunTopK {
 
 	public static void main(String[] args) { 
 		//TODO README:: CHANGE CONFIGS HERE FIRST, CHECK K=50 at the top of this file
-		int mode = 0; //-1=debug train 0=train, 1=test 
+		int mode = 1; //-1=debug train 0=train, 1=test 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {

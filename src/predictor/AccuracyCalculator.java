@@ -67,7 +67,7 @@ public class AccuracyCalculator {
 	public static void main(String args[]){
 		//run second, after running preprocess.java.
 		//read predictions_***.csv and inst**.arff files. produces acc.txt with TNR,TPR,FPR,FNR values.
-		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //TODO: change here first
+		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //TODO: change here first
 		producePredictionAccuracyFile(domain); 
 	}
 }

@@ -56,7 +56,7 @@ public class Preprocess {
 
 	public static void preparePredictionFile() {
 		int scenario = 0;
-		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 3;
 		for (int instance = 1; instance <= instances; instance++) {
 			String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
@@ -77,7 +77,7 @@ public class Preprocess {
 	}
 
 	public static void main(String[] args) {
-		//run this first in prediction. produces file called inst**pred.arff with Y/N replaced with ?
+		//run this first in prediction. reads file tk_instfull.arff and produces file called inst**pred.arff with Y/N replaced with ?
 		//feed this into weka and get weka predictions. copy the result to a file called predictions_***.csv
 		preparePredictionFile(); 
 	}

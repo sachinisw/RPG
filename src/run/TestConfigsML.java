@@ -8,7 +8,7 @@ public class TestConfigsML {
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
 	public static final int [] limitRatio = {50,75};
-	public static final String domain = "EASYIPC"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final String domain = "NAVIGATOR"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
 	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String topkdir = "/topk/";
 	public static final String instancedir="inst";
