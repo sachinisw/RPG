@@ -330,7 +330,7 @@ public class FeatureSet {
 		double d_minEditDistanceSt = getStateGED(desirablestate);//ok
 		double r_achievedLandmarks = computeAchievedLandmarks(criticalstate,currentstate);//ok
 		featurevals[0] = r_actionsetdistance; //R1
-		featurevals[1] = d_actionsetdistance; //D1 *BLOCK
+		featurevals[1] = d_actionsetdistance; //D1 
 		featurevals[2] = r_causallinkdistance; //R2
 		featurevals[3] = d_causallinkdistance; //D2
 		featurevals[4] = r_stateseqdistance; //R3
@@ -339,9 +339,9 @@ public class FeatureSet {
 		featurevals[7] = d_minDistToDesirable; //D4
 		featurevals[8] = r_minEditDistanceAc; //R5
 		featurevals[9] = d_minEditDistanceAc; //D5
-		featurevals[10] = r_minEditDistanceSt; //R6 *BLOCK
-		featurevals[11] = d_minEditDistanceSt; //D6 *BLOCK
-		featurevals[12] = r_achievedLandmarks;//R7 *EASY-IPC
+		featurevals[10] = r_minEditDistanceSt; //R6 
+		featurevals[11] = d_minEditDistanceSt; //D6 
+		featurevals[12] = r_achievedLandmarks;//R7
 		DecimalFormat df = new DecimalFormat("#.##");
 		int index = 0;
 		for (double d : featurevals) {

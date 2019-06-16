@@ -145,9 +145,6 @@ public class LandmarkExtractor {
 			lgg.removeLGGNode(n);
 		}
 		return buildOrders(lgg);
-//														System.out.println("CLEANED ADJ--------------");
-//														System.out.println(lgg);
-//														System.out.println(lgg.getEdges());
 	}
 
 	//merge edges to form a DAG indicating what LMs should be achieved together

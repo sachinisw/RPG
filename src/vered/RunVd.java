@@ -34,19 +34,18 @@ import rg.Problem;
 
 public class RunVd {
 
-	//reads the observations corresponding to files in /data/decision
 	public static TreeSet<String> getFilesInPath(String filepath){
-		TreeSet<String> obFiles = new TreeSet<String>();
+		TreeSet<String> filepaths = new TreeSet<String>();
 		try {
 			File dir = new File(filepath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				obFiles.add(fileItem.getCanonicalPath());
+				filepaths.add(fileItem.getCanonicalPath());
 			}
 		}catch (IOException e) {
 			e.printStackTrace();
 		}
-		return obFiles;	
+		return filepaths;	
 	}
 
 	public static TreeSet<String> filterFiles(TreeSet<String> files, TreeSet<String> actualobs){
@@ -177,7 +176,7 @@ public class RunVd {
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
-					break; //just read one observation file. TODO: remove after debug
+//					break; //just read one observation file. TODO: remove after debug
 				}
 				break;
 			}
@@ -217,11 +216,11 @@ public class RunVd {
 			String now = obs.getObs().get(i);
 			prefix.add(now);
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
-			System.out.println(now);
-			System.out.println(obstate);
+//			System.out.println(now);
+//			System.out.println(obstate);
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa); //attack landmarks
 			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //desirable landmarks
-			for (int j=0; j<hyp.getHyps().size(); j++) { //wait until vered/ramon tells me how to prune hypotheses
+			for (int j=0; j<hyp.getHyps().size(); j++) { //wait until vered/ramon tells me how to prune hypotheses. boo! they never got back to me.
 				String goal = hyp.getHyps().get(j);
 //				if(goal.contains("desirable")) {
 //					if(!achievedDFL.contains(goal.substring(goal.indexOf(":")+1))) {
@@ -371,6 +370,7 @@ public class RunVd {
 
 	public static void writeResultFile(HashMap<String, String> decisions, Observations actuals, String outfile) {
 		FileWriter writer = null;
+		System.out.println(outfile);
 		try {
 			File file = new File(outfile);
 			writer = new FileWriter(file);
@@ -431,9 +431,124 @@ public class RunVd {
 		rpgen.runLandmarkGenerator(rpgfile, confile, critical, init, lmout);
 	}
 
+	//TNR,TPR,FNR,FPR values for R&G, using current planner
+	public static void computeResults(int start) {
+		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			int tp=0, tn=0, fp=0, fn=0;
+			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String outdir = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.verout + TestConfigsVd.planner;
+				String desirables = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.desirableStateFile;
+				String criticals = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.criticalStateFile;
+				Hypotheses hyp = setHypothesis(criticals, desirables);
+				TreeSet<String> paths = getFilesInPath(outdir);
+				for (String s : paths) {
+					System.out.println(s);
+					if(s.contains("out_")) {
+						ArrayList<String> result = readResultOutput(s);
+						tp+=countTP(result, hyp);
+						tn+=countTN(result, hyp);
+						fp+=countFP(result, hyp);
+						fn+=countFN(result, hyp);
+					}
+				}
+				break;//TODO:: remove after debug
+			}
+			writeRatesToFile(tp, tn, fp, fn, TestConfigsVd.prefix+TestConfigsVd.instancedir + inst +TestConfigsVd.resultOutpath+"vd_jff.csv");//this is the tp, tn totals for the 20 cases for the current instance.
+		}
+	}
+	
+	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String critical = hyp.getHyps().get(0);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("Y:")) {
+				if(parts[2].equalsIgnoreCase(critical) ){
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String desirable = hyp.getHyps().get(1);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("N:")) {
+				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static int countFP(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String critical = hyp.getHyps().get(0);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("N:")) {
+				if(parts[2].equalsIgnoreCase(critical)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static int countFN(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String desirable = hyp.getHyps().get(1);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("Y:")) {
+				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	public static ArrayList<String> readResultOutput(String filename){
+		ArrayList<String> results = new ArrayList<String>();
+		Scanner sc;
+		try {
+			sc = new Scanner(new File(filename));
+			while(sc.hasNextLine()) {
+				results.add(sc.nextLine().trim());
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return results;
+	}
+	
+	public static void writeRatesToFile(int TP, int TN, int FP, int FN, String filename) {
+		FileWriter writer = null;
+		double tpr = (double) TP/(double) (TP+FN);
+		double tnr = (double) TN/(double) (TN+FP);
+		double fnr = (double) FN/(double) (TP+FN);
+		double fpr = (double) FP/(double) (TN+FP);
+		try {
+			File file = new File(filename);
+			writer = new FileWriter(file);
+			writer.write("TPR,TNR,FPR,FNR"+"\n");
+			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+	}
+	
 	public static void main(String[] args) {
 		int start = 1;
 		int mode = 1;
 		runVered(start, mode);
+		computeResults(start);
 	}
 }
