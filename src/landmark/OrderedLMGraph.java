@@ -2,6 +2,7 @@ package landmark;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Queue;
@@ -182,6 +183,17 @@ public class OrderedLMGraph {
 		return immediate;
 	}
 
+	public String toString() {
+		String s = "";
+		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode key = itr.next();
+			TreeSet<OrderedLMNode> parents = adj.get(key);
+			s+=key+"=: "+Arrays.toString(parents.toArray())+"\n";
+		}
+		return s;
+	}
+	
 	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> getAdj() {
 		return adj;
 	}

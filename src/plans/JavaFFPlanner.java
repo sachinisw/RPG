@@ -42,7 +42,7 @@ public class JavaFFPlanner {
 			}
 			input.close();
 		} catch (IOException | InterruptedException e) {
-			EventLogger.LOGGER.log(Level.SEVERE, "ERROR runHSPPlanner():: " + e.getMessage());
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR runJavaFFPlanner():: " + e.getMessage());
 		} 
 		return lines;
 	}
@@ -52,7 +52,7 @@ public class JavaFFPlanner {
 		ArrayList<String> lines = runJavaFFPlanner();
 		ArrayList<String> cleaned = new ArrayList<>();
 		for (String s : lines) {
-			cleaned.add(s.substring(s.indexOf("("), s.indexOf(")")+1).toUpperCase());
+			cleaned.add(s.substring(s.indexOf("(")+1, s.indexOf(")")).toUpperCase());
 		}
 		JavaFFPlan jfp = new JavaFFPlan();
 		jfp.setActions(cleaned);

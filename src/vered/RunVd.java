@@ -21,6 +21,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import con.ConnectivityGraph;
 import landmark.OrderedLMGraph;
+import landmark.OrderedLMNode;
 import landmark.RelaxedPlanningGraphGenerator;
 import log.EventLogger;
 import plans.FFPlanner;
@@ -102,6 +103,7 @@ public class RunVd {
 	}
 
 	//online goal recognition with landmarks - Vered 2017
+	//Online goal Recognition as Reasoning over Landmarks, Towards online goal recognition combining goal mirroring and landmarks
 	public static void runVered(int start, int mode) {
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
@@ -137,16 +139,18 @@ public class RunVd {
 				generateRPGConForDesirableGoal(domfile, probfile, desirable, a_out);
 				ConnectivityGraph a_con = readConnectivityGraphs(a_out + TestConfigsVd.a_connectivityGraphFile);
 				ConnectivityGraph u_con = readConnectivityGraphs(a_out + TestConfigsVd.u_connectivityGraphFile);
-				ArrayList<String> runningstate = setInits(initfile); //set the state to init.
+				ArrayList<String> originalInit = setInits(initfile); //set the state to init.
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
-				redoLandmarks(a_out + TestConfigsVd.a_rpgFile, a_out + TestConfigsVd.a_connectivityGraphFile, critical, runningstate, landmarkfile);
-				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, runningstate, ulandmarkfile);
+				redoLandmarks(a_out + TestConfigsVd.a_rpgFile, a_out + TestConfigsVd.a_connectivityGraphFile, critical, originalInit, landmarkfile);
+				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, originalInit, ulandmarkfile);
 				HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(landmarkfile);
 				HashMap<String,TreeSet<String>> u_landmarks = readLandmarksGNOrders(ulandmarkfile);
 				OrderedLMGraph aGraph = new OrderedLMGraph(critical);
 				OrderedLMGraph uGraph = new OrderedLMGraph(desirable);
 				aGraph.produceOrders(a_landmarks, critical);
 				uGraph.produceOrders(u_landmarks, desirable);
+				aGraph.assignSiblingLevels();
+				uGraph.assignSiblingLevels();
 				Iterator<String> itr = obfiles.iterator();
 				while(itr.hasNext()) {//iterates over observation files in the current scenario in the current instance
 					String s = itr.next();
@@ -164,8 +168,8 @@ public class RunVd {
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, runningstate, dom, probC, probD, a_con, 
-								u_con, hyp, a_landmarks, u_landmarks, outdir+path[path.length-1]+"/");
+						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, originalInit, dom, probC, probD, a_con, 
+								u_con, hyp, a_landmarks, u_landmarks, uGraph, aGraph, outdir+path[path.length-1]+"/");
 						if(mode==TestConfigsVd.obFull) {
 							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + ".csv");
 						}else if (mode==TestConfigsVd.ob50lm) {
@@ -176,9 +180,9 @@ public class RunVd {
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
-//					break; //just read one observation file. TODO: remove after debug
+					break; //just read one observation file. TODO: remove after debug
 				}
-				break;
+				if(scen==1) break; //TODO:: remove after debug
 			}
 			break;
 		}
@@ -198,37 +202,46 @@ public class RunVd {
 		ffp.runFF(2, out+TestConfigsVd.u_rpgFile);
 	}
 
-	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> state, 
+	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> init,
 			Domain dom, Problem pcri, Problem pdes, ConnectivityGraph a_con, ConnectivityGraph u_con, Hypotheses hyp, 
-			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, String outdir){ //prob comes from problem_a.txt
+			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, OrderedLMGraph uGraph,
+			OrderedLMGraph aGraph, String outdir){ //prob comes from problem_a.txt
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
-		TreeSet<String> achievedAFL = new TreeSet<String>();
-		TreeSet<String> activeAFL = new TreeSet<String>();
-		TreeSet<String> achievedDFL = new TreeSet<String>();
-		TreeSet<String> activeDFL = new TreeSet<String>();
 		ArrayList<JavaFFPlan> i_k = new ArrayList<>();
 		ArrayList<String> prefix = new ArrayList<>();
+		TreeSet<String> activeAFL = new TreeSet<String>();
+		TreeSet<String> activeDFL = new TreeSet<String>();
+		TreeSet<String> achievedAFL = new TreeSet<String>();
+		TreeSet<String> achievedDFL = new TreeSet<String>();
 		i_k.add(producePlansJavaFF(dom, pcri)); //need to do it twice because I have two goals.
 		i_k.add(producePlansJavaFF(dom, pdes));
+		System.out.println("ik="+i_k);
+		ArrayList<String> state = new ArrayList<>(init);
 		for (int i=0; i<obs.getObs().size(); i++) {
 			HashMap<String, Double> goalranks = new HashMap<String, Double>();
 			ArrayList<String> activeHypotheses = new ArrayList<>();
 			String now = obs.getObs().get(i);
 			prefix.add(now);
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
-//			System.out.println(now);
-//			System.out.println(obstate);
-			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa); //attack landmarks
-			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //desirable landmarks
-			for (int j=0; j<hyp.getHyps().size(); j++) { //wait until vered/ramon tells me how to prune hypotheses. boo! they never got back to me.
+			System.out.println("curac************ "+now);System.out.println("curstate="+obstate);
+			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa, aGraph); //attack landmarks
+			achieveLandmark(now, dom, a_con, obstate, achievedDFL, activeDFL, lmsd, uGraph); //desirable landmarks, with same connectivity because, intervener has full observability
+			//wait until vered/ramon tells me how to prune hypotheses. they never got back to me. #sad. 
+			//to prune goals, I assumed the last ordered landmark to be the goal predicates. if the last ordered landmark is in achieved, that means the goal is already met. prune those goals out
+			for (int j=0; j<hyp.getHyps().size(); j++) {
 				String goal = hyp.getHyps().get(j);
-//				if(goal.contains("desirable")) {
-//					if(!achievedDFL.contains(goal.substring(goal.indexOf(":")+1))) {
+				ArrayList<String> goalpredicates = new ArrayList<String>();
+				String[] gparts = goal.substring(goal.indexOf(":")+2,goal.length()-1).split("\\)\\(");
+				for (String s : gparts) {
+					goalpredicates.add("("+s+")");
+				}
+				if(goal.contains("desirable")) {
+					if(!achievedLMcontainsLastOrderedLandmark(achievedDFL,uGraph,goalpredicates)) {
 						activeHypotheses.add(goal);
-//					}
-//				}else if(!achievedAFL.contains(goal)) {
-//					activeHypotheses.add(goal);
-//				}
+					}
+				}else if(!achievedLMcontainsLastOrderedLandmark(achievedAFL,aGraph,goalpredicates)) {
+					activeHypotheses.add(goal);
+				}
 			}
 			if(!activeHypotheses.isEmpty()) {
 				for (int j=0; j<activeHypotheses.size(); j++) {
@@ -244,13 +257,14 @@ public class RunVd {
 					JavaFFPlan suffix = producePlansJavaFF(dom,probD);
 					prefix.addAll(suffix.getActions()); // now this is m_k
 					if(activeHypotheses.get(j).contains("desirable")) {
-						goalranks.put(activeHypotheses.get(j),(double)prefix.size()/(double)i_k.get(1).getPlanCost());
+						goalranks.put(activeHypotheses.get(j),(double)i_k.get(1).getPlanCost()/(double)prefix.size());
 					}else {
-						goalranks.put(activeHypotheses.get(j),(double)prefix.size()/(double)i_k.get(0).getPlanCost());
+						goalranks.put(activeHypotheses.get(j),(double)i_k.get(0).getPlanCost()/(double)prefix.size());
 					}
 					prefix.removeAll(suffix.getActions());
 				}
 				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
+				System.out.println("goalranks====>>>"+goalranks);
 				if(ent != null) {
 					obsTolikelgoal.put(now, ent.getKey());
 				}else {
@@ -262,9 +276,32 @@ public class RunVd {
 			state.clear();
 			state.addAll(obstate);
 		}
+		state.clear(); //reset state to original init before moving on to the  next observation file
+		state.addAll(init);
 		return obsTolikelgoal;
 	}
 
+	//find from stuff in achieved, the predicate(s) closest to the root of the landmark generation graph
+	//assuming ***last ordered landmark*** to be the goal predicates
+	private static boolean achievedLMcontainsLastOrderedLandmark(TreeSet<String> achieved, OrderedLMGraph orderedGraph, ArrayList<String> goal) {
+		ArrayList<String> achievedRoots = new ArrayList<String>();
+		for (String s : achieved) { 		//check if achieved[] contains goal predicates (ordered int = 0)
+			Iterator<OrderedLMNode> itr = orderedGraph.getAdj().keySet().iterator();
+			while(itr.hasNext()) {
+				OrderedLMNode key = itr.next();
+				if(key.getTreeLevel()==0 && key.getNodecontent().contains(s)) { //this is a root, that has been achieved.
+					achievedRoots.add(s);
+				}
+			}
+		}
+		for (String g : goal) {
+			if(!achievedRoots.contains(g)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
 		//for each goal compute P(Gi|O) (i=1,2) using method above. highest P(Gi|O) is the most likely goal
 		double neta = computeNeta(map);
@@ -303,40 +340,45 @@ public class RunVd {
 	//observation is a state. 
 	//achievedFL=facts that were satisfied before but no longer satisfied
 	//activeFL = facts that are satisfied in current state
-	//prune out goals from hyp if last achieved ordered landmark is associated with that goal
-	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks.
+	//prune out goals from hyp if (last achieved ordered landmark) is associated with that goal. What is this ***last achieved ordered lm***???
+	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks. (Meneguzzi 2017 landmark based plan recognition ECAI, Landmark based heuristics for goal-recognition)
+	//this experiment is for the algorithm:: goal mirroring with landmarks, where landmarks are used to filter out impossible goals and remaining goals are ranked based on cost. (Towards online goal-recognition combining goal mirroring and landmarks - vered, ramon, kaminka, meneguzzi
 	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> stateafterob,
-			TreeSet<String> achievedAFL, TreeSet<String> activeAFL, HashMap<String, TreeSet<String>> landmarks) {
-		if((!activeAFL.isEmpty()) && (observationIntersectswithActiveFL(ob, dom, con, stateafterob, activeAFL))) {
-			achievedAFL.addAll(activeAFL);
-			activeAFL.clear();
-		}else if(activeAFL.isEmpty()) {
+			TreeSet<String> achievedFL, TreeSet<String> activeFL, HashMap<String, TreeSet<String>> landmarks, OrderedLMGraph graph) {
+		if((!activeFL.isEmpty()) && (!observationIntersectswithActiveFL(ob, dom, con, stateafterob, activeFL))) {
+			//state resulting from this observation ob contains activeFact Landmarks. this means the facts are now achieved.//can move the active to achieved.
+			achievedFL.addAll(activeFL);
+			activeFL.clear();
+		} else if(activeFL.isEmpty()) {//no active landmarks. find all fact landmarks closest to root in observed state. add to activeFL
 			Iterator<Entry<String,TreeSet<String>>> itrg = landmarks.entrySet().iterator();
+			ArrayList<String> active = new ArrayList<String>();
 			while(itrg.hasNext()) {
 				Entry<String, TreeSet<String>> e = itrg.next();
 				String cur = e.getKey();
-				TreeSet<String> curval = e.getValue();
-				boolean done = false;
-				if(stateafterob.contains(cur) && curval.isEmpty()) {
-					done = true;
-				}else if(stateafterob.contains(cur) && !curval.isEmpty()) {
-					int count = 0;
-					for (String pred : curval) {
-						for (String st : stateafterob) {
-							if(st.equalsIgnoreCase(pred)) {
-								count++;
-							}
-						}
-					}
-					if(count==curval.size()) {
-						done = true;
-					}
-				}
-				if(done) {
-					activeAFL.add(cur);
+				if(stateafterob.contains(cur)) { //don't have to check for children. cur is the head. if head is in stateafterob, also add it's children to it. because landmarks are ordered
+					active.add(cur);
 				}
 			}
+			int closeToRoot = Integer.MAX_VALUE;
+			String close = "";
+			for (String s : active) { 
+				Iterator<OrderedLMNode> itr = graph.getAdj().keySet().iterator();
+				while(itr.hasNext()) {
+					OrderedLMNode key = itr.next();
+					if(key.getNodecontent().contains(s)) {
+						if(key.getTreeLevel()<=closeToRoot && key.getTreeLevel()>=0) {
+							closeToRoot = key.getTreeLevel();
+							close = s;
+						}
+					}
+				}
+				activeFL.add(close);
+			}
 		}
+		System.out.println("=================================");
+		System.out.println("active    : "+activeFL);
+		System.out.println("achieved  : "+achievedFL);
+		System.out.println("================================");
 	}
 
 	public static ArrayList<String> convertObservationToState(ArrayList<String> state, Domain dom, ConnectivityGraph con, String obs){
@@ -370,7 +412,6 @@ public class RunVd {
 
 	public static void writeResultFile(HashMap<String, String> decisions, Observations actuals, String outfile) {
 		FileWriter writer = null;
-		System.out.println(outfile);
 		try {
 			File file = new File(outfile);
 			writer = new FileWriter(file);
@@ -413,9 +454,6 @@ public class RunVd {
 
 	public static JavaFFPlan producePlansJavaFF(Domain dom, Problem prob) {
 		JavaFFPlanner ffp = new JavaFFPlanner(dom.getDomainPath(), prob.getProblemPath());
-		if(ffp.getJavaFFPlan().getActions().isEmpty()) {
-			EventLogger.LOGGER.log(Level.WARNING, "JavaFF Plan not found");
-		}
 		return ffp.getJavaFFPlan();
 	}
 
@@ -442,7 +480,6 @@ public class RunVd {
 				Hypotheses hyp = setHypothesis(criticals, desirables);
 				TreeSet<String> paths = getFilesInPath(outdir);
 				for (String s : paths) {
-					System.out.println(s);
 					if(s.contains("out_")) {
 						ArrayList<String> result = readResultOutput(s);
 						tp+=countTP(result, hyp);
@@ -547,7 +584,7 @@ public class RunVd {
 	
 	public static void main(String[] args) {
 		int start = 1;
-		int mode = 1;
+		int mode = 1; //full trace, 50% trace, 75% trace
 		runVered(start, mode);
 		computeResults(start);
 	}
