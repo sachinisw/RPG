@@ -180,11 +180,11 @@ public class RunVd {
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
-					break; //just read one observation file. TODO: remove after debug
+//					break; //just read one observation file. TODO: remove after debug
 				}
-				if(scen==1) break; //TODO:: remove after debug
+//				if(scen==1) break; //TODO:: remove after debug
 			}
-			break;
+//			break; //TODO: remove after debug
 		}
 	}
 
@@ -301,7 +301,7 @@ public class RunVd {
 		}
 		return true;
 	}
-	
+
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
 		//for each goal compute P(Gi|O) (i=1,2) using method above. highest P(Gi|O) is the most likely goal
 		double neta = computeNeta(map);
@@ -323,7 +323,7 @@ public class RunVd {
 		}
 		return e;
 	}
-	
+
 	private static double computeNeta(HashMap<String, Double> goalranks) {
 		double rank = 0.0;
 		Iterator<String> itr = goalranks.keySet().iterator();
@@ -336,16 +336,17 @@ public class RunVd {
 			return 0.0;
 		}
 	}
-	
+
 	//observation is a state. 
 	//achievedFL=facts that were satisfied before but no longer satisfied
 	//activeFL = facts that are satisfied in current state
 	//prune out goals from hyp if (last achieved ordered landmark) is associated with that goal. What is this ***last achieved ordered lm***???
-	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks. (Meneguzzi 2017 landmark based plan recognition ECAI, Landmark based heuristics for goal-recognition)
+	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks. This is not the one i am doing (From paper: Meneguzzi 2017 landmark based plan recognition ECAI, Landmark based heuristics for goal-recognition)
 	//this experiment is for the algorithm:: goal mirroring with landmarks, where landmarks are used to filter out impossible goals and remaining goals are ranked based on cost. (Towards online goal-recognition combining goal mirroring and landmarks - vered, ramon, kaminka, meneguzzi
 	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> stateafterob,
 			TreeSet<String> achievedFL, TreeSet<String> activeFL, HashMap<String, TreeSet<String>> landmarks, OrderedLMGraph graph) {
-		if((!activeFL.isEmpty()) && (!observationIntersectswithActiveFL(ob, dom, con, stateafterob, activeFL))) {
+		System.out.println(landmarks);
+		if((!activeFL.isEmpty()) && (!observationContainsActiveFL(ob, dom, con, stateafterob, activeFL, graph))) {
 			//state resulting from this observation ob contains activeFact Landmarks. this means the facts are now achieved.//can move the active to achieved.
 			achievedFL.addAll(activeFL);
 			activeFL.clear();
@@ -397,15 +398,31 @@ public class RunVd {
 		return statenew;
 	}
 
-	public static boolean observationIntersectswithActiveFL(String ob, Domain dom, ConnectivityGraph con, 
-			ArrayList<String> state, TreeSet<String> activeFL) {
+	//check whether ob has caused activeFL to become achieved. i.e. ob contains a higher order landmark.
+	public static boolean observationContainsActiveFL(String ob, Domain dom, ConnectivityGraph con, 
+			ArrayList<String> state, TreeSet<String> activeFL, OrderedLMGraph graph) {
 		ArrayList<String> newstate = convertObservationToState(state, dom, con, ob);
-		for (String string : activeFL) {
-			for (String s : newstate) {
-				if(string.equalsIgnoreCase(s)) {
-					return true;
+		ArrayList<OrderedLMNode> closest = new ArrayList<>();
+		int currentmin = 0;
+		HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> sortedbylevel = graph.sortByTreeLevel();
+		Iterator<OrderedLMNode> sorteditr = sortedbylevel.keySet().iterator();
+		while(sorteditr.hasNext()) {//from newstate find the predicate(s) with lowest tree level value
+			OrderedLMNode ord = sorteditr.next();
+			if(ord.getTreeLevel()<=currentmin && ord.getTreeLevel()>=0) {
+				currentmin = ord.getTreeLevel();
+				closest.add(ord);
+			}
+		}System.out.println("state min===="+ closest);
+		int count = 0;
+		for (String s : newstate) {
+			for (OrderedLMNode o : closest) {
+				if(o.getNodecontent().contains(s)) {
+					++count;
 				}
 			}
+		}
+		if(count==closest.size()) {
+			return true;
 		}
 		return false;
 	}
@@ -488,12 +505,12 @@ public class RunVd {
 						fn+=countFN(result, hyp);
 					}
 				}
-				break;//TODO:: remove after debug
+//				break;//TODO:: remove after debug
 			}
 			writeRatesToFile(tp, tn, fp, fn, TestConfigsVd.prefix+TestConfigsVd.instancedir + inst +TestConfigsVd.resultOutpath+"vd_jff.csv");//this is the tp, tn totals for the 20 cases for the current instance.
 		}
 	}
-	
+
 	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String critical = hyp.getHyps().get(0);
@@ -507,7 +524,7 @@ public class RunVd {
 		}
 		return count;
 	}
-	
+
 	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String desirable = hyp.getHyps().get(1);
@@ -521,7 +538,7 @@ public class RunVd {
 		}
 		return count;
 	}
-	
+
 	public static int countFP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String critical = hyp.getHyps().get(0);
@@ -535,7 +552,7 @@ public class RunVd {
 		}
 		return count;
 	}
-	
+
 	public static int countFN(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String desirable = hyp.getHyps().get(1);
@@ -549,7 +566,7 @@ public class RunVd {
 		}
 		return count;
 	}
-	
+
 	public static ArrayList<String> readResultOutput(String filename){
 		ArrayList<String> results = new ArrayList<String>();
 		Scanner sc;
@@ -564,7 +581,7 @@ public class RunVd {
 		}
 		return results;
 	}
-	
+
 	public static void writeRatesToFile(int TP, int TN, int FP, int FN, String filename) {
 		FileWriter writer = null;
 		double tpr = (double) TP/(double) (TP+FN);
@@ -581,7 +598,7 @@ public class RunVd {
 			e.printStackTrace();
 		} 
 	}
-	
+
 	public static void main(String[] args) {
 		int start = 1;
 		int mode = 1; //full trace, 50% trace, 75% trace

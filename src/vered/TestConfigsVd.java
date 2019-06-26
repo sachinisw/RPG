@@ -5,10 +5,10 @@ public class TestConfigsVd {
 	public static final int ob50lm = 2;
 	public static final int ob75lm = 3;
 	public static final int trainedscenario = 0;
-	public static final int instances = 1; //from start arg. run test for this many instances
+	public static final int instances = 3; //from start arg. run test for this many instances
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
-	public static final String domain = "BLOCKS"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final String domain = "EASYIPC"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
 	public static final String planner = "jff/"; //javaff
 	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String instancedir="inst";
