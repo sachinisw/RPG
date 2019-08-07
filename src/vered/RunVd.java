@@ -106,7 +106,7 @@ public class RunVd {
 	//Online goal Recognition as Reasoning over Landmarks, Towards online goal recognition combining goal mirroring and landmarks
 	public static void runVered(int start, int mode) {
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+			for (int scen=9; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String landmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.atLmfile;
 				String ulandmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.uLmfile;
 				String desirables = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.desirableStateFile;
@@ -182,7 +182,7 @@ public class RunVd {
 					}
 //					break; //just read one observation file. TODO: remove after debug
 				}
-//				if(scen==1) break; //TODO:: remove after debug
+//				break; //TODO:: remove after debug
 			}
 //			break; //TODO: remove after debug
 		}
@@ -505,7 +505,6 @@ public class RunVd {
 						fn+=countFN(result, hyp);
 					}
 				}
-//				break;//TODO:: remove after debug
 			}
 			writeRatesToFile(tp, tn, fp, fn, TestConfigsVd.prefix+TestConfigsVd.instancedir + inst +TestConfigsVd.resultOutpath+"vd_jff.csv");//this is the tp, tn totals for the 20 cases for the current instance.
 		}

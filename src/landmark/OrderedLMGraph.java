@@ -183,6 +183,27 @@ public class OrderedLMGraph {
 		return immediate;
 	}
 
+	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> sortByTreeLevel(){ //sort by tree level of each node in the ascending order
+		HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> ascending = new HashMap<OrderedLMNode, TreeSet<OrderedLMNode>>();
+		ArrayList<OrderedLMNode> sortedkeys = new ArrayList<>();
+		sortedkeys.addAll(adj.keySet());
+		int i=1;
+		while(i < sortedkeys.size()) {
+		    int j = i;
+		    while( j > 0 && sortedkeys.get(j-1).getTreeLevel() > sortedkeys.get(j).getTreeLevel()) {
+		    	OrderedLMNode temp = sortedkeys.get(j);
+		        sortedkeys.set(j,sortedkeys.get(j-1));
+		        sortedkeys.set(j-1,temp);
+		        j = j - 1;
+		    }
+		    i = i + 1;
+		}
+		for (OrderedLMNode orderedLMNode : sortedkeys) {
+			ascending.put(orderedLMNode, adj.get(orderedLMNode));
+		}
+		return ascending;
+	}
+	
 	public String toString() {
 		String s = "";
 		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
