@@ -128,7 +128,7 @@ public class CausalGraph {
 		ArrayList<CGNode> currentpath = new ArrayList<>();
 		ArrayList<CGNode> visited = new ArrayList<CGNode>();
 		allPathsUtil(find, goal, visited, currentpath, paths);
-		System.out.println("long term = "+ paths);
+		System.out.println("long term >>>>= "+ paths);
 	}
 
 	public void allPathsUtil(CGNode s, CGNode d, ArrayList<CGNode> visited, 
@@ -136,7 +136,15 @@ public class CausalGraph {
 		visited.add(s);
 		currentpath.add(s);
 		if(s.equals(d)) {
-			allpaths.add(currentpath);
+			ArrayList<CGNode> copy = new ArrayList<>();
+			for (CGNode cgNode : currentpath) {
+				try {
+					copy.add((CGNode) cgNode.clone());
+				} catch (CloneNotSupportedException e) {
+					e.printStackTrace();
+				}
+			}
+			allpaths.add(copy);
 		}else {
 			TreeSet<CGNode> nbrs = adjacencyList.get(s);
 			if(nbrs!=null) {
@@ -147,6 +155,7 @@ public class CausalGraph {
 				}
 			}
 		}
+		currentpath.remove(s);
 		visited.remove(s);
 	}
 
