@@ -117,7 +117,7 @@ public class CausalGraph {
 
 	//from my current observation find how it leads to goal state
 	//do dfs from current observation.
-	public void findLongTermEnablers(String observation) {
+	public ArrayList<ArrayList<CGNode>> findLongTermEnablers(String observation) {
 		ArrayList<String> data = new ArrayList<String>();
 		data.add(observation);
 		ArrayList<String> g = new ArrayList<>();
@@ -128,7 +128,8 @@ public class CausalGraph {
 		ArrayList<CGNode> currentpath = new ArrayList<>();
 		ArrayList<CGNode> visited = new ArrayList<CGNode>();
 		allPathsUtil(find, goal, visited, currentpath, paths);
-		System.out.println("long term >>>>= "+ paths);
+		System.out.println("long term outcome >>>>= "+ paths);
+		return paths;
 	}
 
 	public void allPathsUtil(CGNode s, CGNode d, ArrayList<CGNode> visited, 
@@ -159,8 +160,20 @@ public class CausalGraph {
 		visited.remove(s);
 	}
 
-	public void findActiveSatisfiers() {
-
+	//find every predicate from init that has to be active for this observation to occur.
+	public ArrayList<ArrayList<CGNode>> findActiveSatisfiers(String observation) {
+		ArrayList<String> dest = new ArrayList<String>();
+		dest.add(observation);
+		ArrayList<String> src = new ArrayList<>();
+		src.add("A_I");
+		CGNode find = new CGNode(dest);
+		CGNode from = new CGNode(src);
+		ArrayList<ArrayList<CGNode>> paths = new ArrayList<>();
+		ArrayList<CGNode> currentpath = new ArrayList<>();
+		ArrayList<CGNode> visited = new ArrayList<CGNode>();
+		allPathsUtil(from, find, visited, currentpath, paths);
+		System.out.println("already seen >>>>= "+ paths);
+		return paths;
 	}
 
 	public ArrayList<CGEdge> findSatisfiersOfUndesirableState() {

@@ -244,13 +244,9 @@ public class RunTopK {
 				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath, K);
 				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
 						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
-				ArrayList<CausalLink> refPlanCausal = findCausalLinksForReferencePlan(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
-						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
-				CausalGraph cg = new CausalGraph(curstate);
-				cg.generateCausalGraph(refPlanCausal);
-				cg.findEnablers(curobs.getObservations().get(j).substring(2));
-				cg.findSatisfiersOfUndesirableState();
-				cg.findLongTermEnablers(curobs.getObservations().get(j).substring(2));
+				explain(curobs.getObservations().get(j).substring(2), altplans, refplans, a_con.get(0), a_rpg.get(0), 
+						decider.getInitialState().getState(), curstate,	decider.critical.getCriticalStatePredicates(), 
+						decider.desirable.getDesirableStatePredicates(), lm_out);
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
@@ -259,6 +255,20 @@ public class RunTopK {
 		}
 	}
 
+	//explanation module
+	public static void explain(String observation, HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, HashMap<ArrayList<String>, ArrayList<String>> refplans,
+			ConnectivityGraph con, RelaxedPlanningGraph rpg, ArrayList<String> init, ArrayList<String> currentstate, ArrayList<String> critical,
+			ArrayList<String> desirable, String lm_out) {
+		ArrayList<CausalLink> refPlanCausal = findCausalLinksForReferencePlan(altplans,refplans, con, rpg, init, 
+				currentstate, critical, desirable, lm_out);
+		CausalGraph cg = new CausalGraph(currentstate);
+		cg.generateCausalGraph(refPlanCausal);
+		cg.findEnablers(observation);
+		cg.findSatisfiersOfUndesirableState();
+		cg.findLongTermEnablers(observation);
+		cg.findActiveSatisfiers(observation);
+	}
+	
 	public static void runTopKAsTraining(int mode) {
 		LOGGER.log(Level.INFO, "Run mode: TRAINING with "+ TrainConfigsML.cases + " cases");
 		String domain = TrainConfigsML.domain;

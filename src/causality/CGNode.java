@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class CGNode implements Comparable<CGNode>{
+public class CGNode implements Comparable<CGNode>, Cloneable{
 	private ArrayList<String> data;
 
 	public CGNode(ArrayList<String> v){
@@ -68,5 +68,12 @@ public class CGNode implements Comparable<CGNode>{
 	public void setData(ArrayList<String> data) {
 		this.data = data;
 	}
+	
+	public Object clone() throws CloneNotSupportedException {
+		CGNode cloned = (CGNode) super.clone();
+		ArrayList<String> clonedData = new ArrayList<>(data);
+		cloned.setData(clonedData);
+        return cloned;
+    }
 	
 }
