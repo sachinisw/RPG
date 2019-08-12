@@ -14,8 +14,10 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import actors.Agent;
 import actors.Decider;
+import causality.CausalGraph;
 import con.ConnectivityGraph;
 import landmark.RelaxedPlanningGraph;
+import metrics.CausalLink;
 import metrics.FeatureSet;
 import out.CSVGenerator;
 import plans.HSPFPlan;
@@ -26,8 +28,12 @@ import rg.Problem;
 
 public class RunTopK {
 	private static final Logger LOGGER = Logger.getLogger(RunML.class.getName());
-	private static final int K = 50;
 
+	/**
+	 * Approximate the risk/desirability features by computing plan similarity metrics and landmark distance for the observer. 
+	 * Learn a decision tree. Predict intervention in small problems (few blocks, 1-good 1 bad) [DONE]
+	 */
+	
 	public static TreeSet<String> getObservationFiles(String obsfiles){
 		TreeSet<String> obFiles = new TreeSet<String>();
 		try {
@@ -68,7 +74,11 @@ public class RunTopK {
 	}
 
 	private static boolean restrict(int mode, int limit, String domain) {
-		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ||
+		if((domain.equalsIgnoreCase("EASYIPC") && mode==DebugConfigsML.runmode && limit>DebugConfigsML.fileLimit) ||
+				(domain.equalsIgnoreCase("NAVIGATOR") && mode==DebugConfigsML.runmode && limit>DebugConfigsML.fileLimit) || 
+				(domain.equalsIgnoreCase("FERRY") && mode==DebugConfigsML.runmode && limit>DebugConfigsML.fileLimit) ) { //when debugging pick only 1 observation file
+			return true;
+		}else if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ||
 				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) || 
 				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
 			return true;
@@ -83,7 +93,7 @@ public class RunTopK {
 	}
 
 	public static HashMap<ArrayList<String>, ArrayList<SASPlan>> generateAlternativePlans(Decider decider, String domainfile, 
-			ArrayList<String> currentstate, List<String> obs, String at_probfile, String ouputpath) {
+			ArrayList<String> currentstate, List<String> obs, String at_probfile, String ouputpath, int K) {
 		//alt plan = prefix (observations made thus far) + suffix (topK plans from current state to hypotheses
 		HashMap<ArrayList<String>, ArrayList<SASPlan>> alts = new HashMap<>();
 		Problem probA = new Problem(); //critical problem always the same. //use the problem for the attacker's definition.
@@ -98,7 +108,7 @@ public class RunTopK {
 		probA.setInit(currentstate);
 		probU.writeProblemFile(ouputpath+"_u.pddl"); //don't have to write the domain 
 		probA.writeProblemFile(ouputpath+"_a.pddl");
-		TopKPlanner tka = new TopKPlanner(domainfile, probA.getProblemPath(), K);
+		TopKPlanner tka = new TopKPlanner(domainfile, probA.getProblemPath(), K );
 		ArrayList<SASPlan> atplans = tka.getPlans();
 		TopKPlanner tku = new TopKPlanner(domainfile, probU.getProblemPath(), K);
 		ArrayList<SASPlan> uplans = tku.getPlans();
@@ -126,7 +136,7 @@ public class RunTopK {
 	//this decision is made by the intervening agent, who has the full visibility of the domain. so can use the domainfile that has everything in it
 	//observations may or may not have harmful actions. Could be executed by the attacker or the user. the goal is to detect the harmful actions as correctly as possible.
 	public static HashMap<ArrayList<String>, ArrayList<String>> generateReferencePlans(Decider decider, String domainfile, ArrayList<String> curstate, 
-			List<String> obs, String at_probfile, String outputpath) { //ref plan = prefix (observations made thus far) + suffix (optimal plan from current state to hypotheses
+			List<String> obs, String at_probfile, String outputpath, int K) { //ref plan = prefix (observations made thus far) + suffix (optimal plan from current state to hypotheses
 		HashMap<ArrayList<String>, ArrayList<String>> refs = new HashMap<>();
 		Problem probA = new Problem(); //critical problem always the same. //use the problem for the attacker's definition.
 		probA.readProblemPDDL(at_probfile);
@@ -170,6 +180,13 @@ public class RunTopK {
 		return fs.getFeaturevals();
 	}
 
+	public static ArrayList<CausalLink> findCausalLinksForReferencePlan(HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans, 
+			HashMap<ArrayList<String>, ArrayList<String>> refplans, ConnectivityGraph con, RelaxedPlanningGraph rpg, 
+			ArrayList<String> init, ArrayList<String> curstate, ArrayList<String> critical, ArrayList<String> desirable, String lmo) {
+		FeatureSet fs = new FeatureSet(altplans, refplans, con, rpg, init, curstate, critical, desirable, lmo);
+		return fs.getReferencePlanCausalLinksForCriticalState(); //for explanations
+	}
+	
 	public static void writeFeatureValsToFile(String outputfilename, ArrayList<double[]> featurevalsforfiles, Observation obs) {
 		ArrayList<String> data = new ArrayList<String>();
 		int index = 0;
@@ -189,7 +206,7 @@ public class RunTopK {
 
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, 
 			String a_out, String criticalfile, String a_init, String obs, 
-			String ds_csv, String lm_out, int delay, boolean full) {
+			String ds_csv, String lm_out, int delay, int K, boolean full) {
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init);
 		decider.setDesirableState();
 		decider.setUndesirableState();
@@ -209,8 +226,7 @@ public class RunTopK {
 			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
 			curstate.addAll(decider.getInitialState().getState());
-//			System.out.println(Arrays.toString(name));
-//			System.out.println("&&&&&&&&&&&&&&&&&&&"+curobs.getObservations());
+			System.out.println(Arrays.toString(name));
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
 				String outpath = "";
 				if(mode==TrainConfigsML.runmode) {
@@ -224,15 +240,21 @@ public class RunTopK {
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
 				curstate.addAll(adds); //effect of action is visible in the domain
-				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath);
-//				System.out.println("CURRENT OBS==="+curobs.getObservations().get(j));
+				HashMap<ArrayList<String>, ArrayList<SASPlan>> altplans = generateAlternativePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath, K);
+				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath, K);
 				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
 						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
+				ArrayList<CausalLink> refPlanCausal = findCausalLinksForReferencePlan(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
+						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
+				CausalGraph cg = new CausalGraph(curstate);
+				cg.generateCausalGraph(refPlanCausal);
+				cg.findEnablers(curobs.getObservations().get(j).substring(2));
+				cg.findSatisfiersOfUndesirableState();
+				cg.findLongTermEnablers(curobs.getObservations().get(j).substring(2));
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-//			break;
+			break; //TODO: remove after debug mode
 //			}
 		}
 	}
@@ -253,7 +275,7 @@ public class RunTopK {
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
 //			if(casenum==1)//5 navigator, 0 blocks, easyipc, 1 ferry
 			run(mode, domain, domainfile, desirablefile, a_prob, 
-					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, true);
+					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, TrainConfigsML.K, true);
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
@@ -270,7 +292,7 @@ public class RunTopK {
 		String ds_csv = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.datadir+DebugConfigsML.decisionCSV;
 		String lm_out = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.datadir+DebugConfigsML.lmoutputFile;
 		String obs = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.obsdir;
-		run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, true);
+		run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, DebugConfigsML.K, true);
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
@@ -289,7 +311,7 @@ public class RunTopK {
 				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
 				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
-				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, true);
+				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, TestConfigsML.K, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
@@ -298,7 +320,7 @@ public class RunTopK {
 
 	public static void main(String[] args) { 
 		//TODO README:: CHANGE CONFIGS HERE FIRST, CHECK K=50 at the top of this file
-		int mode = 1; //-1=debug train 0=train, 1=test 
+		int mode = -1; //-1=debug train 0=train, 1=test 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {

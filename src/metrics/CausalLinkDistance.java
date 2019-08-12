@@ -26,6 +26,20 @@ public class CausalLinkDistance  extends Distance{
 		ref_causal = new ArrayList<>();
 		in_causal = new ArrayList<>();
 	}
+	
+	//need to extract causal links only for the reference plan
+	public CausalLinkDistance(ArrayList<String> ref, ConnectivityGraph c, ArrayList<String> in, ArrayList<String> g) {
+		super(ref,null);
+		con = c;
+		init = in;
+		goal = g;
+		ref_causal = new ArrayList<>();
+		in_causal = new ArrayList<>();
+	}
+	
+	public void extractCausalLinksForReferencePlanForCriticalState() {
+		extractCausalLinksFromReferencePlan();
+	}
 
 	public void extractCausalLinks() {
 		extractCausalLinksFromReferencePlan();

@@ -15,7 +15,7 @@ public class TraceConfigs {
 	//Critical and desirable states for template training problem generator
 	public final static int trainingcases = 20;
 	public final static int scenario = 0; //intervention scenario 0 (BAD/TAD), 1(TEA/EAT), ... for the domain
-	public final static String domain = "LOGISTICS";//BLOCKS,EASYIPC,NAVIGATOR,FERRY,LOGISTICS
+	public final static String domain = "PAG";//BLOCKS,EASYIPC,NAVIGATOR,FERRY,LOGISTICS,PAG
 	public final static String prefix = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train"; //base path. must be followed by a number 1, 2...
 	public final static String t_CriticalStates = "/t_critical.txt";
 	public final static String t_DesirableStates = "/t_desirable.txt";

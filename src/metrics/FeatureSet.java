@@ -20,6 +20,7 @@ public class FeatureSet {
 
 	private HashMap<ArrayList<String>, ArrayList<SASPlan>> alternativePlanSet; //1-critical, 2-desirable
 	private HashMap<ArrayList<String>, ArrayList<String>> referencePlans; //1-critical optimal plan, 2-desirable optimal plan
+	private ArrayList<CausalLink> ref_causalLinks;
 	private ConnectivityGraph connectivity;
 	private RelaxedPlanningGraph rpg;
 	private double[] featurevals;
@@ -49,6 +50,7 @@ public class FeatureSet {
 		init = inits;
 		lmout = lmo;
 		rpg = pg;
+		ref_causalLinks = new ArrayList<>();
 		currentstate = current;
 		featurevals = new double[13]; 
 	}
@@ -315,7 +317,7 @@ public class FeatureSet {
 	}
 
 	public void evaluateFeatureValuesForCurrentObservation() {
-//				System.out.println(alternativePlanSet);System.out.println(referencePlans);
+				System.out.println(alternativePlanSet);System.out.println(referencePlans);
 		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
 		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
 		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate); //ok
@@ -349,7 +351,14 @@ public class FeatureSet {
 			featurevals[index++] = Double.valueOf(formatted);
 		}
 	}
-
+	
+	public ArrayList<CausalLink> getReferencePlanCausalLinksForCriticalState(){
+		ArrayList<String> ref = referencePlans.get(criticalstate);
+		CausalLinkDistance cld = new CausalLinkDistance(ref, connectivity, init, criticalstate);
+		cld.extractCausalLinksForReferencePlanForCriticalState();
+		return cld.getRef_causal();
+	}
+	
 	public HashMap<ArrayList<String>, ArrayList<SASPlan>> getAlternativePlanSet() {
 		return alternativePlanSet;
 	}
@@ -428,6 +437,14 @@ public class FeatureSet {
 
 	public void setInit(ArrayList<String> init) {
 		this.init = init;
+	}
+
+	public ArrayList<CausalLink> getRef_causalLinks() {
+		return ref_causalLinks;
+	}
+
+	public void setRef_causalLinks(ArrayList<CausalLink> ref_causalLinks) {
+		this.ref_causalLinks = ref_causalLinks;
 	}
 
 }

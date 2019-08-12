@@ -2,6 +2,7 @@ package run;
 
 public class TestConfigsML {
 	public static final boolean writeDOT = false;
+	public static final int K = 50; 
 	public static final int runmode = 1; 
 	public static final int trainedscenario = 0;
 	public static final int instances = 3; //from start arg. run test for this many instances

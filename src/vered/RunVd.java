@@ -215,7 +215,7 @@ public class RunVd {
 		TreeSet<String> achievedDFL = new TreeSet<String>();
 		i_k.add(producePlansJavaFF(dom, pcri)); //need to do it twice because I have two goals.
 		i_k.add(producePlansJavaFF(dom, pdes));
-		System.out.println("ik="+i_k);
+//		System.out.println("ik="+i_k);
 		ArrayList<String> state = new ArrayList<>(init);
 		for (int i=0; i<obs.getObs().size(); i++) {
 			HashMap<String, Double> goalranks = new HashMap<String, Double>();
@@ -223,7 +223,7 @@ public class RunVd {
 			String now = obs.getObs().get(i);
 			prefix.add(now);
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
-			System.out.println("curac************ "+now);System.out.println("curstate="+obstate);
+//			System.out.println("curac************ "+now);System.out.println("curstate="+obstate);
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa, aGraph); //attack landmarks
 			achieveLandmark(now, dom, a_con, obstate, achievedDFL, activeDFL, lmsd, uGraph); //desirable landmarks, with same connectivity because, intervener has full observability
 			//wait until vered/ramon tells me how to prune hypotheses. they never got back to me. #sad. 
@@ -264,7 +264,7 @@ public class RunVd {
 					prefix.removeAll(suffix.getActions());
 				}
 				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
-				System.out.println("goalranks====>>>"+goalranks);
+//				System.out.println("goalranks====>>>"+goalranks);
 				if(ent != null) {
 					obsTolikelgoal.put(now, ent.getKey());
 				}else {
@@ -345,7 +345,7 @@ public class RunVd {
 	//this experiment is for the algorithm:: goal mirroring with landmarks, where landmarks are used to filter out impossible goals and remaining goals are ranked based on cost. (Towards online goal-recognition combining goal mirroring and landmarks - vered, ramon, kaminka, meneguzzi
 	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> stateafterob,
 			TreeSet<String> achievedFL, TreeSet<String> activeFL, HashMap<String, TreeSet<String>> landmarks, OrderedLMGraph graph) {
-		System.out.println(landmarks);
+//		System.out.println(landmarks);
 		if((!activeFL.isEmpty()) && (!observationContainsActiveFL(ob, dom, con, stateafterob, activeFL, graph))) {
 			//state resulting from this observation ob contains activeFact Landmarks. this means the facts are now achieved.//can move the active to achieved.
 			achievedFL.addAll(activeFL);
@@ -376,10 +376,10 @@ public class RunVd {
 				activeFL.add(close);
 			}
 		}
-		System.out.println("=================================");
-		System.out.println("active    : "+activeFL);
-		System.out.println("achieved  : "+achievedFL);
-		System.out.println("================================");
+//		System.out.println("=================================");
+//		System.out.println("active    : "+activeFL);
+//		System.out.println("achieved  : "+achievedFL);
+//		System.out.println("================================");
 	}
 
 	public static ArrayList<String> convertObservationToState(ArrayList<String> state, Domain dom, ConnectivityGraph con, String obs){
@@ -412,7 +412,7 @@ public class RunVd {
 				currentmin = ord.getTreeLevel();
 				closest.add(ord);
 			}
-		}System.out.println("state min===="+ closest);
+		}//System.out.println("state min===="+ closest);
 		int count = 0;
 		for (String s : newstate) {
 			for (OrderedLMNode o : closest) {

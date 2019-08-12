@@ -20,7 +20,10 @@ import out.CSVGenerator;
 import out.DecisionDataLine;
 
 public class RunML {
-
+	/**
+	 * Enumerate the full state space for the observer. Extract Feature values risk, desirability, distances to undesirable/desirable, landmarks
+	 * Learn a decision tree. Predict intervention in small problems (few blocks, 1-good 1 bad) [DONE]
+	 */
 	private static final Logger LOGGER = Logger.getLogger(RunML.class.getName());
 	private static final boolean asTraceGenerator = false;
 
