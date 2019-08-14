@@ -1,7 +1,6 @@
 package causality;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Objects;
 
 public class CGNode implements Comparable<CGNode>, Cloneable{
@@ -53,7 +52,11 @@ public class CGNode implements Comparable<CGNode>, Cloneable{
 	}
 	
 	public String toString(){
-		return "{"+ Arrays.toString(data.toArray()) + "}";
+		String s = "";
+		for (String string : data) {
+			s+= string +" ";
+		}
+		return "{"+ s.substring(0,s.length()-1) + "}";
 	}
 
 	@Override

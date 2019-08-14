@@ -15,7 +15,7 @@ import metrics.CausalLink;
  *
  */
 public class CausalGraph {
-	private HashMap<CGNode, TreeSet<CGNode>> adjacencyList;
+	private HashMap<CGNode, ArrayList<CGNode>> adjacencyList;
 	private ArrayList<CGNode> vertices; 
 	private ArrayList<CGEdge> edges;
 	private ArrayList<String> currentState;
@@ -32,7 +32,7 @@ public class CausalGraph {
 	}
 
 	public void generateCausalGraph(ArrayList<CausalLink> cl) {
-		System.out.println("Causal LInks ====" + cl);
+//		System.out.println("Causal LInks ====" + cl);
 		for (CausalLink c : cl) {
 			ArrayList<String> add = new ArrayList<String>();
 			ArrayList<String> need = new ArrayList<String>();
@@ -40,7 +40,7 @@ public class CausalGraph {
 			need.add(c.getActionNeeding());
 			CGNode nodeF = new CGNode(add);
 			CGNode nodeT = new CGNode(need);
-			CGEdge edge = new CGEdge(nodeF, nodeT);
+			CGEdge edge = new CGEdge(nodeF, nodeT, c.getProposition());
 			if(!vertices.contains(nodeF)) {
 				vertices.add(nodeF);
 			}else if(!vertices.contains(nodeT)) {
@@ -52,11 +52,11 @@ public class CausalGraph {
 		}
 		for (CGEdge e : edges) {
 			if(!adjacencyList.containsKey(e.getFrom())) {
-				TreeSet<CGNode> nbr = new TreeSet<>();
+				ArrayList<CGNode> nbr = new ArrayList<>();
 				nbr.add(e.getTo());
 				adjacencyList.put(e.getFrom(), nbr);
 			}else {
-				TreeSet<CGNode> nbr = adjacencyList.get(e.getFrom());
+				ArrayList<CGNode> nbr = adjacencyList.get(e.getFrom());
 				nbr.add(e.getTo());
 				adjacencyList.put(e.getFrom(),nbr);
 			}
@@ -78,7 +78,7 @@ public class CausalGraph {
 
 	//from this observation, what actions get enabled? (i.e. preconditions gets added)
 	//search through causal graph using BFS to find node corresponding to observation. Edge obs-neighbor will have enablers
-	public void findEnablers(String observation) {
+	public ArrayList<CGEdge> findImmediateEnablers(String observation) {
 		ArrayList<String> data = new ArrayList<String>();
 		data.add(observation);
 		CGNode find = new CGNode(data);
@@ -88,7 +88,7 @@ public class CausalGraph {
 		queue.add(getRoot());
 		while(!queue.isEmpty()) {
 			CGNode cur = queue.poll();
-			TreeSet<CGNode> children = adjacencyList.get(cur);
+			ArrayList<CGNode> children = adjacencyList.get(cur);
 			if(cur.isEqual(find)) {
 				if(children!=null) {
 					for (CGNode cgNode : children) {
@@ -109,14 +109,16 @@ public class CausalGraph {
 			}
 			explored.add(cur);
 		}
-		System.out.println("------------------------");
-		System.out.println("ob="+observation);
-		System.out.println(adjacencyList);
-		System.out.println("enablers= "+enablers);
+//		System.out.println("------------------------");
+//		System.out.println("ob="+observation);
+//		System.out.println(adjacencyList);
+//		System.out.println("enablers= "+enablers);
+		return enablers;
 	}
 
 	//from my current observation find how it leads to goal state
 	//do dfs from current observation.
+	//see what goal precondition this one achieves. Do the same for the missing goal precondition **************************
 	public ArrayList<ArrayList<CGNode>> findLongTermEnablers(String observation) {
 		ArrayList<String> data = new ArrayList<String>();
 		data.add(observation);
@@ -147,7 +149,7 @@ public class CausalGraph {
 			}
 			allpaths.add(copy);
 		}else {
-			TreeSet<CGNode> nbrs = adjacencyList.get(s);
+			ArrayList<CGNode> nbrs = adjacencyList.get(s);
 			if(nbrs!=null) {
 				for (CGNode c : adjacencyList.get(s)) {
 					if(!visited.contains(c)) {
@@ -160,8 +162,24 @@ public class CausalGraph {
 		visited.remove(s);
 	}
 
+	public ArrayList<CGEdge> findContributorsToGoalInPath(ArrayList<ArrayList<CGNode>> paths) {
+		ArrayList<CGEdge> contributors = new ArrayList<>();
+		ArrayList<String> g = new ArrayList<>();
+		g.add("A_G");
+		CGNode goal = new CGNode(g);
+		for (ArrayList<CGNode> path : paths) {
+			CGNode last = path.get(path.size()-1);
+			if(last.equals(goal)) {
+				CGNode justbefore = path.get(path.size()-2);
+				ArrayList<CGEdge> e = findImmediateEnablers(justbefore.getData().get(0));
+				contributors.addAll(e);
+			}
+		}
+		return contributors;
+	}
+	
 	//find every predicate from init that has to be active for this observation to occur.
-	public ArrayList<ArrayList<CGNode>> findActiveSatisfiers(String observation) {
+	public ArrayList<CGEdge> findActiveSatisfiers(String observation) {
 		ArrayList<String> dest = new ArrayList<String>();
 		dest.add(observation);
 		ArrayList<String> src = new ArrayList<>();
@@ -172,8 +190,60 @@ public class CausalGraph {
 		ArrayList<CGNode> currentpath = new ArrayList<>();
 		ArrayList<CGNode> visited = new ArrayList<CGNode>();
 		allPathsUtil(from, find, visited, currentpath, paths);
-		System.out.println("already seen >>>>= "+ paths);
-		return paths;
+//		System.out.println("already seen >>>>= "+ findEdgesInPath(paths));
+		return findEdgesInPath(paths);
+	}
+
+	public TreeSet<String> findPreconditions(CGNode n){
+		TreeSet<String> precond = new TreeSet<String>();
+		if(!n.getData().contains("A_I")) { //init action doesnt have preconditions
+			for (CGEdge e : edges) {
+				if(e.getTo().equals(n)) {
+					precond.add(e.getEdgeLabel());
+				}
+			}
+		}
+		return precond;
+	}
+
+	public TreeSet<String> findInitState(){
+		TreeSet<String> init = new TreeSet<String>();
+		for (CGEdge e : edges) {
+			if(e.getFrom().getData().contains("A_I")) {
+				init.add(e.getEdgeLabel());
+			}
+		}
+		return init;
+	}
+
+	//seen >>>>= [{A_I} -> {STACK A W}, {A_I} -> {PICK-UP A}, {PICK-UP A} -> {STACK A W}]
+	//running remembers what has been observed so far in the observation sequence.
+	public TreeSet<String> modifyStateThroughPath(ArrayList<CGEdge> passededgeset, ArrayList<CGEdge> toHappen, ArrayList<String> runningstate){
+		TreeSet<String> state = new TreeSet<String>(runningstate); //start with runningstate
+		System.out.println("start===="+state);
+		for (CGEdge e : passededgeset) {
+			state.removeAll(findPreconditions(e.getTo()));
+		}
+		for (CGEdge e : toHappen) {
+			state.add(e.getEdgeLabel());
+		}
+		runningstate.clear();
+		runningstate.addAll(state); //update running state to keep state rolling on for next observation
+		return state;
+	}
+
+	public ArrayList<CGEdge> findEdgesInPath(ArrayList<ArrayList<CGNode>> paths){
+		ArrayList<CGEdge> edgeset = new ArrayList<>();
+		for (ArrayList<CGNode> path : paths) {
+			for(int i=0; i<path.size()-1; i++) {
+				for (CGEdge ed : edges) {
+					if(ed.getFrom().equals(path.get(i)) && ed.getTo().equals(path.get(i+1)) && !edgeset.contains(ed)) {
+						edgeset.add(ed);
+					}
+				}				
+			}
+		}
+		return edgeset;
 	}
 
 	public ArrayList<CGEdge> findSatisfiersOfUndesirableState() {
@@ -185,26 +255,24 @@ public class CausalGraph {
 				satisfiers.add(e);
 			}
 		}
-		System.out.println("satisifiers of undesirable= "+satisfiers);
 		return satisfiers;
 	}
 
 	public ArrayList<CGEdge> findEdges(CGNode nodefrom, CGNode nodeTo){
 		ArrayList<CGEdge> edgeset = new ArrayList<CGEdge>();
-		CGEdge find = new CGEdge(nodefrom, nodeTo);
 		for (CGEdge cgEdge : edges) {
-			if(cgEdge.equals(find)) {
+			if(cgEdge.getFrom().equals(nodefrom) && cgEdge.getTo().equals(nodeTo)) {
 				edgeset.add(cgEdge);
 			}
 		}
 		return edgeset;
 	}
 
-	public HashMap<CGNode, TreeSet<CGNode>> getAdjacencyList() {
+	public HashMap<CGNode, ArrayList<CGNode>> getAdjacencyList() {
 		return adjacencyList;
 	}
 
-	public void setAdjacencyList(HashMap<CGNode, TreeSet<CGNode>> adjacencyList) {
+	public void setAdjacencyList(HashMap<CGNode, ArrayList<CGNode>> adjacencyList) {
 		this.adjacencyList = adjacencyList;
 	}
 
