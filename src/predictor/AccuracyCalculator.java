@@ -56,12 +56,16 @@ public class AccuracyCalculator {
 		double TNR = (double)cmat[3]/(double)(cmat[3]+cmat[2]);
 		double FPR = (double)cmat[2]/(double)(cmat[3]+cmat[2]);
 		double FNR = (double)cmat[1]/(double)(cmat[1]+cmat[0]);
+		double precision = (double)cmat[0]/(double)(cmat[0]+cmat[2]); //tp/tp+fp
+		double recall = (double)cmat[0]/(double)(cmat[0]+cmat[1]);   //tp/tp+fn
+		double f1 = 2.0 * ( (precision*recall) / (precision+recall));
 		DecimalFormat fm = new DecimalFormat("#.###");
 		StringBuilder sb = new StringBuilder();
 		sb.append("\nMode:"+ mode +"\nTotal Observations = "+String.valueOf(sum)+ "\n"+
 				"TP\tTN\tFP\tFN\n"+
 				String.valueOf(fm.format(TPR))+"\t"+String.valueOf(fm.format(TNR))+ "\t"+
 				String.valueOf(fm.format(FPR))+"\t"+String.valueOf(fm.format(FNR)));
+		sb.append("\n precision=" + precision + " recall=" + recall + " F1="+f1);
 		return sb.toString();
 	}
 	public static void main(String args[]){

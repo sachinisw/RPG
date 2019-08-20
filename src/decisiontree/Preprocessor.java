@@ -376,9 +376,9 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
-		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
-		int alg  = 1; //0-full state space, 1-topk planner
+		int mode = 0; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
+		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		int alg  = 0; //0-full state space, 1-topk planner
 		int instances  = 3;
 		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();

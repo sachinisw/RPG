@@ -264,7 +264,7 @@ public class RunML {
 	}
 
 	public static void main(String[] args) { 
-		int mode = -1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
+		int mode = 0; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigsML.runmode){
 			runAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {

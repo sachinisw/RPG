@@ -587,11 +587,16 @@ public class RunVd {
 		double tnr = (double) TN/(double) (TN+FP);
 		double fnr = (double) FN/(double) (TP+FN);
 		double fpr = (double) FP/(double) (TN+FP);
+		double precision = (double)TP/(double)(TP+FP); //tp/tp+fp
+		double recall = (double)TP/(double)(TP+FN);   //tp/tp+fn
+		double f1 = 2.0 * ( (precision*recall) / (precision+recall));
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
 			writer.write("TPR,TNR,FPR,FNR"+"\n");
 			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
+			writer.write("PRECISION,RECALL,F1\n");
+			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+"\n");
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
