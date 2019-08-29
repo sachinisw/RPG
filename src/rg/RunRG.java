@@ -193,10 +193,10 @@ public class RunRG {
 				String actualObservations = "";
 				if(mode==TestConfigsRG.obFull) { //full trace
 					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observationFiles;
-				}else if(mode==TestConfigsRG.ob50lm) { //50lm
-					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation50Files;
-				}else if(mode==TestConfigsRG.ob75lm) { //75lm
-					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation75Files;  
+//				}else if(mode==TestConfigsRG.ob50lm) { //50lm
+//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation50Files;
+//				}else if(mode==TestConfigsRG.ob75lm) { //75lm
+//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation75Files;  
 				}
 				String domfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.domainFile;
 				String probfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.a_problemFile;
@@ -221,10 +221,10 @@ public class RunRG {
 						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, outdir+path[path.length-1]+"/");
 						if(mode==TestConfigsRG.obFull) {
 							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + ".csv");
-						}else if (mode==TestConfigsRG.ob50lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "50.csv");
-						}else if (mode==TestConfigsRG.ob75lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "75.csv");
+//						}else if (mode==TestConfigsRG.ob50lm) {
+//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "50.csv");
+//						}else if (mode==TestConfigsRG.ob75lm) {
+//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "75.csv");
 						}
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
@@ -249,7 +249,7 @@ public class RunRG {
 		return results;
 	}
 
-	//TNR,TPR,FNR,FPR values for R&G, using current planner
+	//TNR,TPR,FNR,FPR, precision, recall f1 values for R&G, using current planner
 	public static void computeResults(int start) {
 		for (int inst=start; inst<=TestConfigsRG.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			int tp=0, tn=0, fp=0, fn=0;
@@ -283,11 +283,16 @@ public class RunRG {
 		double tnr = (double) TN/(double) (TN+FP);
 		double fnr = (double) FN/(double) (TP+FN);
 		double fpr = (double) FP/(double) (TN+FP);
+		double precision = (double)TP/(double)(TP+FP); //tp/tp+fp
+		double recall = (double)TP/(double)(TP+FN);   //tp/tp+fn
+		double f1 = 2.0 * ( (precision*recall) / (precision+recall));
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
 			writer.write("TPR,TNR,FPR,FNR"+"\n");
 			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
+			writer.write("PRECISION,RECALL,F1\n");
+			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+"\n");
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -351,7 +356,7 @@ public class RunRG {
 	}
 	
 	public static void main(String[] args) {
-		int start = 3; //TODO: change here. this is the starting instance number. will go until TestConfig.instances number of times.
+		int start = 1; //TODO: change here. this is the starting instance number. will go until TestConfig.instances number of times.
 		int mode = 1;  // change here to indicate which observation files are being run. full, 50% limited or 75% limited
 		runRandG(start , mode);
 		computeResults(start);

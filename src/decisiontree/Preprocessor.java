@@ -17,6 +17,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 public class Preprocessor {
+
 	private static final Logger LOGGER = Logger.getLogger(Preprocessor.class.getName());
 
 	public ArrayList<String> getDataFiles(String filedir, int algorithm){		
@@ -377,7 +378,7 @@ public class Preprocessor {
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
 		int mode = 0; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int alg  = 0; //0-full state space, 1-topk planner
 		int instances  = 3;
 		int casePerInstance = 20; //change to 20
@@ -422,27 +423,27 @@ public class Preprocessor {
 			for (int instance = 1; instance <= instances; instance++) {
 				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
-				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
-				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";
+//				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
+//				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";
 				String instout_fulltk=prefix+String.valueOf(instance)+"/data/tk_instfull.csv";
 				ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
 				ArrayList<ArrayList<DataFile>> inst_tkfull = new ArrayList<>();
-				ArrayList<ArrayList<DataFile>> inst_lm50 = new ArrayList<>();
-				ArrayList<ArrayList<DataFile>> inst_lm75 = new ArrayList<>();
+//				ArrayList<ArrayList<DataFile>> inst_lm50 = new ArrayList<>();
+//				ArrayList<ArrayList<DataFile>> inst_lm75 = new ArrayList<>();
 				for(int instcase = 0; instcase<casePerInstance; instcase++) {
 					String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
 					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
 					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
 					String outFulltkforcase = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/tk_full.csv";
-					String outFull_lm50 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_50lm.csv";
-					String outFull_lm75 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_75lm.csv";
+//					String outFull_lm50 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_50lm.csv";
+//					String outFull_lm75 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_75lm.csv";
 					if(alg==0) {
 						ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1, alg);
-						ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2, alg);
-						ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3, alg);
+//						ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2, alg);
+//						ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3, alg);
 						inst_full.add(df);
-						inst_lm50.add(dlm50);
-						inst_lm75.add(dlm75);
+//						inst_lm50.add(dlm50);
+//						inst_lm75.add(dlm75);
 					}else if(alg==1) {
 						ArrayList<DataFile> tk = pre.preprocessTopKTestingData(inputfilepath, outFulltkforcase, alg); //collect all observation file outputs and produce 1 csv for the scenario 0-20
 						inst_tkfull.add(tk); //collect the _tk.csv result files for this instance
@@ -450,8 +451,8 @@ public class Preprocessor {
 				}
 				if(alg==0) {
 					writeInstanceSpecificOutput(inst_full, instout_full);
-					writeInstanceSpecificOutput(inst_lm50, instout_lm50);
-					writeInstanceSpecificOutput(inst_lm75, instout_lm75);
+//					writeInstanceSpecificOutput(inst_lm50, instout_lm50);
+//					writeInstanceSpecificOutput(inst_lm75, instout_lm75);
 				}else if(alg==1) {
 					writeInstanceSpecificTopKOutput(inst_tkfull, instout_fulltk); //write the collected _tk_csv files for all 3 instances to one file in insti/data directory
 				}

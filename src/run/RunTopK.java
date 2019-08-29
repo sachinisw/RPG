@@ -14,7 +14,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import actors.Agent;
 import actors.Decider;
-import causality.Explanation;
+//import causality.Explanation;
 import con.ConnectivityGraph;
 import landmark.RelaxedPlanningGraph;
 import metrics.CausalLink;
@@ -221,14 +221,14 @@ public class RunTopK {
 			}
 			obFileLimit++;
 			String name[] = file.split("/");
-			if(name[name.length-1].equalsIgnoreCase("4")) { //navigator=5, 0=easyipc,blocks ferry=15
+//			if(name[name.length-1].equalsIgnoreCase("4")) { //navigator=5, 0=easyipc,blocks ferry=15
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
 			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
 			ArrayList<String> causalstate = new ArrayList<String>();
 			curstate.addAll(decider.getInitialState().getState());
 			causalstate.addAll(decider.getInitialState().getState());
-			System.out.println(Arrays.toString(name));
+//			System.out.println(Arrays.toString(name));
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
 				String outpath = "";
 				if(mode==TrainConfigsML.runmode) {
@@ -237,7 +237,7 @@ public class RunTopK {
 					outpath = TestConfigsML.prefix+TestConfigsML.instancedir+name[name.length-5].substring(4)+TestConfigsML.instscenario+
 							name[name.length-3]+TestConfigsML.topkdir+name[name.length-1]+"_"+j;
 				}
-				System.out.println(outpath);
+//				System.out.println(outpath);
 				ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
@@ -246,18 +246,19 @@ public class RunTopK {
 				HashMap<ArrayList<String>, ArrayList<String>> refplans = generateReferencePlans(decider, domainfile, curstate, curobs.getObservations().subList(0, j+1), a_prob, outpath, K);
 				double[] featureval = computeFeatureSet(altplans,refplans,a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
 						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
-				ArrayList<CausalLink> refPlanCausal = findCausalLinksForReferencePlan(altplans,refplans, a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
-						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
+//				//////////////CAUSAL EXPLANATION MODULE///////////////
+//				ArrayList<CausalLink> refPlanCausal = findCausalLinksForReferencePlan(altplans,refplans, a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), 
+//						curstate, decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				//if(curobs.getObservations().get(j).substring(2).equalsIgnoreCase("Y")) {
-					Explanation.explain(curobs.getObservations().get(j).substring(2), causalstate, refPlanCausal, altplans, refplans, 
-							a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), curstate,	
-							decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
+//					Explanation.explain(curobs.getObservations().get(j).substring(2), causalstate, refPlanCausal, altplans, refplans, 
+//							a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), curstate,	
+//							decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				//}
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-			break; //TODO: remove after debug mode
-			}
+//			break; //TODO: remove after debug mode
+//			}
 		}
 	}
 	
@@ -322,7 +323,7 @@ public class RunTopK {
 
 	public static void main(String[] args) { 
 		//TODO README:: CHANGE CONFIGS HERE FIRST, CHECK K=50 at the top of this file
-		int mode = -1; //-1=debug train 0=train, 1=test 
+		int mode = 0; //-1=debug train 0=train, 1=test 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {

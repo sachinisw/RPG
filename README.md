@@ -15,16 +15,22 @@ This project is contains the Java implementation of the state graph.
 
 # Execution Steps
 * State space enumeration
- * Training
-  * run.runML (change domain name in TrainingConfigs, and mode=0)
- * Testing
-  * decisiontree.Preprocessor (change domain, alg=0, mode=0 in Preprocessor.java)
+    * Training
+        - run.runML (change domain name in TrainingConfigs, and mode=0)
+    * Testing
+        - decisiontree.Preprocessor (change domain, alg=0, mode=0 in Preprocessor.java)
 * TopK (repeat 2 times K=50, K=100)
- * Training
-  * run.RunTopK (change domain name in TrainingConfigs, and mode=0)
- * Testing
-  * decisiontree.Preprocessor (change domain, alg=0, mode=0 in Preprocessor.java)
+    * Training
+        - run.RunTopK (change domain name in TrainingConfigs, mode=0)
+    * Testing
+        - decisiontree.Preprocessor (change domain, alg=1, mode=1 in Preprocessor.java)
 * R&G 2010
- * Run rg.RunRG.java
+    - Run rg.RunRG.java
 * Vered 2018
- * Run vered.RunVd.java
+    - Run vered.RunVd.java
+
+
+* Use WEKA to get the model predictions.
+    * run predictor.Preprocess.java
+    * run predictor.AccuracyCalculator.java
+    

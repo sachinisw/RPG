@@ -317,7 +317,7 @@ public class FeatureSet {
 	}
 
 	public void evaluateFeatureValuesForCurrentObservation() {
-				System.out.println(alternativePlanSet);System.out.println(referencePlans);
+//				System.out.println(alternativePlanSet);System.out.println(referencePlans);
 		double r_actionsetdistance = getMedianActionSetDistanceFromAltPlans(criticalstate); //ok
 		double d_actionsetdistance = getMedianActionSetDistanceFromAltPlans(desirablestate); //ok
 		double r_causallinkdistance = getMedianCausalLinkDistanceFromAltPlans(criticalstate); //ok

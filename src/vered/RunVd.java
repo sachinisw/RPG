@@ -106,7 +106,7 @@ public class RunVd {
 	//Online goal Recognition as Reasoning over Landmarks, Towards online goal recognition combining goal mirroring and landmarks
 	public static void runVered(int start, int mode) {
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
-			for (int scen=9; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String landmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.atLmfile;
 				String ulandmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.uLmfile;
 				String desirables = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.desirableStateFile;
@@ -116,10 +116,10 @@ public class RunVd {
 				String actualObservations = "";
 				if(mode==TestConfigsVd.obFull) { //full trace
 					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observationFiles;
-				}else if(mode==TestConfigsVd.ob50lm) { //50lm
-					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation50Files;
-				}else if(mode==TestConfigsVd.ob75lm) { //75lm
-					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation75Files;  
+//				}else if(mode==TestConfigsVd.ob50lm) { //50lm
+//					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation50Files;
+//				}else if(mode==TestConfigsVd.ob75lm) { //75lm
+//					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation75Files;  
 				}
 				String domfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.domainFile;
 				String probfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.a_problemFile;
@@ -172,10 +172,10 @@ public class RunVd {
 								u_con, hyp, a_landmarks, u_landmarks, uGraph, aGraph, outdir+path[path.length-1]+"/");
 						if(mode==TestConfigsVd.obFull) {
 							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + ".csv");
-						}else if (mode==TestConfigsVd.ob50lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "50.csv");
-						}else if (mode==TestConfigsVd.ob75lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "75.csv");
+//						}else if (mode==TestConfigsVd.ob50lm) {
+//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "50.csv");
+//						}else if (mode==TestConfigsVd.ob75lm) {
+//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "75.csv");
 						}
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
@@ -215,7 +215,6 @@ public class RunVd {
 		TreeSet<String> achievedDFL = new TreeSet<String>();
 		i_k.add(producePlansJavaFF(dom, pcri)); //need to do it twice because I have two goals.
 		i_k.add(producePlansJavaFF(dom, pdes));
-//		System.out.println("ik="+i_k);
 		ArrayList<String> state = new ArrayList<>(init);
 		for (int i=0; i<obs.getObs().size(); i++) {
 			HashMap<String, Double> goalranks = new HashMap<String, Double>();
@@ -223,7 +222,6 @@ public class RunVd {
 			String now = obs.getObs().get(i);
 			prefix.add(now);
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
-//			System.out.println("curac************ "+now);System.out.println("curstate="+obstate);
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa, aGraph); //attack landmarks
 			achieveLandmark(now, dom, a_con, obstate, achievedDFL, activeDFL, lmsd, uGraph); //desirable landmarks, with same connectivity because, intervener has full observability
 			//wait until vered/ramon tells me how to prune hypotheses. they never got back to me. #sad. 
@@ -264,7 +262,6 @@ public class RunVd {
 					prefix.removeAll(suffix.getActions());
 				}
 				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
-//				System.out.println("goalranks====>>>"+goalranks);
 				if(ent != null) {
 					obsTolikelgoal.put(now, ent.getKey());
 				}else {
@@ -345,7 +342,6 @@ public class RunVd {
 	//this experiment is for the algorithm:: goal mirroring with landmarks, where landmarks are used to filter out impossible goals and remaining goals are ranked based on cost. (Towards online goal-recognition combining goal mirroring and landmarks - vered, ramon, kaminka, meneguzzi
 	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> stateafterob,
 			TreeSet<String> achievedFL, TreeSet<String> activeFL, HashMap<String, TreeSet<String>> landmarks, OrderedLMGraph graph) {
-//		System.out.println(landmarks);
 		if((!activeFL.isEmpty()) && (!observationContainsActiveFL(ob, dom, con, stateafterob, activeFL, graph))) {
 			//state resulting from this observation ob contains activeFact Landmarks. this means the facts are now achieved.//can move the active to achieved.
 			achievedFL.addAll(activeFL);
@@ -412,7 +408,7 @@ public class RunVd {
 				currentmin = ord.getTreeLevel();
 				closest.add(ord);
 			}
-		}//System.out.println("state min===="+ closest);
+		}
 		int count = 0;
 		for (String s : newstate) {
 			for (OrderedLMNode o : closest) {

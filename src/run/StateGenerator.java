@@ -624,7 +624,8 @@ public class StateGenerator {
 				seen.add(s);
 				recursiveAddEdge(newState, con, graph, seen, x, y, crates, deslocs);
 			}
-			seen.remove(seen.size()-1);
+			if(!seen.isEmpty())
+				seen.remove(seen.size()-1);
 		}
 	}
 
