@@ -57,29 +57,39 @@ public class Preprocess {
 
 	public static void preparePredictionFile() {
 		int scenario = 0;
-		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 3;
-		for (int instance = 1; instance <= instances; instance++) {
-			String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
-			String inst_full=prefix+String.valueOf(instance)+"/data/instfull.arff";
-//			String inst_lm50=prefix+String.valueOf(instance)+"/data/instlm50.arff";
-//			String inst_lm75=prefix+String.valueOf(instance)+"/data/instlm75.arff";
-			String inst_tk=prefix+String.valueOf(instance)+"/data/tk_instfull.arff";
+		if(!domain.equalsIgnoreCase("RUSHHOUR")) {
+			for (int instance = 1; instance <= instances; instance++) {
+				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
+				String inst_full=prefix+String.valueOf(instance)+"/data/instfull.arff";
+				//			String inst_lm50=prefix+String.valueOf(instance)+"/data/instlm50.arff";
+				//			String inst_lm75=prefix+String.valueOf(instance)+"/data/instlm75.arff";
+				String inst_tk=prefix+String.valueOf(instance)+"/data/tk_instfull.arff";
+				ArrayList<String> full = produceARFFCopy(inst_full);
+				//			ArrayList<String> lm50 = produceARFFCopy(inst_lm50);
+				//			ArrayList<String> lm75 = produceARFFCopy(inst_lm75);
+				ArrayList<String> tk = produceARFFCopy(inst_tk);
+				writeStructureToFile(full, prefix+String.valueOf(instance)+"/data/instfullpred.arff");
+				//			writeStructureToFile(lm50, prefix+String.valueOf(instance)+"/data/instlm50pred.arff");
+				//			writeStructureToFile(lm75, prefix+String.valueOf(instance)+"/data/instlm75pred.arff");
+				writeStructureToFile(tk, prefix+String.valueOf(instance)+"/data/insttkpred.arff");
+				LOGGER.log(Level.INFO, "Prediction Preprocessing Instance: " + instance  + " complete");
+			}
+		}else if(domain.equalsIgnoreCase("RUSHHOUR")) {
+			String inst_full="/home/sachini/domains/"+domain+"/scenarios/0/testobs/tk_instfull.arff";
+			String rush_predout = "/home/sachini/domains/"+domain+"/scenarios/0/testobs/";
 			ArrayList<String> full = produceARFFCopy(inst_full);
-//			ArrayList<String> lm50 = produceARFFCopy(inst_lm50);
-//			ArrayList<String> lm75 = produceARFFCopy(inst_lm75);
-			ArrayList<String> tk = produceARFFCopy(inst_tk);
-			writeStructureToFile(full, prefix+String.valueOf(instance)+"/data/instfullpred.arff");
-//			writeStructureToFile(lm50, prefix+String.valueOf(instance)+"/data/instlm50pred.arff");
-//			writeStructureToFile(lm75, prefix+String.valueOf(instance)+"/data/instlm75pred.arff");
-			writeStructureToFile(tk, prefix+String.valueOf(instance)+"/data/insttkpred.arff");
-			LOGGER.log(Level.INFO, "Prediction Preprocessing Instance: " + instance  + " complete");
+			writeStructureToFile(full, rush_predout+"instfullpred.arff");
 		}
 	}
 
 	public static void main(String[] args) {
-		//run this first in prediction. reads file tk_instfull.arff and produces file called inst**pred.arff with Y/N replaced with ?
-		//feed this into weka and get weka predictions. copy the result to a file called predictions_***.csv
+		//makesure in inst(1)/data/instfull.csv is converted to instfull.arff. do the same to tk
+		//then run this first to predict. reads file instfull.arff and tk_instfull.arff and produces file called inst(full/tk)pred.arff with Y/N replaced with ?
+		//feed this into weka as supplied input and get predictions. 
+		//copy the result to a file called predictions_***.csv
+		//then run accuracycalculator.java
 		preparePredictionFile(); 
 	}
 }

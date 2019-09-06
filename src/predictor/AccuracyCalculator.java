@@ -13,24 +13,35 @@ public class AccuracyCalculator {
 	public static void producePredictionAccuracyFile(String domain) {
 		int scenario = 0;
 		int instances  = 3;
-		for (int instance = 1; instance <= instances; instance++) {
+		if(!domain.equalsIgnoreCase("RUSHHOUR")) {
+			for (int instance = 1; instance <= instances; instance++) {
+				String out = "";
+				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
+				String outfile = prefix+String.valueOf(instance)+"/data/acc.txt";
+				String inst_fulla=prefix+String.valueOf(instance)+"/data/instfull.arff"; //actuals
+				//			String inst_lm50a=prefix+String.valueOf(instance)+"/data/instlm50.arff"; //actuals
+				//			String inst_lm75a=prefix+String.valueOf(instance)+"/data/instlm75.arff"; //actuals
+				String inst_tka=prefix+String.valueOf(instance)+"/data/tk_instfull.arff";   //actuals
+				String inst_fullp=prefix+String.valueOf(instance)+"/data/predictions_full.csv"; //predicted by weka
+				//			String inst_lm50p=prefix+String.valueOf(instance)+"/data/predictions_lm50.csv"; //predicted by weka
+				//			String inst_lm75p=prefix+String.valueOf(instance)+"/data/predictions_lm75.csv"; //predicted by weka
+				String inst_tkp=prefix+String.valueOf(instance)+"/data/predictions_tk.csv"; //predicted by weka
+				String f = computeAccuracy(inst_fullp, inst_fulla, "full");
+				//			String l50 = computeAccuracy(inst_lm50p, inst_lm50a, "lm50");
+				//			String l75 = computeAccuracy(inst_lm75p, inst_lm75a, "lm75");
+				String tk = computeAccuracy(inst_tkp, inst_tka, "tk");
+				//			out += f+l50+l75+tk;
+				out += f+tk;
+				writeLineToFile(out, outfile);
+			}
+		}else if(domain.equalsIgnoreCase("RUSHHOUR")) {
 			String out = "";
-			String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
-			String outfile = prefix+String.valueOf(instance)+"/data/acc.txt";
-			String inst_fulla=prefix+String.valueOf(instance)+"/data/instfull.arff"; //actuals
-//			String inst_lm50a=prefix+String.valueOf(instance)+"/data/instlm50.arff"; //actuals
-//			String inst_lm75a=prefix+String.valueOf(instance)+"/data/instlm75.arff"; //actuals
-			String inst_tka=prefix+String.valueOf(instance)+"/data/tk_instfull.arff";   //actuals
-			String inst_fullp=prefix+String.valueOf(instance)+"/data/predictions_full.csv"; //predicted by weka
-//			String inst_lm50p=prefix+String.valueOf(instance)+"/data/predictions_lm50.csv"; //predicted by weka
-//			String inst_lm75p=prefix+String.valueOf(instance)+"/data/predictions_lm75.csv"; //predicted by weka
-			String inst_tkp=prefix+String.valueOf(instance)+"/data/predictions_tk.csv"; //predicted by weka
-			String f = computeAccuracy(inst_fullp, inst_fulla, "full");
-//			String l50 = computeAccuracy(inst_lm50p, inst_lm50a, "lm50");
-//			String l75 = computeAccuracy(inst_lm75p, inst_lm75a, "lm75");
-			String tk = computeAccuracy(inst_tkp, inst_tka, "tk");
-//			out += f+l50+l75+tk;
-			out += f+tk;
+			String prefix = "/home/sachini/domains/"+domain+"/scenarios/0/testobs/";
+			String outfile = prefix+"acc.txt";
+			String inst_fulla=prefix+"tk_instfull.arff"; //actuals
+			String inst_fullp=prefix+"predictions_full.csv"; //predicted by weka
+			String tk= computeAccuracy(inst_fullp, inst_fulla, "tk");
+			out += tk;
 			writeLineToFile(out, outfile);
 		}
 	}
@@ -39,7 +50,7 @@ public class AccuracyCalculator {
 		PrintWriter writer = null;
 		try {
 			writer = new PrintWriter(out, "UTF-8");
-				writer.write(s+"\n");
+			writer.write(s+"\n");
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			e.printStackTrace();
 		} finally{
@@ -72,7 +83,7 @@ public class AccuracyCalculator {
 	public static void main(String args[]){
 		//run second, after running preprocess.java.
 		//read predictions_***.csv and inst**.arff files. produces acc.txt with TNR,TPR,FPR,FNR values.
-		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //TODO: change here first
+		String domain = "NAVIGATOR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //TODO: change here first
 		producePredictionAccuracyFile(domain); 
 	}
 }

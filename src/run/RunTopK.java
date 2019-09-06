@@ -69,6 +69,7 @@ public class RunTopK {
 
 	public static ArrayList<ConnectivityGraph> getConnectivityGraph(Agent agent, String dom){
 		StateGenerator gen = new StateGenerator(agent, dom);
+		gen.runPlanner();
 		ArrayList<ConnectivityGraph> cons = gen.readConnectivityGraphs();
 		return cons;
 	}
@@ -85,8 +86,9 @@ public class RunTopK {
 		}else {
 			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) || 
 					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ||
-					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
-				return true;
+					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ||
+					(domain.equalsIgnoreCase("RUSHHOUR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
+			return true;
 			}
 		}
 		return false;
@@ -257,7 +259,6 @@ public class RunTopK {
 				featurevalsforfile.add(featureval);
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-//			break; //TODO: remove after debug mode
 //			}
 		}
 	}
@@ -276,7 +277,6 @@ public class RunTopK {
 			String ds_csv = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.decisionCSV;
 			String lm_out = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.lmoutputFile;
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
-//			if(casenum==1)//5 navigator, 0 blocks, easyipc, 1 ferry
 			run(mode, domain, domainfile, desirablefile, a_prob, 
 					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, TrainConfigsML.K, true);
 		}
@@ -323,7 +323,7 @@ public class RunTopK {
 
 	public static void main(String[] args) { 
 		//TODO README:: CHANGE CONFIGS HERE FIRST, CHECK K=50 at the top of this file
-		int mode = 0; //-1=debug train 0=train, 1=test 
+		int mode = 1; //-1=debug train 0=train, 1=test 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
 		}else if(mode==TrainConfigsML.runmode) {

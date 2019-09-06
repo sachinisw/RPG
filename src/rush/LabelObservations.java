@@ -34,10 +34,10 @@ public class LabelObservations {
 	}
 
 	public static void label(int start) {
-		for (int x=0; x<LabelConfigs.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+		for (int x=19; x<LabelConfigs.instanceCases; x++) {
 			String criticalfile = LabelConfigs.prefix+String.valueOf(x)+LabelConfigs.criticalStateFile;
 			String obs = LabelConfigs.prefix+String.valueOf(x)+LabelConfigs.observationFiles;
-			TreeSet<String> files = getObservationFiles(obs); //all obs/u and obs/ua files
+			TreeSet<String> files = getObservationFiles(obs); //all obplan/u and obplan/ua files
 			CriticalState cs = new CriticalState(criticalfile);
 			cs.readCriticalState();
 			applyLabel(getCriticalObject(cs), files);
@@ -54,9 +54,8 @@ public class LabelObservations {
 		return c;
 	}
 
-	public static void applyLabel(String criticalOb, TreeSet<String> files) {
-		int filecounteru = 0;
-		int filecounterua = 0;
+	public static void applyLabel(String criticalOb, TreeSet<String> files) { //has both u and ua folders
+		int filecounter = 0, ucount = 0, uacount = 0;
 		for (String f : files) {
 			ArrayList<String> updated = new ArrayList<String>();
 			ArrayList<String> lines = readPlanFile(f);
@@ -84,11 +83,18 @@ public class LabelObservations {
 				pathname+=fpath[i]+"/";
 			}
 			if(src.equalsIgnoreCase("u")) {
-				pathname = pathname+"finalob/u/"+filecounteru++;
+				ucount++;
+				if(ucount<=75) {
+					pathname = pathname+"obs/"+filecounter++;
+					writeToFile(updated, pathname);
+				}
 			}else {
-				pathname = pathname+"finalob/ua/"+filecounterua++;
+				uacount++;
+				if(uacount<=75) {
+					pathname = pathname+"obs/"+filecounter++;
+					writeToFile(updated, pathname);
+				}
 			}
-			writeToFile(updated, pathname);
 		}
 	}
 	

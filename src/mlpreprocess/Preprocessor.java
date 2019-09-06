@@ -1,4 +1,4 @@
-package decisiontree;
+package mlpreprocess;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,9 +17,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 public class Preprocessor {
+	//after runML.java runTopK.java, execute this code to collect all result csv files and produce an aggregate file to be given as training data for the classifier.
 
 	private static final Logger LOGGER = Logger.getLogger(Preprocessor.class.getName());
-
 	public ArrayList<String> getDataFiles(String filedir, int algorithm){		
 		ArrayList<String> dataFilePaths = new ArrayList<String>(); 
 		try {
@@ -377,9 +377,9 @@ public class Preprocessor {
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
 		int scenario = 0, cases = 20;
-		int mode = 0; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
-		int alg  = 0; //0-full state space, 1-topk planner
+		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
+		String domain = "FERRY";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //"RUSHHOUR"
+		int alg  = 1; //0-full state space, 1-topk planner
 		int instances  = 3;
 		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();
@@ -394,69 +394,88 @@ public class Preprocessor {
 			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/aggregate.csv";
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
-			for(int currentCase=0; currentCase<cases; currentCase++) {
-				LOGGER.log(Level.INFO, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
-				LOGGER.log(Level.INFO, "CASE = "+ currentCase);
-				String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
-				String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
-				String outTKFullforcase = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/tk_full.csv";
-				String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
-				if(alg==0) { //state space enumeration
-					pre.preprocessTrainingData(inputfilepath, out, outFull, alg);
-				}else if(alg==1) { //top k planner
-					pre.preprocessTopKTrainingData(inputfilepath, outTKFullforcase, alg);
-				}
-			}
-			if(alg==0) {
-				String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
-				String aggfile = "/data/inputdecisiontree/full.csv";
-				String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
-				pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
-			}else if(alg==1) {
-				String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
-				String aggfile = "/data/inputdecisiontree/tk_full.csv";
-				String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/tk_aggregate.csv";
-				pre.aggeregateTopKData(aggroot, aggfile, cases, outpath);
-			}
-		}else if (mode==1){
-			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode DOMAIN======"+ domain);
-			for (int instance = 1; instance <= instances; instance++) {
-				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
-				String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
-//				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
-//				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";
-				String instout_fulltk=prefix+String.valueOf(instance)+"/data/tk_instfull.csv";
-				ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
-				ArrayList<ArrayList<DataFile>> inst_tkfull = new ArrayList<>();
-//				ArrayList<ArrayList<DataFile>> inst_lm50 = new ArrayList<>();
-//				ArrayList<ArrayList<DataFile>> inst_lm75 = new ArrayList<>();
-				for(int instcase = 0; instcase<casePerInstance; instcase++) {
-					String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
-					String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
-					String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
-					String outFulltkforcase = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/tk_full.csv";
-//					String outFull_lm50 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_50lm.csv";
-//					String outFull_lm75 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_75lm.csv";
-					if(alg==0) {
-						ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1, alg);
-//						ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2, alg);
-//						ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3, alg);
-						inst_full.add(df);
-//						inst_lm50.add(dlm50);
-//						inst_lm75.add(dlm75);
-					}else if(alg==1) {
-						ArrayList<DataFile> tk = pre.preprocessTopKTestingData(inputfilepath, outFulltkforcase, alg); //collect all observation file outputs and produce 1 csv for the scenario 0-20
-						inst_tkfull.add(tk); //collect the _tk.csv result files for this instance
+			if(!domain.equalsIgnoreCase("RUSHHOUR")) {
+				for(int currentCase=0; currentCase<cases; currentCase++) {
+					LOGGER.log(Level.INFO, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
+					LOGGER.log(Level.INFO, "CASE = "+ currentCase);
+					String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
+					String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+					String outTKFullforcase = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/tk_full.csv";
+					String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
+					if(alg==0) { //state space enumeration
+						pre.preprocessTrainingData(inputfilepath, out, outFull, alg);
+					}else if(alg==1) { //top k planner
+						pre.preprocessTopKTrainingData(inputfilepath, outTKFullforcase, alg);
 					}
 				}
 				if(alg==0) {
-					writeInstanceSpecificOutput(inst_full, instout_full);
-//					writeInstanceSpecificOutput(inst_lm50, instout_lm50);
-//					writeInstanceSpecificOutput(inst_lm75, instout_lm75);
+					String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+					String aggfile = "/data/inputdecisiontree/full.csv";
+					String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
+					pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 				}else if(alg==1) {
-					writeInstanceSpecificTopKOutput(inst_tkfull, instout_fulltk); //write the collected _tk_csv files for all 3 instances to one file in insti/data directory
+					String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+					String aggfile = "/data/inputdecisiontree/tk_full.csv";
+					String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/tk_aggregate.csv";
+					pre.aggeregateTopKData(aggroot, aggfile, cases, outpath);
 				}
-				LOGGER.log(Level.INFO, "Instance: " + instance  + " complete");
+			}else if(domain.equalsIgnoreCase("RUSHHOUR")) {
+				LOGGER.log(Level.INFO, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
+				String outTKFullforcase = "/home/sachini/domains/RUSHHOUR/scenarios/0/trainobs/tk_full.csv";
+				String inputfilepath = "/home/sachini/domains/RUSHHOUR/scenarios/0/trainobs/";
+				if(alg==1) { //top k planner
+					pre.preprocessTopKTrainingData(inputfilepath, outTKFullforcase, alg);
+				}
+			}
+		}else if (mode==1){
+			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode DOMAIN======"+ domain);
+			if(!domain.equalsIgnoreCase("RUSHHOUR")) {
+				for (int instance = 1; instance <= instances; instance++) {
+					String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
+					String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
+																								//				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
+																								//				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";
+					String instout_fulltk=prefix+String.valueOf(instance)+"/data/tk_instfull.csv";
+					ArrayList<ArrayList<DataFile>> inst_full = new ArrayList<>();
+					ArrayList<ArrayList<DataFile>> inst_tkfull = new ArrayList<>();
+																								//				ArrayList<ArrayList<DataFile>> inst_lm50 = new ArrayList<>();
+																								//				ArrayList<ArrayList<DataFile>> inst_lm75 = new ArrayList<>();
+					for(int instcase = 0; instcase<casePerInstance; instcase++) {
+						String inputfilepath = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/decision/"; 
+						String out = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/"; 
+						String outFull = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full.csv";
+						String outFulltkforcase = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/tk_full.csv";
+																								//					String outFull_lm50 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_50lm.csv";
+																								//					String outFull_lm75 = prefix+String.valueOf(instance)+"/scenarios/"+String.valueOf(instcase)+"/data/inputdecisiontree/full_75lm.csv";
+						if(alg==0) {
+							ArrayList<DataFile> df = pre.preprocessTestingData(inputfilepath, out, outFull, 1, alg);
+																								//						ArrayList<DataFile> dlm50 = pre.preprocessTestingData(inputfilepath, out, outFull_lm50, 2, alg);
+																								//						ArrayList<DataFile> dlm75 = pre.preprocessTestingData(inputfilepath, out, outFull_lm75, 3, alg);
+							inst_full.add(df);
+																								//						inst_lm50.add(dlm50);
+																								//						inst_lm75.add(dlm75);
+						}else if(alg==1) {
+							ArrayList<DataFile> tk = pre.preprocessTopKTestingData(inputfilepath, outFulltkforcase, alg); //collect all observation file outputs and produce 1 csv for the scenario 0-20
+							inst_tkfull.add(tk); //collect the _tk.csv result files for this instance
+						}
+					}
+					if(alg==0) {
+						writeInstanceSpecificOutput(inst_full, instout_full);
+																								//					writeInstanceSpecificOutput(inst_lm50, instout_lm50);
+																								//					writeInstanceSpecificOutput(inst_lm75, instout_lm75);
+					}else if(alg==1) {
+						writeInstanceSpecificTopKOutput(inst_tkfull, instout_fulltk); //write the collected _tk_csv files for all 3 instances to one file in insti/data directory
+					}
+					LOGGER.log(Level.INFO, "Instance: " + instance  + " complete");
+				}
+			}else if(domain.equalsIgnoreCase("RUSHHOUR")) {
+				String outTKFullforcase = "/home/sachini/domains/RUSHHOUR/scenarios/0/testobs/tk_full.csv";
+				String inputfilepath = "/home/sachini/domains/RUSHHOUR/scenarios/0/testobs/";
+				String instout_fulltk = "/home/sachini/domains/RUSHHOUR/scenarios/0/testobs/tk_instfull.csv";
+				ArrayList<ArrayList<DataFile>> inst_tkfull = new ArrayList<>();
+				ArrayList<DataFile> tk = pre.preprocessTopKTestingData(inputfilepath, outTKFullforcase, alg); //collect all observation file outputs and produce 1 csv for the scenario 0-20
+				inst_tkfull.add(tk); //collect the _tk.csv result files for this instance
+				writeInstanceSpecificTopKOutput(inst_tkfull, instout_fulltk); //write the collected _tk_csv files for all 3 instances to one file in insti/data directory
 			}
 		}
 		LOGGER.log(Level.INFO, "Preprocessing done");
