@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -286,17 +289,38 @@ public class RunRG {
 		double precision = (double)TP/(double)(TP+FP); //tp/tp+fp
 		double recall = (double)TP/(double)(TP+FN);   //tp/tp+fn
 		double f1 = 2.0 * ( (precision*recall) / (precision+recall));
+		String mcc = computeMCC(TP, TN, FP, FN);
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
 			writer.write("TPR,TNR,FPR,FNR"+"\n");
 			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
-			writer.write("PRECISION,RECALL,F1\n");
-			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+"\n");
+			writer.write("PRECISION,RECALL,F1,MCC\n");
+			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+","+String.valueOf(mcc)+"\n");
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
+	}
+	
+	public static String computeMCC(double TP, double TN, double FP, double FN) {
+		//MCC = ( (TP*TN) - (FP*FN) ) / SQRT((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+		BigDecimal btp = new BigDecimal(TP);
+		BigDecimal btn = new BigDecimal(TN);
+		BigDecimal bfp = new BigDecimal(FP);
+		BigDecimal bfn = new BigDecimal(FN);
+		BigDecimal top = btp.multiply(btn).subtract(bfp.multiply(bfn)) ;
+		BigDecimal a = (btp.add(bfp));
+		BigDecimal b = (btp.add(bfn));
+		BigDecimal c = (btn.add(bfp));
+		BigDecimal d = (btn.add(bfn));
+		BigDecimal bot = a.multiply(b.multiply(c).multiply(d));
+		if(bot.compareTo(new BigDecimal(0))==0) {
+			return "-"; //division by zero
+		}else {
+			BigDecimal mcc = top.divide(bot.sqrt(new MathContext(10)),3,RoundingMode.UP);
+			return mcc.toString();
+		}
 	}
 	
 	public static int countTP(ArrayList<String> result, Hypotheses hyp) {

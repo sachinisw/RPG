@@ -199,8 +199,10 @@ public class RunTopK {
 			}
 			String ob = obs.getObservations().get(index).substring(2);
 			String label = obs.getObservations().get(index).substring(0,1);
-			data.add(ob+","+d+label+"\n");
+			String time = String.valueOf(featurevalsforfiles.get(1));
+			data.add(ob+","+d+label+","+time+"\n");
 			index++;
+			break;
 		}
 		CSVGenerator results = new CSVGenerator(outputfilename, data, 2);
 		results.writeOutput();
@@ -217,6 +219,7 @@ public class RunTopK {
 		ArrayList<RelaxedPlanningGraph> a_rpg = getRelaxedPlanningGraph(decider, domain);
 		decider.generateVerifiedLandmarks(a_rpg.get(0), a_con.get(0), lm_out); //verified landmarks generated for this problem. file written to lmout
 		int obFileLimit = 1;
+		long duration = 0;
 		for (String file : obFiles) { 
 			if (restrict(mode, obFileLimit, domain)) {
 				break;
@@ -232,6 +235,7 @@ public class RunTopK {
 			causalstate.addAll(decider.getInitialState().getState());
 //			System.out.println(Arrays.toString(name));
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
+				long start = System.currentTimeMillis();
 				String outpath = "";
 				if(mode==TrainConfigsML.runmode) {
 					outpath = TrainConfigsML.root+name[name.length-3]+TrainConfigsML.topkdir+name[name.length-1]+"_"+j;
@@ -257,6 +261,9 @@ public class RunTopK {
 //							decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				//}
 				featurevalsforfile.add(featureval);
+				long end = System.currentTimeMillis();
+				duration = end-start;
+				featurevalsforfile.add(new double[] {duration});
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
 //			}

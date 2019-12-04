@@ -57,7 +57,7 @@ public class Preprocess {
 
 	public static void preparePredictionFile() {
 		int scenario = 0;
-		String domain = "EASYIPC";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
+		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 3;
 		if(!domain.equalsIgnoreCase("RUSHHOUR")) {
 			for (int instance = 1; instance <= instances; instance++) {
@@ -85,10 +85,11 @@ public class Preprocess {
 	}
 
 	public static void main(String[] args) {
-		//makesure in inst(1)/data/instfull.csv is converted to instfull.arff. do the same to tk
-		//then run this first to predict. reads file instfull.arff and tk_instfull.arff and produces file called inst(full/tk)pred.arff with Y/N replaced with ?
+		//make sure in inst(1)/data/instfull.csv is converted to instfull.arff. do the same to tk
+		//					then run this program first to create files needed to prediction. 
+		//the program reads file instfull.arff and tk_instfull.arff and produces file called inst(full/tk)pred.arff with Y/N replaced with ?
 		//feed this into weka as supplied input and get predictions. 
-		//copy the result to a file called predictions_***.csv
+		//copy the result to a file called predictions_***.csv for each classifier DT/KNN/Log.REG/NB
 		//then run accuracycalculator.java
 		preparePredictionFile(); 
 	}

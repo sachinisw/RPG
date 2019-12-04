@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,6 +28,8 @@ import landmark.OrderedLMNode;
 import landmark.RelaxedPlanningGraphGenerator;
 import log.EventLogger;
 import plans.FFPlanner;
+import plans.HSPFPlan;
+import plans.HSPPlanner;
 import plans.JavaFFPlan;
 import plans.JavaFFPlanner;
 import rg.Domain;
@@ -180,7 +185,7 @@ public class RunVd {
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
-//					break; //just read one observation file. TODO: remove after debug
+					//break; //just read one observation file. TODO: remove after debug
 				}
 //				break; //TODO:: remove after debug
 			}
@@ -207,20 +212,23 @@ public class RunVd {
 			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, OrderedLMGraph uGraph,
 			OrderedLMGraph aGraph, String outdir){ //prob comes from problem_a.txt
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
-		ArrayList<JavaFFPlan> i_k = new ArrayList<>();
-		ArrayList<String> prefix = new ArrayList<>();
+		ArrayList<HSPFPlan> i_k = new ArrayList<>();
+		ArrayList<String> m_k = new ArrayList<>();
 		TreeSet<String> activeAFL = new TreeSet<String>();
 		TreeSet<String> activeDFL = new TreeSet<String>();
 		TreeSet<String> achievedAFL = new TreeSet<String>();
 		TreeSet<String> achievedDFL = new TreeSet<String>();
-		i_k.add(producePlansJavaFF(dom, pcri)); //need to do it twice because I have two goals.
-		i_k.add(producePlansJavaFF(dom, pdes));
+		i_k.add(produceIdealPlanHSP(dom, pcri)); //need to do it twice because I have two goals. This is the ideal plans for the 2 goals
+		i_k.add(produceIdealPlanHSP(dom, pdes));
+		//System.out.println(i_k.get(0).getActions());
+		//System.out.println(i_k.get(1).getActions());
 		ArrayList<String> state = new ArrayList<>(init);
 		for (int i=0; i<obs.getObs().size(); i++) {
 			HashMap<String, Double> goalranks = new HashMap<String, Double>();
 			ArrayList<String> activeHypotheses = new ArrayList<>();
 			String now = obs.getObs().get(i);
-			prefix.add(now);
+			//System.out.println("OB--"+now);
+			m_k.add(now); //cur obs becomes part of the prefix
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
 			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa, aGraph); //attack landmarks
 			achieveLandmark(now, dom, a_con, obstate, achievedDFL, activeDFL, lmsd, uGraph); //desirable landmarks, with same connectivity because, intervener has full observability
@@ -253,13 +261,14 @@ public class RunVd {
 					probD.setInit(curstate);
 					probD.writeProblemFile(outdir+"/p_"+i+"_"+j+".pddl"); //don't have to write the domain 
 					JavaFFPlan suffix = producePlansJavaFF(dom,probD);
-					prefix.addAll(suffix.getActions()); // now this is m_k
+					m_k.addAll(suffix.getActions()); // m_k = prefix+suffix
+					//System.out.println("pref+suff======"+m_k);
 					if(activeHypotheses.get(j).contains("desirable")) {
-						goalranks.put(activeHypotheses.get(j),(double)i_k.get(1).getPlanCost()/(double)prefix.size());
+						goalranks.put(activeHypotheses.get(j),(double)i_k.get(1).getPlanCost()/(double)m_k.size());
 					}else {
-						goalranks.put(activeHypotheses.get(j),(double)i_k.get(0).getPlanCost()/(double)prefix.size());
+						goalranks.put(activeHypotheses.get(j),(double)i_k.get(0).getPlanCost()/(double)m_k.size());
 					}
-					prefix.removeAll(suffix.getActions());
+					m_k.removeAll(suffix.getActions());//System.out.println("pref======"+m_k);
 				}
 				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
 				if(ent != null) {
@@ -274,7 +283,7 @@ public class RunVd {
 			state.addAll(obstate);
 		}
 		state.clear(); //reset state to original init before moving on to the  next observation file
-		state.addAll(init);
+		state.addAll(init);//System.out.println(obsTolikelgoal);
 		return obsTolikelgoal;
 	}
 
@@ -321,7 +330,7 @@ public class RunVd {
 		return e;
 	}
 
-	private static double computeNeta(HashMap<String, Double> goalranks) {
+	private static double computeNeta(HashMap<String, Double> goalranks) { //Vered,Kaminka 2017 Heuristic online goal recognition in continuous domains.
 		double rank = 0.0;
 		Iterator<String> itr = goalranks.keySet().iterator();
 		while(itr.hasNext()) {
@@ -470,6 +479,11 @@ public class RunVd {
 		return ffp.getJavaFFPlan();
 	}
 
+	public static HSPFPlan produceIdealPlanHSP(Domain dom, Problem prob) {
+		HSPPlanner hsp = new HSPPlanner(dom.getDomainPath(), prob.getProblemPath());
+		return hsp.getHSPPlan();
+	}
+	
 	public static ConnectivityGraph readConnectivityGraphs(String confile){
 		ConnectivityGraph graph = new ConnectivityGraph(confile);
 		graph.readConGraphOutput(confile);
@@ -586,19 +600,40 @@ public class RunVd {
 		double precision = (double)TP/(double)(TP+FP); //tp/tp+fp
 		double recall = (double)TP/(double)(TP+FN);   //tp/tp+fn
 		double f1 = 2.0 * ( (precision*recall) / (precision+recall));
+		String mcc = computeMCC(TP, TN, FP, FN);
 		try {
 			File file = new File(filename);
 			writer = new FileWriter(file);
 			writer.write("TPR,TNR,FPR,FNR"+"\n");
 			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
-			writer.write("PRECISION,RECALL,F1\n");
-			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+"\n");
+			writer.write("PRECISION,RECALL,F1,MCC\n");
+			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+","+String.valueOf(mcc)+"\n");
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
 	}
 
+	public static String computeMCC(double TP, double TN, double FP, double FN) {
+		//MCC = ( (TP*TN) - (FP*FN) ) / SQRT((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+		BigDecimal btp = new BigDecimal(TP);
+		BigDecimal btn = new BigDecimal(TN);
+		BigDecimal bfp = new BigDecimal(FP);
+		BigDecimal bfn = new BigDecimal(FN);
+		BigDecimal top = btp.multiply(btn).subtract(bfp.multiply(bfn)) ;
+		BigDecimal a = (btp.add(bfp));
+		BigDecimal b = (btp.add(bfn));
+		BigDecimal c = (btn.add(bfp));
+		BigDecimal d = (btn.add(bfn));
+		BigDecimal bot = a.multiply(b.multiply(c).multiply(d));
+		if(bot.compareTo(new BigDecimal(0))==0) {
+			return "-"; //division by zero
+		}else {
+			BigDecimal mcc = top.divide(bot.sqrt(new MathContext(10)),3,RoundingMode.UP);
+			return mcc.toString();
+		}
+	}
+	
 	public static void main(String[] args) {
 		int start = 1;
 		int mode = 1; //full trace, 50% trace, 75% trace
