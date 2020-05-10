@@ -147,17 +147,14 @@ public class RelaxedPlanningGraphGenerator {
 
 	public static void main(String[] args) {
 		RelaxedPlanningGraphGenerator rpgen= new RelaxedPlanningGraphGenerator();
-		String inputfilerpg = "/home/sachini/domains/BLOCKS/scenarios/test1/rpg";
-		String inputfilecon = "/home/sachini/domains/BLOCKS/scenarios/test1/con";
-		String lmoutput = "/home/sachini/domains/BLOCKS/scenarios/test1/verifiedlm.txt";
+		String inputfilerpg = "/home/sachini/domains/LandmarkTest/rpg";
+		String inputfilecon = "/home/sachini/domains/LandmarkTest/con";
+		String lmoutput = "/home/sachini/domains/LandmarkTest/verifiedlm.txt";
 		ArrayList<String> goal = new ArrayList<String>();
 		ArrayList<String> init = new ArrayList<String>();
 		ArrayList<String> currentstate = new ArrayList<String>();
 
-		goal.add("(CLEAR R)");
-		goal.add("(ON E D)");//attacker PAC, user PAL
-		goal.add("(ON R E)");
-		goal.add("(ONTABLE D)");
+		goal.add("(AT BOX1 APT2)");
 		//		init.add("(HANDEMPTY)");
 		//		init.add("(CLEAR P)");
 		//		init.add("(CLEAR A)");
@@ -167,68 +164,76 @@ public class RelaxedPlanningGraphGenerator {
 		//		init.add("(ONTABLE P)");
 		//		init.add("(ONTABLE L)");
 		//		init.add("(ONTABLE C)");
+		init.add("(AT APN1 APT2)");
+		init.add("(AT TRU1 L3)");
+		init.add("(AT BOX1 L2)");
+		init.add("(IN-CITY APT1 CIT1)");
+		init.add("(IN-CITY L1 CIT1)");
+		init.add("(IN-CITY L2 CIT1)");
+		init.add("(IN-CITY L3 CIT1)");
+		init.add("(IN-CITY APT2 CIT2)");
 
-		init.add("(CLEAR S)");
-		init.add("(CLEAR R)");
-		init.add("(CLEAR D)");
-		init.add("(CLEAR E)");
-		init.add("(HANDEMPTY)");
-		init.add("(ONTABLE S)");
-		init.add("(ONTABLE R)");
-		init.add("(ONTABLE B)");
-		init.add("(ONTABLE A)");
-		init.add("(ON D B)");
-		init.add("(ON E A)");
-				//		currentstate.add("(HANDEMPTY)");
-				//		currentstate.add("(CLEAR P)");
-				//		currentstate.add("(CLEAR L)");
-				//		currentstate.add("(CLEAR A)");
-				//		currentstate.add("(ON A C)");
-				//		currentstate.add("(ONTABLE P)");
-				//		currentstate.add("(ONTABLE L)");
-				//		currentstate.add("(ONTABLE C)");
+		//		init.add("(CLEAR S)");
+		//		init.add("(CLEAR R)");
+		//		init.add("(CLEAR D)");
+		//		init.add("(CLEAR E)");
+		//		init.add("(HANDEMPTY)");
+		//		init.add("(ONTABLE S)");
+		//		init.add("(ONTABLE R)");
+		//		init.add("(ONTABLE B)");
+		//		init.add("(ONTABLE A)");
+		//		init.add("(ON D B)");
+		//		init.add("(ON E A)");
+		//		currentstate.add("(HANDEMPTY)");
+		//		currentstate.add("(CLEAR P)");
+		//		currentstate.add("(CLEAR L)");
+		//		currentstate.add("(CLEAR A)");
+		//		currentstate.add("(ON A C)");
+		//		currentstate.add("(ONTABLE P)");
+		//		currentstate.add("(ONTABLE L)");
+		//		currentstate.add("(ONTABLE C)");
 
-//				currentstate.add("(HOLDING A)");
-//				currentstate.add("(CLEAR P)");
-//				currentstate.add("(CLEAR L)");
-//				currentstate.add("(CLEAR C)");
-//				currentstate.add("(ONTABLE P)");
-//				currentstate.add("(ONTABLE L)");
-//				currentstate.add("(ONTABLE C)");
+		//				currentstate.add("(HOLDING A)");
+		//				currentstate.add("(CLEAR P)");
+		//				currentstate.add("(CLEAR L)");
+		//				currentstate.add("(CLEAR C)");
+		//				currentstate.add("(ONTABLE P)");
+		//				currentstate.add("(ONTABLE L)");
+		//				currentstate.add("(ONTABLE C)");
 
-				//		critical.add("(ON C A)"); //prob 30
-				//		critical.add("(ON B D)");
-				//		init.add("(HANDEMPTY)");
-				//		init.add("(CLEAR A)");
-				//		init.add("(ONTABLE A)");
-				//		init.add("(CLEAR B)");
-				//		init.add("(ONTABLE B)");
-				//		init.add("(ONTABLE C)");
-				//		init.add("(ON D C)");
-				//		init.add("(CLEAR D)");
+		//		critical.add("(ON C A)"); //prob 30
+		//		critical.add("(ON B D)");
+		//		init.add("(HANDEMPTY)");
+		//		init.add("(CLEAR A)");
+		//		init.add("(ONTABLE A)");
+		//		init.add("(CLEAR B)");
+		//		init.add("(ONTABLE B)");
+		//		init.add("(ONTABLE C)");
+		//		init.add("(ON D C)");
+		//		init.add("(CLEAR D)");
 
-				//		critical.add("(AT D)"); //prob 31. Give these with paranthesis
-				//		init.add("(AT A)");
-				//		init.add("(ADJ A B)");
-				//		init.add("(ADJ A E)");
-				//		init.add("(ADJ B C)");
-				//		init.add("(ADJ C D)");
-				//		init.add("(ADJ A D)");
-		currentstate.add("(CLEAR S)");
-		currentstate.add("(CLEAR R)");
-		currentstate.add("(CLEAR E)");
-		currentstate.add("(CLEAR A)");
-		currentstate.add("(HANDEMPTY)");
-		currentstate.add("(ONTABLE S)");
-		currentstate.add("(ONTABLE R)");
-		currentstate.add("(ONTABLE B)");
-		currentstate.add("(ONTABLE A)");
-		currentstate.add("(ON E D)");
-		currentstate.add("(ON D B)");
+		//		critical.add("(AT D)"); //prob 31. Give these with paranthesis
+		//		init.add("(AT A)");
+		//		init.add("(ADJ A B)");
+		//		init.add("(ADJ A E)");
+		//		init.add("(ADJ B C)");
+		//		init.add("(ADJ C D)");
+		//		init.add("(ADJ A D)");
+//		currentstate.add("(CLEAR S)");
+//		currentstate.add("(CLEAR R)");
+//		currentstate.add("(CLEAR E)");
+//		currentstate.add("(CLEAR A)");
+//		currentstate.add("(HANDEMPTY)");
+//		currentstate.add("(ONTABLE S)");
+//		currentstate.add("(ONTABLE R)");
+//		currentstate.add("(ONTABLE B)");
+//		currentstate.add("(ONTABLE A)");
+//		currentstate.add("(ON E D)");
+//		currentstate.add("(ON D B)");
 
-				rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, goal, init, lmoutput);
-				double x = rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
-				System.out.println(x);
+		rpgen.runLandmarkGenerator(inputfilerpg, inputfilecon, goal, init, lmoutput);
+		//double x = rpgen.computeAchievedLandmarks(goal, lmoutput, currentstate);
+		//System.out.println(x);
 	}
 
 	//TODO: Karpaz,domshlak 2009 (cost optimal planning with landmarks)
@@ -303,47 +308,47 @@ public class RelaxedPlanningGraphGenerator {
 
 	public HashMap<OrderedLMNode, Integer> getMaxCompleteLevel(HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels, 
 			HashMap<OrderedLMNode, Boolean> active) {
-//		System.out.println("active====="+active);
-//		HashMap<OrderedLMNode, Integer> lmCompletedLevel = new HashMap<>();
-//		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
-//		while(itr.hasNext()) {
-//			OrderedLMNode key = itr.next();
-//			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
-//			Iterator<OrderedLMNode> itrac = active.keySet().iterator();
-//			OrderedLMNode minimumActive = null;
-//			int l = Integer.MAX_VALUE;
-//			while(itrac.hasNext()) { //find node at the highest point (level~0) in tree which is active 
-//				OrderedLMNode keyac = itrac.next();
-//				if(active.get(keyac)) {
-//					if(keyac.getTreeLevel()<l && l>=0) {
-//						l = keyac.getTreeLevel();
-//						minimumActive = keyac;
-//					}
-//				}
-//			}
-//			System.out.println("MIN ACTIVE"+minimumActive);
-//			if(l==0 && key.equals(minimumActive)) {
-//				lmCompletedLevel.put(key, levels.size()+1);
-//			}else {
-//				int completeLevel = levels.size()-1;
-//				for (int i=levels.size()-1; i>=0; i--) {
-//					ArrayList<OrderedLMNode> level = levels.get(i);
-//					int curlevelcompletenodes = 0;
-//					for (OrderedLMNode node : level) {
-//						if(active.get(node)) {
-//							++curlevelcompletenodes;
-//						}
-//					}
-//					if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
-//						completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
-//					}//half complete. if so, check if upper level is active. if yes, the upper level becomes the complete level
-//				}
-//				lmCompletedLevel.put(key, completeLevel);
-//			}
-//		}
-//		System.out.println("***********************");
-//		System.out.println(lmCompletedLevel);
-//		return lmCompletedLevel;
+		//		System.out.println("active====="+active);
+		//		HashMap<OrderedLMNode, Integer> lmCompletedLevel = new HashMap<>();
+		//		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
+		//		while(itr.hasNext()) {
+		//			OrderedLMNode key = itr.next();
+		//			ArrayList<ArrayList<OrderedLMNode>> levels = subgoallevels.get(key);
+		//			Iterator<OrderedLMNode> itrac = active.keySet().iterator();
+		//			OrderedLMNode minimumActive = null;
+		//			int l = Integer.MAX_VALUE;
+		//			while(itrac.hasNext()) { //find node at the highest point (level~0) in tree which is active 
+		//				OrderedLMNode keyac = itrac.next();
+		//				if(active.get(keyac)) {
+		//					if(keyac.getTreeLevel()<l && l>=0) {
+		//						l = keyac.getTreeLevel();
+		//						minimumActive = keyac;
+		//					}
+		//				}
+		//			}
+		//			System.out.println("MIN ACTIVE"+minimumActive);
+		//			if(l==0 && key.equals(minimumActive)) {
+		//				lmCompletedLevel.put(key, levels.size()+1);
+		//			}else {
+		//				int completeLevel = levels.size()-1;
+		//				for (int i=levels.size()-1; i>=0; i--) {
+		//					ArrayList<OrderedLMNode> level = levels.get(i);
+		//					int curlevelcompletenodes = 0;
+		//					for (OrderedLMNode node : level) {
+		//						if(active.get(node)) {
+		//							++curlevelcompletenodes;
+		//						}
+		//					}
+		//					if(curlevelcompletenodes==level.size()) { //if completelevel=0 that means the tree is fully done. complete level=1 means all but root is complete.
+		//						completeLevel = i+1;//i+1 subgoallevels structure doesn't have the 0th (goal) level.
+		//					}//half complete. if so, check if upper level is active. if yes, the upper level becomes the complete level
+		//				}
+		//				lmCompletedLevel.put(key, completeLevel);
+		//			}
+		//		}
+		//		System.out.println("***********************");
+		//		System.out.println(lmCompletedLevel);
+		//		return lmCompletedLevel;
 		System.out.println(subgoallevels);
 		HashMap<OrderedLMNode, Integer> lmCompletedLevel = new HashMap<>(); //contains the highest fully complete tree level 
 		Iterator<OrderedLMNode> itr = subgoallevels.keySet().iterator();
@@ -371,14 +376,14 @@ public class RelaxedPlanningGraphGenerator {
 							System.out.println("current level is fully complete ");
 							completeLevel = i;
 						}
-//						else { //half complete level. if so, check if upper level (key) is active. 
-//							System.out.println("half complete level");
-//							if(active.get(key)) { //if yes, the upper level becomes the complete level
-//								completeLevel = key.getTreeLevel()+1;
-//							}else { //half complete also parent is not active. (-1)
-//								completeLevel = -1;
-//							}
-//						}
+						//						else { //half complete level. if so, check if upper level (key) is active. 
+						//							System.out.println("half complete level");
+						//							if(active.get(key)) { //if yes, the upper level becomes the complete level
+						//								completeLevel = key.getTreeLevel()+1;
+						//							}else { //half complete also parent is not active. (-1)
+						//								completeLevel = -1;
+						//							}
+						//						}
 					}
 					lmCompletedLevel.put(key, completeLevel+1); //i+1 subgoallevels structure doesn't have the 0th (goal) level.
 				}else { //this subgoal doesn't have children

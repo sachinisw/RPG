@@ -13,6 +13,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import log.EventLogger;
 
+//http://www.cs.toronto.edu/~shirin/Sohrabi-MRC-ECAI-16-Camera-ready.pdf
 //Generates a sampling set of K plans for a given problem and domain.
 public class TopKPlanner{
 	private final static String tkPath = "python /home/sachini/domains/Planners/top-k/";

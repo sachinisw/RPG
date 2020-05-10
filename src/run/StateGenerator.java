@@ -399,7 +399,6 @@ public class StateGenerator {
 		System.out.println(order + " stacked crates="+crateCount);
 		System.out.println("state="+state);
 		if(!order.isEmpty() && order.get(0).contains("CRATE") && order.getLast().contains("PALLET") && crateCount== crates && clearCount==1){
-			System.out.println("***********************************match");
 			return true;
 		}
 		return false;
