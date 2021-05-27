@@ -16,8 +16,8 @@ import log.EventLogger;
 //http://www.cs.toronto.edu/~shirin/Sohrabi-MRC-ECAI-16-Camera-ready.pdf
 //Generates a sampling set of K plans for a given problem and domain.
 public class TopKPlanner{
-	private final static String tkPath = "python /home/sachini/domains/Planners/top-k/";
-	private final static String tkoutpath = "/home/sachini/eclipse-workspace/IJCAI16/RPG/found_plans/";
+	private final static String tkPath = "python /home/sachini/oldhp/sachini/domains/Planners/top-k/";
+	private final static String tkoutpath = "/home/sachini/oldhp/sachini/eclipse-workspace/IJCAI16/RPG/found_plans/";
 	private String domainfile;
 	private String problemfile;
 	private int k;

@@ -56,12 +56,12 @@ public class Preprocess {
 	}
 
 	public static void preparePredictionFile() {
-		int scenario = 0;
+		int scenario = 1;
 		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC";
 		int instances  = 3;
 		if(!domain.equalsIgnoreCase("RUSHHOUR")) {
 			for (int instance = 1; instance <= instances; instance++) {
-				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
+				String prefix = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String inst_full=prefix+String.valueOf(instance)+"/data/instfull.arff";
 				//			String inst_lm50=prefix+String.valueOf(instance)+"/data/instlm50.arff";
 				//			String inst_lm75=prefix+String.valueOf(instance)+"/data/instlm75.arff";

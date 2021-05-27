@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
+
 public class AccuracyCalculator {
 	private static final Logger LOGGER = Logger.getLogger(AccuracyCalculator.class.getName());
 
@@ -26,7 +27,8 @@ public class AccuracyCalculator {
 			File dir = new File(pred);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				if(fileItem.getCanonicalPath().contains("predictions_") && !fileItem.getCanonicalPath().contains("old")
+				if(fileItem.getCanonicalPath().contains("predictions_") 
+						//&& !fileItem.getCanonicalPath().contains("old")
 						&& !fileItem.getCanonicalPath().contains("acc")) {
 					if(code==0) { //full space
 						if(fileItem.getCanonicalPath().contains("_full")) {
@@ -45,12 +47,10 @@ public class AccuracyCalculator {
 		return predictionFiles;	
 	}
 
-	public static void producePredictionAccuracyFile(String domain) {
-		int scenario = 0;
-		int instances  = 3;
+	public static void producePredictionAccuracyFile(String domain, int scenario, int instances) {
 		if(!domain.equalsIgnoreCase("RUSHHOUR")) {
 			for (int instance = 1; instance <= instances; instance++) {
-				String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
+				String prefix = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 				String outfile = prefix+String.valueOf(instance)+"/data/";
 				String inst_fulla=prefix+String.valueOf(instance)+"/data/instfull.arff"; //******actuals
 				String inst_tka=prefix+String.valueOf(instance)+"/data/tk_instfull.arff";   //******** actuals
@@ -159,7 +159,9 @@ public class AccuracyCalculator {
 	public static void main(String args[]){
 		//run second, after running preprocess.java.
 		//read predictions_***.csv and inst**.arff files. produces acc.txt with TNR,TPR,FPR,FNR values.
-		String domain = "RUSHHOUR";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //RUSHHOUR //TODO: change here first
-		producePredictionAccuracyFile(domain); 
+		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //RUSHHOUR //TODO: change here first
+		int scenario = 1; // 0 or 1 for blocks. 0 for everything else.
+		int instances = 3; 
+		producePredictionAccuracyFile(domain, scenario, instances); 
 	}
 }

@@ -11,7 +11,7 @@ public class FFPlanner {
 	private String domain;
 	private String problem;
 	private String outputpath;
-	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
+	public final static String ffPath = "/home/sachini/oldhp/sachini/domains/Planners/FF/ff ";
 
 	public FFPlanner(String d, String p, String o) {
 		this.setDomain(d);

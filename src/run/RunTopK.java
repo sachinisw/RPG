@@ -79,15 +79,15 @@ public class RunTopK {
 				(domain.equalsIgnoreCase("NAVIGATOR") && mode==DebugConfigsML.runmode && limit>DebugConfigsML.fileLimit) || 
 				(domain.equalsIgnoreCase("FERRY") && mode==DebugConfigsML.runmode && limit>DebugConfigsML.fileLimit) ) { //when debugging pick only 1 observation file
 			return true;
-		}else if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ||
-				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) || 
-				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+		}else if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmodeTest && limit>TestConfigsML.fileLimit) ||
+				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmodeTest && limit>TestConfigsML.fileLimit) || 
+				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigsML.runmodeTest && limit>TestConfigsML.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
 			return true;
 		}else {
-			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) || 
-					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ||
-					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ||
-					(domain.equalsIgnoreCase("RUSHHOUR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
+			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit) || 
+					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit) ||
+					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit) ||
+					(domain.equalsIgnoreCase("RUSHHOUR") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit) ) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
 			return true;
 			}
 		}
@@ -119,7 +119,6 @@ public class RunTopK {
 		if(atplans.isEmpty()|| uplans.isEmpty()) {
 			LOGGER.log(Level.SEVERE, "Possible attacker/user topK plans generation failed.");
 		}
-		//		System.out.println(obs+"---------------------");
 		int index = 0;
 		for (String o : obs) {//add the observation prefix to topK plans
 			for (SASPlan sasPlan : uplans) {
@@ -191,18 +190,21 @@ public class RunTopK {
 	
 	public static void writeFeatureValsToFile(String outputfilename, ArrayList<double[]> featurevalsforfiles, Observation obs) {
 		ArrayList<String> data = new ArrayList<String>();
-		int index = 0;
-		for (double[] arr : featurevalsforfiles) {
+		int index = 0;	
+		for(int i=0; i<featurevalsforfiles.size(); i+=2) {
 			String d = "";
+			double[] arr = featurevalsforfiles.get(i);
 			for (double v : arr) {
 				d+=String.valueOf(v)+",";
 			}
+			
 			String ob = obs.getObservations().get(index).substring(2);
 			String label = obs.getObservations().get(index).substring(0,1);
-			String time = String.valueOf(featurevalsforfiles.get(1));
+			String time = String.valueOf(Arrays.toString(featurevalsforfiles.get(i+1)));
+			
 			data.add(ob+","+d+label+","+time+"\n");
+
 			index++;
-			break;
 		}
 		CSVGenerator results = new CSVGenerator(outputfilename, data, 2);
 		results.writeOutput();
@@ -233,17 +235,16 @@ public class RunTopK {
 			ArrayList<String> causalstate = new ArrayList<String>();
 			curstate.addAll(decider.getInitialState().getState());
 			causalstate.addAll(decider.getInitialState().getState());
-//			System.out.println(Arrays.toString(name));
+
 			for (int j=0; j<curobs.getObservations().size(); j++) { //when you make an observation, generate plans with inits set to the effect of that observation
 				long start = System.currentTimeMillis();
 				String outpath = "";
-				if(mode==TrainConfigsML.runmode) {
+				if(mode==TrainConfigsML.runmodeTrain) {
 					outpath = TrainConfigsML.root+name[name.length-3]+TrainConfigsML.topkdir+name[name.length-1]+"_"+j;
-				}else if(mode==TestConfigsML.runmode) {
+				}else if(mode==TestConfigsML.runmodeTest) {
 					outpath = TestConfigsML.prefix+TestConfigsML.instancedir+name[name.length-5].substring(4)+TestConfigsML.instscenario+
 							name[name.length-3]+TestConfigsML.topkdir+name[name.length-1]+"_"+j;
 				}
-//				System.out.println(outpath);
 				ArrayList<String> adds = a_con.get(0).findStatesAddedByAction(curobs.getObservations().get(j).substring(2));
 				ArrayList<String> dels = a_con.get(0).findStatesDeletedByAction(curobs.getObservations().get(j).substring(2));
 				curstate.removeAll(dels);
@@ -333,9 +334,9 @@ public class RunTopK {
 		int mode = 1; //-1=debug train 0=train, 1=test 
 		if(mode==DebugConfigsML.runmode){
 			runTopKAsDebug(mode);
-		}else if(mode==TrainConfigsML.runmode) {
+		}else if(mode==TrainConfigsML.runmodeTrain) {
 			runTopKAsTraining(mode);
-		}else if(mode==TestConfigsML.runmode){
+		}else if(mode==TestConfigsML.runmodeTest){
 			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runTopKAsTesting(mode,start); //TODO: only running the full trace for now. add the observation limited trace if needed later
 		}

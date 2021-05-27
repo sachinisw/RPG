@@ -376,32 +376,32 @@ public class Preprocessor {
 	//Creates input.csv for the decision tree
 	//README:  Remove bin columns from weka preprocessor
 	public static void main(String[] args) {
-		int scenario = 0, cases = 20;
+		int scenario = 1, cases = 20; //TODO: change for blocks >> 0--tad/bad  1--cut/cup
 		int mode = 1; // -1=debug 0-train, 1-test TODO: CHANGE HERE FIRST
-		String domain = "FERRY";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //"RUSHHOUR"
+		String domain = "BLOCKS";//"FERRY";//"NAVIGATOR";//"BLOCKS"; //"EASYIPC"; //"RUSHHOUR"
 		int alg  = 1; //0-full state space, 1-topk planner
 		int instances  = 3;
 		int casePerInstance = 20; //change to 20
 		Preprocessor pre = new Preprocessor();
 		if(mode==-1) {
 			LOGGER.log(Level.INFO, "Preprocessing for DEBUG mode. DOMAIN======"+ domain);
-			String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
-			String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
-			String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
+			String out = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
+			String outFull = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+			String inputfilepath = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/decision/"; //contains unweighed F(o) for each observation
 			pre.preprocessTrainingData(inputfilepath, out, outFull, alg);
-			String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
+			String aggroot = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/";
 			String aggfile = "/data/inputdecisiontree/full.csv";
-			String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/aggregate.csv";
+			String outpath = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/data/aggregate.csv";
 			pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 		}else if(mode==0) { //from 20 training problems, produce CSV for WEKA to train the model
 			if(!domain.equalsIgnoreCase("RUSHHOUR")) {
 				for(int currentCase=0; currentCase<cases; currentCase++) {
 					LOGGER.log(Level.INFO, "Preprocessing for TRAINING mode DOMAIN======"+ domain);
 					LOGGER.log(Level.INFO, "CASE = "+ currentCase);
-					String out = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
-					String outFull = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
-					String outTKFullforcase = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/tk_full.csv";
-					String inputfilepath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
+					String out = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/"; //contains binned F(o) for each observation + CRD
+					String outFull = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/full.csv"; //contains binned F(o) for all observations
+					String outTKFullforcase = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/inputdecisiontree/tk_full.csv";
+					String inputfilepath = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/"+currentCase+"/data/decision/"; //contains unweighed F(o) for each observation
 					if(alg==0) { //state space enumeration
 						pre.preprocessTrainingData(inputfilepath, out, outFull, alg);
 					}else if(alg==1) { //top k planner
@@ -409,14 +409,14 @@ public class Preprocessor {
 					}
 				}
 				if(alg==0) {
-					String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+					String aggroot = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
 					String aggfile = "/data/inputdecisiontree/full.csv";
-					String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
+					String outpath = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/aggregate.csv";
 					pre.aggregateTrainingData(aggroot, aggfile, cases, outpath);
 				}else if(alg==1) {
-					String aggroot = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+					String aggroot = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
 					String aggfile = "/data/inputdecisiontree/tk_full.csv";
-					String outpath = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/tk_aggregate.csv";
+					String outpath = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/data/tk_aggregate.csv";
 					pre.aggeregateTopKData(aggroot, aggfile, cases, outpath);
 				}
 			}else if(domain.equalsIgnoreCase("RUSHHOUR")) {
@@ -431,7 +431,7 @@ public class Preprocessor {
 			LOGGER.log(Level.CONFIG, "Preprocessing for TESTING mode DOMAIN======"+ domain);
 			if(!domain.equalsIgnoreCase("RUSHHOUR")) {
 				for (int instance = 1; instance <= instances; instance++) {
-					String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
+					String prefix = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/TEST"+scenario+"/inst";
 					String instout_full=prefix+String.valueOf(instance)+"/data/instfull.csv";
 																								//				String instout_lm50=prefix+String.valueOf(instance)+"/data/instlm50.csv";
 																								//				String instout_lm75=prefix+String.valueOf(instance)+"/data/instlm75.csv";

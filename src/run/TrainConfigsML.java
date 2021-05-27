@@ -2,13 +2,13 @@ package run;
 
 public class TrainConfigsML {
 	public static final int K = 50; //50 //100
-	public static final int scenario = 0;
-	public static final int runmode = 0;
+	public static final int scenario = 1;
+	public static final int runmodeTrain = 0;
 	public static final int cases = 20; //rushhour cases 10 (20 takes too long)
 	public static final int fileLimit = 110; //RUSHHOUR 110, rest 100
 	public static final boolean writeDOT = false;
-	public static final String domain = "RUSHHOUR"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY, RUSHHOUR
-	public static final String root = "/home/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
+	public static final String domain = "BLOCKS"; //NAVIGATOR, EASYIPC, BLOCKS, FERRY, RUSHHOUR
+	public static final String root = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+scenario+"/train/cases/";
 	public static final String traindir = "train/cases/";
 	public static final String obsdir = "/obs/";
 	public static final String outsdir = "/outs/";
@@ -28,6 +28,6 @@ public class TrainConfigsML {
 	public static final String u_initFile = "/init_u.txt";
 	public static final String weightedCSV = "weighted/";
 	public static final String decisionCSV = "decision/";
-	public static final String owFile = "/home/sachini/domains/"+domain +"/configs/ow_short.config";
+	public static final String owFile = "/home/sachini/oldhp/sachini/domains/"+domain +"/configs/ow_short.config";
 	public static final String lmoutputFile = "verifiedlm.txt";
 }

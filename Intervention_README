@@ -1,0 +1,33 @@
+How to run the components of the project
+
+eclipse project > RPG
+
+Training Component
+To Train A Model Using Full Space Enumeration
+	1_run file > run.RunML.java
+		this creates data csv files with risk, desirability, distances, landmark features for 20 intervention problems
+	2 run file > mlpreprocess.Preprocessor.java
+		this creates the training data csv that collects all  data csv files created in step 1 and creates 1 big csv file 
+		convert this csv as a arff file using weka
+		train the models
+		
+Testing and Evaluation Component
+To Test The Trained Model Using Full Space Enumeration
+	1_run file > run.RunML.java
+		this creates data csv files with risk, desirability, distances, landmark features for 20 intervention problems
+	2 run file > mlpreprocess.Preprocessor.java
+		this creates the training data csv that collects all  data csv files created in step 1 and creates 1 big csv file 
+		the produced file is called instfull.csv
+		convert this csv as a arff file using weka
+	3 run file > predictor.Preprocess.java
+		the program reads file instfull.arff and tk_instfull.arff and produces file called inst(full/tk)pred.arff with Y/N replaced with ?
+		feed this into weka as supplied input and get predictions. 
+		copy weka output to the prediction-featureset-classifier.csv files for each classifier and topk or full space featuresets
+	4 run file > predictor.AccuracyCalculator.java
+		produces the file with precision, recall, f1 values for each prediction file.
+	5 repeat 1--4 for the three test instances.
+
+
+repeat for top-k
+repeat for ramirez
+repeat for vered

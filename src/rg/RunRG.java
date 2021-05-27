@@ -45,7 +45,7 @@ public class RunRG {
 		}
 		return obFiles;	
 	}
-	
+
 	public static TreeSet<String> filterFiles(TreeSet<String> files, TreeSet<String> actualobs){
 		TreeSet<String> filtered = new TreeSet<String>();
 		for (String string : files) {
@@ -196,10 +196,10 @@ public class RunRG {
 				String actualObservations = "";
 				if(mode==TestConfigsRG.obFull) { //full trace
 					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observationFiles;
-//				}else if(mode==TestConfigsRG.ob50lm) { //50lm
-//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation50Files;
-//				}else if(mode==TestConfigsRG.ob75lm) { //75lm
-//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation75Files;  
+					//				}else if(mode==TestConfigsRG.ob50lm) { //50lm
+					//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation50Files;
+					//				}else if(mode==TestConfigsRG.ob75lm) { //75lm
+					//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation75Files;  
 				}
 				String domfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.domainFile;
 				String probfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.a_problemFile;
@@ -224,16 +224,46 @@ public class RunRG {
 						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, outdir+path[path.length-1]+"/");
 						if(mode==TestConfigsRG.obFull) {
 							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + ".csv");
-//						}else if (mode==TestConfigsRG.ob50lm) {
-//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "50.csv");
-//						}else if (mode==TestConfigsRG.ob75lm) {
-//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "75.csv");
+							//						}else if (mode==TestConfigsRG.ob50lm) {
+							//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "50.csv");
+							//						}else if (mode==TestConfigsRG.ob75lm) {
+							//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "75.csv");
 						}
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
 				}
 			}
+		}
+	}
+
+	public static void runRandGForRushHour(String userid, String puzzleid) {
+		//String criticals = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.criticalStateFile;
+		String domfile = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + TestConfigsRG.domainFile;
+		String probfile = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + TestConfigsRG.rh_prob+puzzleid+".pddl";
+		String outdir = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + TestConfigsRG.rh_rgout;
+		String desirables = TestConfigsRG.rh_root + TestConfigsRG.rh_goal + TestConfigsRG.rh_d;
+		String observations = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + "/datapoints_firstclick.csv";
+
+		new File(outdir).mkdirs(); //create outdir folder
+		
+		//Hypotheses hyp = setHypothesis(criticals, desirables);
+		
+		Domain dom = new Domain();
+		dom.readDominPDDL(domfile);
+		Problem probTemplate = new Problem();
+		probTemplate.readProblemPDDL(probfile); //use the problem for the attacker's definition.
+		Observations obs = new Observations(); //this one has the class labels
+		obs.readObs(observations);
+		
+		System.out.println(obs);
+		try {
+			Observations noLabel = (Observations) obs.clone();
+			noLabel.removeLabels();
+			//HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, outdir+path[path.length-1]+"/");
+			//writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + ".csv");
+		} catch (CloneNotSupportedException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 		}
 	}
 
@@ -302,7 +332,7 @@ public class RunRG {
 			e.printStackTrace();
 		} 
 	}
-	
+
 	public static String computeMCC(double TP, double TN, double FP, double FN) {
 		//MCC = ( (TP*TN) - (FP*FN) ) / SQRT((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
 		BigDecimal btp = new BigDecimal(TP);
@@ -322,7 +352,7 @@ public class RunRG {
 			return mcc.toString();
 		}
 	}
-	
+
 	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String critical = hyp.getHyps().get(0);
@@ -336,7 +366,7 @@ public class RunRG {
 		}
 		return count;
 	}
-	
+
 	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String desirable = hyp.getHyps().get(1);
@@ -350,7 +380,7 @@ public class RunRG {
 		}
 		return count;
 	}
-	
+
 	public static int countFP(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String critical = hyp.getHyps().get(0);
@@ -364,7 +394,7 @@ public class RunRG {
 		}
 		return count;
 	}
-	
+
 	public static int countFN(ArrayList<String> result, Hypotheses hyp) {
 		int count = 0;
 		String desirable = hyp.getHyps().get(1);
@@ -378,7 +408,7 @@ public class RunRG {
 		}
 		return count;
 	}
-	
+
 	public static void main(String[] args) {
 		int start = 1; //TODO: change here. this is the starting instance number. will go until TestConfig.instances number of times.
 		int mode = 1;  // change here to indicate which observation files are being run. full, 50% limited or 75% limited

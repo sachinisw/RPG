@@ -10,10 +10,10 @@ import log.EventLogger;
 
 //Generates **one** plan from Fast Downward using lazy-greedy heuristic given problem and domain.
 public class FDPlanner {
-	private final static String fdPath = "python /home/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
+	private final static String fdPath = "python /home/sachini/oldhp/sachini/domains/Planners/LAMA/FD/fast-downward.py ";
 	private final static String fdConfigGreedy = " --evaluator hff=ff() --evaluator hcea=cea() --search lazy_greedy([hff,hcea],preferred=[hff,hcea])";
-	private final static String fdoutput = "/home/sachini/eclipse-workspace/IJCAI16/RPG/sas_plan";
-	private final static String fdoutputsub = "/home/sachini/eclipse-workspace/IJCAI16/RPG/output.sas";
+	private final static String fdoutput = "/home/sachini/oldhp/sachini/eclipse-workspace/IJCAI16/RPG/sas_plan";
+	private final static String fdoutputsub = "/home/sachini/oldhp/sachini/eclipse-workspace/IJCAI16/RPG/output.sas";
 
 	private String domainfile;
 	private String problemfile;

@@ -138,12 +138,12 @@ public class CausalLinkDistance  extends Distance{
 
 	//source: https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume15/ambite01a-html/node21.html FIGURE 17 whoopee!!
 	public void extractCausalLinksFromReferencePlan() {
-		SpecialAction ini = new SpecialAction("A_I");
+		SpecialAction ini = new SpecialAction("A_I"); //pre=[], add=[init]
 		ini.adds.addAll(init);
-		SpecialAction go = new SpecialAction("A_G");
+		SpecialAction go = new SpecialAction("A_G");//pre=[goal], add=[]
 		go.pres.addAll(goal);
 		ArrayList<String> refdummy = new ArrayList<>(ref);
-		refdummy.add(0,ini.name);
+		refdummy.add(0,ini.name);//append special actions to the end and to the start
 		refdummy.add(go.name);
 		for (int i=refdummy.size()-1; i>=0; i--) {
 			String ai = refdummy.get(i);
@@ -280,28 +280,28 @@ public class CausalLinkDistance  extends Distance{
 	}
 
 	public static ConnectivityGraph readConnectivityGraphs(){
-		ConnectivityGraph graph = new ConnectivityGraph("/home/sachini/domains/TEST/testcon");
-		graph.readConGraphOutput("/home/sachini/domains/TEST/testcon");
+		ConnectivityGraph graph = new ConnectivityGraph("/home/sachini/domains/Nguye/testcon");
+		graph.readConGraphOutput("/home/sachini/domains/Nguye/testcon");
 		return graph;
 	}
 
 	public static void main(String[] args) {
 		ArrayList<String> in = new ArrayList<String>();
-		in.add("(R1)");
+		in.add("(RA)");
 		ArrayList<String> a = new ArrayList<String>();
-		a.add("A1");
-		a.add("A2");
-		a.add("A3");
+		a.add("AA");
+		a.add("AB");
+		a.add("AC");
 		ArrayList<String> b = new ArrayList<String>();
-		b.add("A1");
-		b.add("A2");
-		b.add("A4");
+		b.add("AA");
+		b.add("AB");
+		b.add("AD");
 		ArrayList<String> c = new ArrayList<String>();
-		c.add("A5");
-		c.add("A6");
+		c.add("AE");
+		c.add("AF");
 		ArrayList<String> g = new ArrayList<String>();
-		g.add("(R3)");
-		g.add("(R4)");
+		g.add("(RC)");
+		g.add("(RD)");
 		ConnectivityGraph con = readConnectivityGraphs();
 		CausalLinkDistance cld = new CausalLinkDistance(c, b, con, in, g);
 		System.out.println(cld.getCausalLinkDistance());

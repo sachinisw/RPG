@@ -133,14 +133,14 @@ public class RunML {
 	}
 	
 	private static boolean restrict(int mode, int limit, String domain) {
-		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ||
-				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) || 
-				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigsML.runmode && limit>TestConfigsML.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
+		if((domain.equalsIgnoreCase("EASYIPC") && mode==TestConfigsML.runmodeTest && limit>TestConfigsML.fileLimit) ||
+				(domain.equalsIgnoreCase("NAVIGATOR") && mode==TestConfigsML.runmodeTest && limit>TestConfigsML.fileLimit) || 
+				(domain.equalsIgnoreCase("FERRY") && mode==TestConfigsML.runmodeTest && limit>TestConfigsML.fileLimit) ) { //when testing the trained model in EASYIPC, pick only 10 observation files from each cs/ds pair in current test instance
 			return true;
 		}else {
-			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) || 
-					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit) ||
-					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmode && limit>TrainConfigsML.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
+			if( (domain.equalsIgnoreCase("EASYIPC") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit) || 
+					(domain.equalsIgnoreCase("FERRY") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit) ||
+					(domain.equalsIgnoreCase("NAVIGATOR") && mode==TrainConfigsML.runmodeTrain && limit>TrainConfigsML.fileLimit)) { //when training navigator (creates too many instances), put a limit on num of observation files (100)
 				return true;
 			}
 		}
@@ -241,23 +241,12 @@ public class RunML {
 				String a_out = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_outputPath;
 				String a_init = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_initFile;
 				String a_dotpre_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_dotFilePrefix;
-//				String a_dotpre_lm = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.a_dotFileLMPrefix;
 				String a_dotsuf = TestConfigsML.a_dotFileSuffix;
 				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
 				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
-//				String lm_out_short50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort50;
-//				String lm_out_short75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputShort75;
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
-//				String obslm50 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles50;
-//				String obslm75 = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.limitedObservationFiles75; 
 				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, 0, writedot, true);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
-//				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
-//						a_out, criticalfile, a_init, a_dotsuf, obslm50, ds_csv, lm_out_short50, 50, writedot, false);
-//				LOGGER.log(Level.INFO, "Finished 50% reduced case: "+ x +" for test instance:" +instance );
-//				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_lm, 
-//						a_out, criticalfile, a_init, a_dotsuf, obslm75, ds_csv, lm_out_short75, 75, writedot, false);
-//				LOGGER.log(Level.INFO, "Finished 75% reduced case: "+ x +" for test instance:" +instance );
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
 		}
@@ -267,9 +256,9 @@ public class RunML {
 		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigsML.runmode){
 			runAsDebug(mode);
-		}else if(mode==TrainConfigsML.runmode) {
+		}else if(mode==TrainConfigsML.runmodeTrain) {
 			runAsTraining(mode);
-		}else if(mode==TestConfigsML.runmode){
+		}else if(mode==TestConfigsML.runmodeTest){
 			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
 			runAsTesting(mode,start);
 		}

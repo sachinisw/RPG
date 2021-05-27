@@ -35,7 +35,7 @@ import rpg.PlanningGraph;
 
 public class StateGenerator {
 	public static final Logger LOGGER = Logger.getLogger(StateGenerator.class.getName());
-	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
+	public final static String ffPath = "/home/sachini/oldhp/sachini/domains/Planners/FF/ff";
 	public final static String dotFileExt = ".dot";
 	public final static double initProbability = 1.0;
 	public Agent agent;
@@ -168,6 +168,7 @@ public class StateGenerator {
 	}
 
 	public ArrayList<RelaxedPlanningGraph> readRelaxedPlanningGraph(){ //used exclusively for landmarks
+		runPlanner();
 		ArrayList<String> rpgFiles = getRPGFiles();
 		ArrayList<RelaxedPlanningGraph> relaxedpgs = new ArrayList<RelaxedPlanningGraph>();
 		for(int i=0; i<rpgFiles.size(); i++){
@@ -179,6 +180,7 @@ public class StateGenerator {
 	}
 
 	public ArrayList<ConnectivityGraph> readConnectivityGraphs(){
+		runPlanner();
 		ArrayList<String> conGraphFiles = getConnectivityFiles();
 		ArrayList<ConnectivityGraph> connectivities = new ArrayList<ConnectivityGraph>();
 		for(int i=0; i<conGraphFiles.size(); i++){

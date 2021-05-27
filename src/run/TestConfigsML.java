@@ -3,14 +3,14 @@ package run;
 public class TestConfigsML {
 	public static final boolean writeDOT = false;
 	public static final int K = 50; 
-	public static final int runmode = 1; 
-	public static final int trainedscenario = 0;
+	public static final int runmodeTest = 1; 
+	public static final int trainedscenario = 1; //0 for tad/bad, 1 for cut/cup if domain is blocks. else 0 for all other domains
 	public static final int instances = 3; //from start arg. run test for this many instances
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
 	public static final int [] limitRatio = {50,75};
-	public static final String domain = "FERRY"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
-	public static final String prefix = "/home/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
+	public static final String domain = "BLOCKS"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final String prefix = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String topkdir = "/topk/";
 	public static final String instancedir="inst";
 	public static final String instscenario="/scenarios/";

@@ -10,7 +10,7 @@ import log.EventLogger;
 
 //Generates the optimal plan from HSP-F from problem and domain.
 public class HSPPlanner {
-	private final static String hsppath = "/home/sachini/domains/Planners/hsps/hsps/hsp_f -cost ";
+	private final static String hsppath = "/home/sachini/oldhp/sachini/domains/Planners/hsps/hsps/hsp_f -cost ";
 
 	private String domainfile;
 	private String problemfile;

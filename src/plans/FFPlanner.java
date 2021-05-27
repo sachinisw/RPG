@@ -8,7 +8,7 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 
 public class FFPlanner {
-	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
+	public final static String ffPath = "/home/sachini/oldhp/sachini/domains/Planners/FF/ff ";
 
 	private String domainfile;
 	private String problemfile;
