@@ -10,6 +10,8 @@ public class DecisionDataLine {
 	private int fDistanceToDesirableState;
 	private double fPercentActiveALM;
 	public double funcValue;
+	private long processingTime;
+	private String predictedLabel;
 	
 	public DecisionDataLine(String o, Metrics m){
 		observation = o.split(":")[1];
@@ -19,6 +21,8 @@ public class DecisionDataLine {
 		fDistanceToCriticalState = m.getDistanceToCritical();
 		fDistanceToDesirableState = m.getDistanceToDesirable();
 		fPercentActiveALM = m.getStateContainsLandmark(); 
+		processingTime = 0L;
+		predictedLabel = "";
 	}
 	
 	public void computeObjectiveFunctionValue(){
@@ -28,7 +32,7 @@ public class DecisionDataLine {
 	public String toString(){ //for current observation return full string of weighted metrics for all weights
 		return observation + "," + metrics.toString() + "," + funcValue + ","
 			+ fDistanceToCriticalState +","+ fDistanceToDesirableState +","+ fPercentActiveALM +
-			","+ classLabel + "\n";
+			","+ classLabel + "," + processingTime+ "," + predictedLabel + "\n";
 	}
 	
 	public String getObservation() {
@@ -70,11 +74,27 @@ public class DecisionDataLine {
 		this.fDistanceToDesirableState = fDistanceToDesirableState;
 	}
 
-	public double isfContainsUndersirableLandmark() {
+	public double getPercentActiveLM() {
 		return fPercentActiveALM;
 	}
 
-	public void setfContainsUndersirableLandmark(double fContainsUndersirableLandmark) {
+	public void setPercentActiveLM(double fContainsUndersirableLandmark) {
 		this.fPercentActiveALM = fContainsUndersirableLandmark;
+	}
+
+	public long getProcessingTime() {
+		return processingTime;
+	}
+
+	public void setProcessingTime(long processingTime) {
+		this.processingTime = processingTime;
+	}
+	
+	public String getPredictedLabel() {
+		return predictedLabel;
+	}
+	
+	public void setPredictedLabel (String s) {
+		predictedLabel = s;
 	}
 }

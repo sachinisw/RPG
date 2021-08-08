@@ -108,7 +108,7 @@ public class StateGenerator {
 			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				if(fileItem.getName().contains("rpg")){
+				if(fileItem.getName().contains("rpg-problem_a")){
 					rpgFilePaths.add(fileItem.getCanonicalPath());
 				}
 			}
@@ -127,7 +127,7 @@ public class StateGenerator {
 			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				if(fileItem.getName().contains("con")){
+				if(fileItem.getName().contains("connectivity-problem_a")){
 					conFilePaths.add(fileItem.getCanonicalPath());
 				}
 			}

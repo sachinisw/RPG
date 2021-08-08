@@ -68,6 +68,7 @@ public class RunRG {
 		String goalpredicate = "";
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
 		for (int i=0; i<obs.getObs().size(); i++) {
+			long start = System.currentTimeMillis();
 			String now = obs.getObs().get(i);
 			EventLogger.LOGGER.log(Level.INFO, "observation :: " + now);
 			String prev = "";
@@ -98,10 +99,12 @@ public class RunRG {
 				map.put(hyp.getHyps().get(j), goalprob);
 			}
 			Entry<String, Double> ent = maxLikelyGoal(map); //if ent = null, then the agent wasn't able to decide what the most likely goal is
+			long end = System.currentTimeMillis();
+			long duration = end - start;
 			if(ent != null) {
-				obsTolikelgoal.put(now, ent.getKey());
+				obsTolikelgoal.put(now, ent.getKey()+","+duration);
 			}else {
-				obsTolikelgoal.put(now, null);
+				obsTolikelgoal.put(now, null+","+duration);
 			}
 			domain = copy; //pass the domain from this round to the next observation
 		}
@@ -173,8 +176,8 @@ public class RunRG {
 			writer = new FileWriter(file);
 			for (String o : actuals.getObs()) {
 				String ob = o.substring(2);
-				String dec = decisions.get(ob);
-				writer.write(o.substring(0,2)+","+ob+","+dec+"\n");
+				String decisionparts[] = decisions.get(ob).split(","); //0 = most likely goal, 1=time
+				writer.write(o.substring(0,2)+","+ob+","+decisionparts[0]+","+ decisionparts[1]+"\n");
 			}
 			writer.close();
 		} catch (IOException e) {
@@ -186,21 +189,19 @@ public class RunRG {
 		new File(outputpath+obfilename+"/").mkdirs();
 	}
 
-	public static void runRandG(int start, int mode) {
+	public static void runRandG(int start) {
+		ArrayList<Long> runtimes = new ArrayList<>();
 		for (int inst=start; inst<=TestConfigsRG.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
 			EventLogger.initLog(TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.logfilename);
+			long duration = 0L; long numReqs = 0L;
 			for (int scen=0; scen<TestConfigsRG.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String desirables = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.desirableStateFile;
 				String criticals = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.criticalStateFile;
 				String testedObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.testedObservationFiles;
 				String actualObservations = "";
-				if(mode==TestConfigsRG.obFull) { //full trace
-					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observationFiles;
-					//				}else if(mode==TestConfigsRG.ob50lm) { //50lm
-					//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation50Files;
-					//				}else if(mode==TestConfigsRG.ob75lm) { //75lm
-					//					actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observation75Files;  
-				}
+				
+				actualObservations = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.observationFiles;
+				
 				String domfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.domainFile;
 				String probfile = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.a_problemFile;
 				String outdir = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.rgout + TestConfigsRG.planner;
@@ -222,23 +223,62 @@ public class RunRG {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
 						HashMap<String, String> decisions = doPRPforObservationsWithFD(noLabel, dom, probTemplate, hyp, outdir+path[path.length-1]+"/");
-						if(mode==TestConfigsRG.obFull) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + ".csv");
-							//						}else if (mode==TestConfigsRG.ob50lm) {
-							//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "50.csv");
-							//						}else if (mode==TestConfigsRG.ob75lm) {
-							//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + "75.csv");
-						}
+						writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsRG.outputfile + "_" + path[path.length-1] + ".csv");
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
 				}
+				String current = computeProcessingTime(inst, scen);
+				duration += Long.parseLong(current.split(",")[0]);
+				numReqs += Long.parseLong(current.split(",")[1]);
 			}
+			runtimes.add(duration);
+			runtimes.add((duration/numReqs));
 		}
+		System.out.println(runtimes);
 	}
 
+	public static TreeSet<String> getRGCSV(String path){
+		TreeSet<String> csv = new TreeSet<String>();
+		try {
+			File dir = new File(path);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				if(fileItem.getCanonicalPath().contains(".csv")) {
+					csv.add(fileItem.getCanonicalPath());
+				}
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		return csv;	
+	}
+	
+	public static String computeProcessingTime(int instance, int casenum) {
+		String ds_csv_path = TestConfigsRG.prefix + TestConfigsRG.instancedir + instance + TestConfigsRG.instscenario + casenum + TestConfigsRG.rgout + TestConfigsRG.planner;
+		TreeSet<String> csv = getRGCSV(ds_csv_path);
+		int number_of_decisions = 0;
+		long total_duration = 0L;
+		for (String path : csv) {
+			Scanner scan;
+			try {
+				scan = new Scanner (new File(path));
+				while(scan.hasNextLine()) {
+					String line = scan.nextLine();
+					String parts[] = line.split(",");
+					int duration = Integer.parseInt(parts[parts.length-1]); 
+					total_duration += duration;
+					number_of_decisions++;
+				}
+				scan.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return String.valueOf(total_duration)+","+String.valueOf(number_of_decisions);
+	}
+	
 	public static void runRandGForRushHour(String userid, String puzzleid) {
-		//String criticals = TestConfigsRG.prefix + TestConfigsRG.instancedir + inst + TestConfigsRG.instscenario + scen + TestConfigsRG.criticalStateFile;
 		String domfile = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + TestConfigsRG.domainFile;
 		String probfile = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + TestConfigsRG.rh_prob+puzzleid+".pddl";
 		String outdir = TestConfigsRG.rh_root + TestConfigsRG.rh_data + userid + TestConfigsRG.rh_rgout;
@@ -411,8 +451,7 @@ public class RunRG {
 
 	public static void main(String[] args) {
 		int start = 1; //TODO: change here. this is the starting instance number. will go until TestConfig.instances number of times.
-		int mode = 1;  // change here to indicate which observation files are being run. full, 50% limited or 75% limited
-		runRandG(start , mode);
+		runRandG(start);
 		computeResults(start);
 	}
 }

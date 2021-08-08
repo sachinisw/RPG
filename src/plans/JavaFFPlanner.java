@@ -10,7 +10,7 @@ import log.EventLogger;
 
 //Generates the JavaFF plan from problem and domain.
 public class JavaFFPlanner {
-	private final static String jff = "java -jar /home/sachini/domains/Planners/JavaFF2/out/artifacts/JavaFF2_jar/JavaFF2.jar ";
+	private final static String jff = "java -jar /home/sachini/oldhp/sachini/domains/Planners/JavaFF2/out/artifacts/JavaFF2_jar/JavaFF2.jar ";
 
 	private String domainfile;
 	private String problemfile;

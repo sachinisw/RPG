@@ -1,9 +1,11 @@
 package run;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,6 +15,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import actors.Agent;
 import actors.Decider;
+import classifiers.ClassifierWrapper;
 import con.ConnectivityGraph;
 import graph.StateGraph;
 import landmark.RelaxedPlanningGraph;
@@ -118,15 +121,39 @@ public class RunML {
 	}
 
 	public static void computeMetricsForDecisionTree(String domain, Observation ob, Decider decider, ArrayList<StateGraph> trees, 
-			RelaxedPlanningGraph arpg, ConnectivityGraph con, String outputfilename, String lmoutput){
+			RelaxedPlanningGraph arpg, ConnectivityGraph con, String outputfilename, String lmoutput, String classifier, long file_start_time){
 		ArrayList<String> items = new ArrayList<String>();
 		for (int i=1; i<trees.size(); i++) { //skip the first one. It's the initial state or in the case of half traces, it's the state before I start making decisions
+			long observation_start_time = System.currentTimeMillis();
 			decider.setState(trees.get(i)); //add stategraphs to user, attacker objects
 			Metrics metrics = new Metrics(decider, domain, lmoutput, arpg, con); //compute features for decision tree
 			metrics.computeFeatureSet();
 			DecisionDataLine data = new DecisionDataLine(ob.getObservations().get(i-1), metrics);
 			data.computeObjectiveFunctionValue();
-			items.add(data.toString());
+			
+			// CALL CLASSIFIER HERE and get the decision.
+			String[] featureset = new String [6];
+			//featureset[0] = String.valueOf(data.getMetrics().getCRD()[0]);
+			featureset[0] = String.valueOf(data.getMetrics().getCRD()[1]);
+			featureset[1] = String.valueOf(data.getMetrics().getCRD()[2]);
+			featureset[2] = String.valueOf(data.getfDistanceToCriticalState());
+			featureset[3] = String.valueOf(data.getfDistanceToDesirableState());
+			featureset[4] = String.valueOf(data.getPercentActiveLM());
+			featureset[5] = "?";
+			String prediction = ClassifierWrapper.getPrediction(TestConfigsML.graph_features, classifier, featureset);
+			// RECORD END TIME here and compute the difference
+			long observation_end_time = System.currentTimeMillis();
+			long duration = 0;
+			if(i==1) {
+				duration = observation_end_time - file_start_time;
+			}else {
+				duration = observation_end_time - observation_start_time;
+			}
+			data.setProcessingTime(duration);
+			data.setPredictedLabel(prediction);
+			
+			// add the data point with time to the csv file
+			items.add(data.toString());			
 		}
 		CSVGenerator results = new CSVGenerator(outputfilename, items, 0);
 		results.writeOutput();
@@ -149,7 +176,7 @@ public class RunML {
 
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, String a_dotpre, 
 			String a_out, String criticalfile, String a_init, String a_dotsuf, String obs, 
-			String ds_csv, String lm_out, int delay, boolean writedot, boolean full) {
+			String ds_csv, String lm_out, int delay, boolean writedot, boolean full, String classifier) {
 		int reverseConfig = 1;
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init, a_dotpre, a_dotsuf);
 		TreeSet<String> obFiles = getObservationFiles(obs);
@@ -160,17 +187,18 @@ public class RunML {
 			if (restrict(mode, obFileLimit, domain)) {
 				break;
 			}
+			long obfile_processing_startTime = System.currentTimeMillis();
 			obFileLimit++;
 			String name[] = file.split("/");
-			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
+			Observation curobs = setObservations(file); 
 			LOGGER.log(Level.INFO, "Generating attacker state graphs for domain: "+ domain);
 			ArrayList<StateGraph> attackerState = generateStateGraphsForObservations(decider, domain, curobs, decider.getInitialState(), reverseConfig, 
 					name[name.length-1], writedot, full);//generate graph for attacker and user
 			if(full) {
 				LOGGER.log(Level.INFO, "Processing FULL observation file: "+ file);
 				computeMetricsForDecisionTree(domain, curobs, decider, attackerState, a_rpg.get(0), a_con.get(0), 
-						ds_csv+name[name.length-1]+".csv",lm_out); //rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state.
-			}else {
+						ds_csv+name[name.length-1]+".csv",lm_out, classifier, obfile_processing_startTime); //rewrites landmarks for each observation. landmarks are generated from the intial state-> goal. i dont change it when the graph is generated for the updated state.
+			}else { //THIS PART IS NOT NEEDED. I DID NOT TEST FOR PARTIAL OBSERVATION FILES.
 				LOGGER.log(Level.INFO, "Processing PARTIAL observation file: "+ file);
 				Observation cleaned = new Observation();
 				ArrayList<String> cl = new ArrayList<>();
@@ -181,7 +209,7 @@ public class RunML {
 				}
 				cleaned.setObservations(cl);
 				computeMetricsForDecisionTree(domain, cleaned, decider, attackerState, a_rpg.get(0), a_con.get(0), 
-						ds_csv+name[name.length-1]+"lm"+String.valueOf(delay)+".csv",lm_out); //file path -- scenarios/x/data/decision/0_lm50.csv
+						ds_csv+name[name.length-1]+"lm"+String.valueOf(delay)+".csv",lm_out, classifier, obfile_processing_startTime); //file path -- scenarios/x/data/decision/0_lm50.csv
 			}
 		}
 	}
@@ -202,8 +230,9 @@ public class RunML {
 			String lm_out = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.lmoutputFile;
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
 			boolean writedot = TrainConfigsML.writeDOT;
+			String classifier = ""; //value empty because training phase
 			run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
-					a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true);
+					a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true, classifier);
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
@@ -223,16 +252,19 @@ public class RunML {
 		String lm_out = DebugConfigsML.root+DebugConfigsML.datadir+DebugConfigsML.lmoutputFile;
 		String obs = DebugConfigsML.root+DebugConfigsML.obsdir;
 		boolean writedot = DebugConfigsML.writeDOT;
+		String classifier = ""; //value empty because debug phase
 		run(mode, domain, domainfile, desirablefile, a_prob, dotpre, 
-				a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true);
+				a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out, 0, writedot, true, classifier);
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
-	public static void runAsTesting(int mode, int start) {
+	public static void runAsTesting(int mode, int start, String classifier) {
 		String domain = TestConfigsML.domain;
 		boolean writedot = TestConfigsML.writeDOT; 
+		ArrayList<Long> runtimes = new ArrayList<>();
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
 		for (int instance=start; instance<=TestConfigsML.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			long duration = 0L; long numReqs = 0L;
 			for (int x=0; x<TestConfigsML.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String domainfile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.domainFile;
 				String desirablefile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.desirableStateFile;
@@ -245,13 +277,62 @@ public class RunML {
 				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
 				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
-				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, 0, writedot, true);
+				run(mode, domain, domainfile, desirablefile, a_prob, a_dotpre_full, a_out, criticalfile, a_init, a_dotsuf, obs, ds_csv, lm_out_full, 0, writedot, true, classifier);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
+				String current = computeProcessingTime(instance, x);
+				duration += Long.parseLong(current.split(",")[0]);
+				numReqs += Long.parseLong(current.split(",")[1]);
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
+			runtimes.add(duration);
+			runtimes.add((duration/numReqs));
 		}
+		System.out.println(runtimes);
 	}
 
+	//computes the sum of processing times and the number of requests for  the cases 1-20 for this instance (1,2,3);
+	public static String computeProcessingTime(int instance, int casenum) {
+		String ds_csv_path = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(casenum)+TestConfigsML.decisionCSV;
+		TreeSet<String> csv = getGraphCSV(ds_csv_path);
+		int number_of_decisions = 0;
+		long total_duration = 0L;
+		for (String path : csv) {
+			Scanner scan;
+			try {
+				scan = new Scanner (new File(path));
+				scan.nextLine(); //read off the header
+				while(scan.hasNextLine()) {
+					String line = scan.nextLine();
+					String parts[] = line.split(",");
+					long duration = Long.parseLong(parts[parts.length-2]);
+					total_duration += duration;
+					number_of_decisions++;
+				}
+				scan.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return String.valueOf(total_duration)+","+String.valueOf(number_of_decisions);
+	}
+	
+	
+	public static TreeSet<String> getGraphCSV(String path){
+		TreeSet<String> csv = new TreeSet<String>();
+		try {
+			File dir = new File(path);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				if(!fileItem.getCanonicalPath().contains("_tk.csv") && !fileItem.getCanonicalPath().contains("lm")) {
+					csv.add(fileItem.getCanonicalPath());
+				}
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		return csv;	
+	}
+	
 	public static void main(String[] args) { 
 		int mode = 1; //-1=debug train 0=train, 1=test TODO README:: CHANGE CONFIGS HERE FIRST 
 		if(mode==DebugConfigsML.runmode){
@@ -260,7 +341,8 @@ public class RunML {
 			runAsTraining(mode);
 		}else if(mode==TestConfigsML.runmodeTest){
 			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
-			runAsTesting(mode,start);
+			String classifier = TestConfigsML.naiveBayes;
+			runAsTesting(mode,start, classifier);
 		}
 	}
 }

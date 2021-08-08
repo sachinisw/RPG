@@ -1,10 +1,12 @@
 package run;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Scanner;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,7 +16,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import actors.Agent;
 import actors.Decider;
-//import causality.Explanation;
+import classifiers.ClassifierWrapper;
 import con.ConnectivityGraph;
 import landmark.RelaxedPlanningGraph;
 import metrics.CausalLink;
@@ -189,6 +191,7 @@ public class RunTopK {
 	}
 	
 	public static void writeFeatureValsToFile(String outputfilename, ArrayList<double[]> featurevalsforfiles, Observation obs) {
+		//featurevalsforfiles look like this. [ob, feature values comma separated, [duration, prediction]]
 		ArrayList<String> data = new ArrayList<String>();
 		int index = 0;	
 		for(int i=0; i<featurevalsforfiles.size(); i+=2) {
@@ -200,9 +203,14 @@ public class RunTopK {
 			
 			String ob = obs.getObservations().get(index).substring(2);
 			String label = obs.getObservations().get(index).substring(0,1);
-			String time = String.valueOf(Arrays.toString(featurevalsforfiles.get(i+1)));
-			
-			data.add(ob+","+d+label+","+time+"\n");
+			String time = String.valueOf(featurevalsforfiles.get(i+1)[0]);
+			String prediction = "";
+			if(featurevalsforfiles.get(i+1)[1]==1) {
+				prediction = "Y";
+			}else {
+				prediction = "N";
+			}
+			data.add(ob+","+d+label+","+time+","+ prediction +"\n");
 
 			index++;
 		}
@@ -212,7 +220,7 @@ public class RunTopK {
 
 	public static void run(int mode, String domain, String domainfile, String desirablefile, String a_prob, 
 			String a_out, String criticalfile, String a_init, String obs, 
-			String ds_csv, String lm_out, int delay, int K, boolean full) {
+			String ds_csv, String lm_out, int delay, int K, boolean full, String classifier) {
 		Decider decider = new Decider(domain, domainfile, desirablefile, a_prob, a_out, criticalfile , a_init);
 		decider.setDesirableState();
 		decider.setUndesirableState();
@@ -228,7 +236,6 @@ public class RunTopK {
 			}
 			obFileLimit++;
 			String name[] = file.split("/");
-//			if(name[name.length-1].equalsIgnoreCase("4")) { //navigator=5, 0=easyipc,blocks ferry=15
 			Observation curobs = setObservations(file); //TODO: how to handle noise in trace.
 			ArrayList<double[]> featurevalsforfile = new ArrayList<>();
 			ArrayList<String> curstate = new ArrayList<String>();
@@ -261,13 +268,38 @@ public class RunTopK {
 //							a_con.get(0), a_rpg.get(0), decider.getInitialState().getState(), curstate,	
 //							decider.critical.getCriticalStatePredicates(), decider.desirable.getDesirableStatePredicates(), lm_out);
 				//}
-				featurevalsforfile.add(featureval);
+				
+				// CALL CLASSIFIER HERE and get the decision.
+				String[] featureset = new String [14];
+				featureset[0] = String.valueOf(featureval[0]);
+				featureset[1] = String.valueOf(featureval[1]);
+				featureset[2] = String.valueOf(featureval[2]);
+				featureset[3] = String.valueOf(featureval[3]);
+				featureset[4] = String.valueOf(featureval[4]);
+				featureset[5] = String.valueOf(featureval[5]);
+				featureset[6] = String.valueOf(featureval[6]);
+				featureset[7] = String.valueOf(featureval[7]);
+				featureset[8] = String.valueOf(featureval[8]);
+				featureset[9] = String.valueOf(featureval[9]);
+				featureset[10] = String.valueOf(featureval[10]);
+				featureset[11] = String.valueOf(featureval[11]);
+				featureset[12] = String.valueOf(featureval[12]);
+				featureset[13] = "?";
+
+				String prediction = ClassifierWrapper.getPrediction(TestConfigsML.topk_features, classifier, featureset);
 				long end = System.currentTimeMillis();
+				// RECORD END TIME here and compute the difference
+				double pred;
+				if (prediction.equals("Y")) {
+					pred = 1;
+				}else {
+					pred = 0;
+				}
+				featurevalsforfile.add(featureval);
 				duration = end-start;
-				featurevalsforfile.add(new double[] {duration});
+				featurevalsforfile.add(new double[] {duration, pred});
 			} //collect the feature set and write result to csv file for this observation file when this loop finishes
 			writeFeatureValsToFile(ds_csv+name[name.length-1]+"_tk.csv", featurevalsforfile, curobs);
-//			}
 		}
 	}
 	
@@ -285,8 +317,9 @@ public class RunTopK {
 			String ds_csv = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.decisionCSV;
 			String lm_out = TrainConfigsML.root+casenum+TrainConfigsML.datadir+TrainConfigsML.lmoutputFile;
 			String obs = TrainConfigsML.root+casenum+TrainConfigsML.obsdir;
+			String classifier = "";
 			run(mode, domain, domainfile, desirablefile, a_prob, 
-					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, TrainConfigsML.K, true);
+					a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, TrainConfigsML.K, true, classifier);
 		}
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
@@ -303,14 +336,17 @@ public class RunTopK {
 		String ds_csv = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.datadir+DebugConfigsML.decisionCSV;
 		String lm_out = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.datadir+DebugConfigsML.lmoutputFile;
 		String obs = DebugConfigsML.root+DebugConfigsML.traindir+DebugConfigsML.obsdir;
-		run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, DebugConfigsML.K, true);
+		String classifier = "";
+		run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out, 0, DebugConfigsML.K, true, classifier);
 		LOGGER.log(Level.INFO, "Completed data generation to train a model for domain:" + domain);
 	}
 
-	public static void runTopKAsTesting(int mode, int start) {
+	public static void runTopKAsTesting(int mode, int start, String classifier) {
 		String domain = TestConfigsML.domain;
+		ArrayList<Long> runtimes = new ArrayList<>();
 		LOGGER.log(Level.INFO, "Run mode: TESTING domain ["+ domain +"]");
 		for (int instance=start; instance<=TestConfigsML.instances; instance++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			long duration = 0L; long numReqs = 0L;
 			for (int x=0; x<TestConfigsML.instanceCases; x++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				LOGGER.log(Level.INFO, "Current case: "+ x);
 				String domainfile = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.domainFile;
@@ -322,13 +358,60 @@ public class RunTopK {
 				String ds_csv = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.decisionCSV;
 				String lm_out_full = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.lmoutputFull;
 				String obs = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(x)+TestConfigsML.observationFiles;
-				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, TestConfigsML.K, true);
+				run(mode, domain, domainfile, desirablefile, a_prob, a_out, criticalfile, a_init, obs, ds_csv, lm_out_full, 0, TestConfigsML.K, true, classifier);
 				LOGGER.log(Level.INFO, "Finished full case: "+ x +" for test instance:" +instance );
+				String current = computeProcessingTime(instance, x);
+				duration += Long.parseLong(current.split(",")[0]);
+				numReqs += Long.parseLong(current.split(",")[1]);
 			}
 			LOGGER.log(Level.INFO, "Test instance: "+ instance + " done" );
+			runtimes.add(duration);
+			runtimes.add((duration/numReqs));
 		}
+		System.out.println(runtimes);
+	}
+	
+	public static String computeProcessingTime(int instance, int casenum) {
+		String ds_csv_path = TestConfigsML.prefix+TestConfigsML.instancedir+String.valueOf(instance)+TestConfigsML.instscenario+String.valueOf(casenum)+TestConfigsML.decisionCSV;
+		TreeSet<String> csv = getTopKCSV(ds_csv_path);
+		int number_of_decisions = 0;
+		long total_duration = 0L;
+		for (String path : csv) {
+			Scanner scan;
+			try {
+				scan = new Scanner (new File(path));
+				scan.nextLine(); //read off the header
+				while(scan.hasNextLine()) {
+					String line = scan.nextLine();
+					String parts[] = line.split(",");
+					int duration = Integer.parseInt(parts[parts.length-2].substring(0, parts[parts.length-2].length()-2)); //there is one decimal point at the end 293.0 remove that
+					total_duration += duration;
+					number_of_decisions++;
+				}
+				scan.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return String.valueOf(total_duration)+","+String.valueOf(number_of_decisions);
 	}
 
+	public static TreeSet<String> getTopKCSV(String path){
+		TreeSet<String> csv = new TreeSet<String>();
+		try {
+			File dir = new File(path);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				if(fileItem.getCanonicalPath().contains("_tk.csv")) {
+					csv.add(fileItem.getCanonicalPath());
+				}
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		return csv;	
+	}
+	
 	public static void main(String[] args) { 
 		//TODO README:: CHANGE CONFIGS HERE FIRST, CHECK K=50 at the top of this file
 		int mode = 1; //-1=debug train 0=train, 1=test 
@@ -338,7 +421,8 @@ public class RunTopK {
 			runTopKAsTraining(mode);
 		}else if(mode==TestConfigsML.runmodeTest){
 			int start = 1; //TODO README:: provide a starting number to test instances (1-3) 1, will test all 3 instances; 2, will test instances 1,2 and 3 will only run instance 3
-			runTopKAsTesting(mode,start); //TODO: only running the full trace for now. add the observation limited trace if needed later
+			String classifier = TestConfigsML.naiveBayes;
+			runTopKAsTesting(mode,start,classifier); //TODO: only running the full trace for now. add the observation limited trace if needed later
 		}
 	}
 

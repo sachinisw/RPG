@@ -4,12 +4,12 @@ public class TestConfigsRG {
 	public static final int obFull = 1;
 	public static final int ob50lm = 2;
 	public static final int ob75lm = 3;
-	public static final int trainedscenario = 1; //for blocks 0=tad/bad, 1=cut/cup
 	public static final int instances = 3; //from start arg. run test for this many instances
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
-	public static final String domain = "BLOCKS"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
-	public static final String planner = "lama/"; //hsp //lama
+	public static final int trainedscenario = 0; //for blocks 0=tad/bad, 1=cut/cup // for all others 0
+	public static final String domain = "FERRY"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final String planner = "hsp/"; //hsp //lama
 	public static final String prefix = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
 	public static final String instancedir="inst";
 	public static final String instscenario="/scenarios/";

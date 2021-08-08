@@ -109,8 +109,10 @@ public class RunVd {
 
 	//online goal recognition with landmarks - Vered 2017
 	//Online goal Recognition as Reasoning over Landmarks, Towards online goal recognition combining goal mirroring and landmarks
-	public static void runVered(int start, int mode) {
+	public static void runVered(int start) {
+		ArrayList<Long> runtimes = new ArrayList<>();
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			long duration = 0L; long numReqs = 0L;
 			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String landmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.atLmfile;
 				String ulandmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.uLmfile;
@@ -118,14 +120,7 @@ public class RunVd {
 				String criticals = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.criticalStateFile;
 				String initfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.a_initFile;
 				String testedObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.testedObservationFiles;
-				String actualObservations = "";
-				if(mode==TestConfigsVd.obFull) { //full trace
-					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observationFiles;
-//				}else if(mode==TestConfigsVd.ob50lm) { //50lm
-//					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation50Files;
-//				}else if(mode==TestConfigsVd.ob75lm) { //75lm
-//					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation75Files;  
-				}
+				String actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observationFiles;
 				String domfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.domainFile;
 				String probfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.a_problemFile;
 				String outdir = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.verout + TestConfigsVd.planner;
@@ -141,6 +136,7 @@ public class RunVd {
 				for (String s : partsd) {
 					desirable.add(s+")");
 				}
+				long scenario_start_time = System.currentTimeMillis();
 				generateRPGConForDesirableGoal(domfile, probfile, desirable, a_out);
 				ConnectivityGraph a_con = readConnectivityGraphs(a_out + TestConfigsVd.a_connectivityGraphFile);
 				ConnectivityGraph u_con = readConnectivityGraphs(a_out + TestConfigsVd.u_connectivityGraphFile);
@@ -157,7 +153,9 @@ public class RunVd {
 				aGraph.assignSiblingLevels();
 				uGraph.assignSiblingLevels();
 				Iterator<String> itr = obfiles.iterator();
+				int filestart = 0;
 				while(itr.hasNext()) {//iterates over observation files in the current scenario in the current instance
+					long file_start_time = System.currentTimeMillis();
 					String s = itr.next();
 					EventLogger.LOGGER.log(Level.INFO, "Current file::   "+s);
 					String path[] = s.split("/");
@@ -173,26 +171,72 @@ public class RunVd {
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, originalInit, dom, probC, probD, a_con, 
-								u_con, hyp, a_landmarks, u_landmarks, uGraph, aGraph, outdir+path[path.length-1]+"/");
-						if(mode==TestConfigsVd.obFull) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + ".csv");
-//						}else if (mode==TestConfigsVd.ob50lm) {
-//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "50.csv");
-//						}else if (mode==TestConfigsVd.ob75lm) {
-//							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "75.csv");
+						long start_time = 0L;
+						if(filestart==0) {
+							start_time = scenario_start_time;
+						}else {
+							start_time = file_start_time;
 						}
+						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, originalInit, dom, probC, probD, a_con, 
+								u_con, hyp, a_landmarks, u_landmarks, uGraph, aGraph, outdir+path[path.length-1]+"/", start_time);
+
+						writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + ".csv");
+
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
-					//break; //just read one observation file. TODO: remove after debug
+					filestart++;
 				}
-//				break; //TODO:: remove after debug
+				String current = computeProcessingTime(inst, scen);
+				duration += Long.parseLong(current.split(",")[0]);
+				numReqs += Long.parseLong(current.split(",")[1]);
 			}
-//			break; //TODO: remove after debug
+			runtimes.add(duration);
+			runtimes.add((duration/numReqs));
 		}
+		System.out.println(runtimes);
 	}
 
+	public static TreeSet<String> getVdCSV(String path){
+		TreeSet<String> csv = new TreeSet<String>();
+		try {
+			File dir = new File(path);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				if(fileItem.getCanonicalPath().contains(".csv")) {
+					csv.add(fileItem.getCanonicalPath());
+				}
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		return csv;	
+	}
+	
+	public static String computeProcessingTime(int instance, int casenum) {
+		String ds_csv_path = TestConfigsVd.prefix + TestConfigsVd.instancedir + instance + TestConfigsVd.instscenario + casenum + TestConfigsVd.verout + TestConfigsVd.planner;
+		TreeSet<String> csv = getVdCSV(ds_csv_path);
+		int number_of_decisions = 0;
+		long total_duration = 0L;
+		for (String path : csv) {
+			Scanner scan;
+			try {
+				scan = new Scanner (new File(path));
+				while(scan.hasNextLine()) {
+					String line = scan.nextLine();
+					String parts[] = line.split(",");
+					int duration = Integer.parseInt(parts[parts.length-1]); 
+					total_duration += duration;
+					number_of_decisions++;
+				}
+				scan.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return String.valueOf(total_duration)+","+String.valueOf(number_of_decisions);
+	}
+	
 	private static void generateRPGConForDesirableGoal(String domainfile, String probfile, ArrayList<String> desirabe, String out) {
 		Problem probC = new Problem(); //critical problem //use the problem for the attacker's definition.
 		probC.readProblemPDDL(probfile); 
@@ -210,7 +254,7 @@ public class RunVd {
 	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> init,
 			Domain dom, Problem pcri, Problem pdes, ConnectivityGraph a_con, ConnectivityGraph u_con, Hypotheses hyp, 
 			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, OrderedLMGraph uGraph,
-			OrderedLMGraph aGraph, String outdir){ //prob comes from problem_a.txt
+			OrderedLMGraph aGraph, String outdir, long start_time){ //prob comes from problem_a.txt
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
 		ArrayList<HSPFPlan> i_k = new ArrayList<>();
 		ArrayList<String> m_k = new ArrayList<>();
@@ -220,10 +264,10 @@ public class RunVd {
 		TreeSet<String> achievedDFL = new TreeSet<String>();
 		i_k.add(produceIdealPlanHSP(dom, pcri)); //need to do it twice because I have two goals. This is the ideal plans for the 2 goals
 		i_k.add(produceIdealPlanHSP(dom, pdes));
-		//System.out.println(i_k.get(0).getActions());
-		//System.out.println(i_k.get(1).getActions());
+
 		ArrayList<String> state = new ArrayList<>(init);
 		for (int i=0; i<obs.getObs().size(); i++) {
+			long ob_start = System.currentTimeMillis();
 			HashMap<String, Double> goalranks = new HashMap<String, Double>();
 			ArrayList<String> activeHypotheses = new ArrayList<>();
 			String now = obs.getObs().get(i);
@@ -262,7 +306,6 @@ public class RunVd {
 					probD.writeProblemFile(outdir+"/p_"+i+"_"+j+".pddl"); //don't have to write the domain 
 					JavaFFPlan suffix = producePlansJavaFF(dom,probD);
 					m_k.addAll(suffix.getActions()); // m_k = prefix+suffix
-					//System.out.println("pref+suff======"+m_k);
 					if(activeHypotheses.get(j).contains("desirable")) {
 						goalranks.put(activeHypotheses.get(j),(double)i_k.get(1).getPlanCost()/(double)m_k.size());
 					}else {
@@ -271,13 +314,21 @@ public class RunVd {
 					m_k.removeAll(suffix.getActions());//System.out.println("pref======"+m_k);
 				}
 				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
-				if(ent != null) {
-					obsTolikelgoal.put(now, ent.getKey());
+				long ob_end = System.currentTimeMillis();
+				long duration = 0L;
+				if(i==0) {
+					duration = ob_end - start_time;
 				}else {
-					obsTolikelgoal.put(now, null);
+					duration = ob_end - ob_start;
+				}
+				if(ent != null) {
+					obsTolikelgoal.put(now, ent.getKey()+","+duration);
+				}else {
+					obsTolikelgoal.put(now, null+","+duration);
 				}
 			}else { //all hypotheses are removed because of respective landmarks are active
-				obsTolikelgoal.put(now, null);
+				long duration = System.currentTimeMillis() - ob_start;
+				obsTolikelgoal.put(now, null+","+duration);
 			}
 			state.clear();
 			state.addAll(obstate);
@@ -438,9 +489,9 @@ public class RunVd {
 			File file = new File(outfile);
 			writer = new FileWriter(file);
 			for (String o : actuals.getObs()) {
-				String ob = o.substring(2);
-				String dec = decisions.get(ob);
-				writer.write(o.substring(0,2)+","+ob+","+dec+"\n");
+				String ob = o.substring(2);			
+				String decisionparts[] = decisions.get(ob).split(","); //0 = most likely goal, 1=time
+				writer.write(o.substring(0,2)+","+ob+","+decisionparts[0]+","+ decisionparts[1]+"\n");
 			}
 			writer.close();
 		} catch (IOException e) {
@@ -636,8 +687,7 @@ public class RunVd {
 	
 	public static void main(String[] args) {
 		int start = 1;
-		int mode = 1; //full trace, 50% trace, 75% trace
-		runVered(start, mode);
+		runVered(start);
 		computeResults(start);
 	}
 }

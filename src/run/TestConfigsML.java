@@ -4,13 +4,14 @@ public class TestConfigsML {
 	public static final boolean writeDOT = false;
 	public static final int K = 50; 
 	public static final int runmodeTest = 1; 
-	public static final int trainedscenario = 1; //0 for tad/bad, 1 for cut/cup if domain is blocks. else 0 for all other domains
 	public static final int instances = 3; //from start arg. run test for this many instances
 	public static final int instanceCases = 20;
 	public static final int fileLimit = 10;
 	public static final int [] limitRatio = {50,75};
-	public static final String domain = "BLOCKS"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
+	public static final int trainedscenario = 0; //0 for tad/bad, 1 for cut/cup if domain is blocks. else 0 for all other domains
+	public static final String domain = "NAVIGATOR"; //EASYIPC //BLOCKS //NAVIGATOR //FERRY
 	public static final String prefix = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/TEST"+trainedscenario+"/";
+	public static final String prefix_models = "/home/sachini/oldhp/sachini/domains/"+domain+"/scenarios/"+trainedscenario+"/train/cases/data/models/";
 	public static final String topkdir = "/topk/";
 	public static final String instancedir="inst";
 	public static final String instscenario="/scenarios/";
@@ -39,4 +40,13 @@ public class TestConfigsML {
 	public static final String lmoutputFull = "/outs/verifiedlm_full.txt";
 	public static final String lmoutputShort50 = "/outs/verifiedlm_short50.txt";
 	public static final String lmoutputShort75 = "/outs/verifiedlm_short75.txt";
+	public static final String decisionTree = "DT";
+	public static final String knn = "KNN";
+	public static final String naiveBayes = "NB";
+	public static final String regression = "LOG";
+	public static final String graph_features = "GRAPH";
+	public static final String topk_features = "TOPK";
+
+
+	
 }
