@@ -40,7 +40,7 @@ public class Problem implements Cloneable{
 		boolean headerstart = false;
 		boolean goalstart = false;
 		for (String s : lines) {
-			if(s.contains("define") || s.contains("domain")) {
+			if(s.contains("define") || s.contains("domain") || s.contains("objects")) {
 				header.add(s);
 			}else if(s.contains("(:init")) {
 				initstart = true;
@@ -56,7 +56,7 @@ public class Problem implements Cloneable{
 				initstart = false;
 			}
 			if(!initstart && !headerstart && goalstart) {
-				goal.add(s);
+				goal.add(s.replace(",",""));
 			}
 		}
 	}

@@ -17,7 +17,7 @@ import plans.InterventionPlan;
 import plans.InterventionPlanExtractor;
 
 public class Planner {
-	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
+	public final static String ffPath = "/home/sachini/oldhp/sachini/domains/Planners/FF/ff ";
 
 	public static String executeShellCommand(String command){
 		StringBuilder sb = new StringBuilder(); 

@@ -20,5 +20,16 @@ public abstract class Agent {
 		this.criticalStateFile = cri;
 		this.dotFilePrefix = dotp;
 		this.dotFileSuffix = dots;
+	}
+	
+	public Agent(String domain, String domfile, String des, String pro, String out, String cri){
+		this.domainFile = domfile;
+		this.domain = domain;
+		this.desirableStateFile = des;
+		this.problemFile = pro;
+		this.outputPath = out;
+		this.criticalStateFile = cri;
+		this.dotFilePrefix = "";
+		this.dotFileSuffix = "";
 	}	
 }

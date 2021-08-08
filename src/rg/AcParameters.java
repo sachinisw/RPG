@@ -35,11 +35,11 @@ public class AcParameters implements Cloneable{
 		AcParameters clone = null;
 		try{
 			clone = (AcParameters) super.clone();//do a deep copy here. because array list is a shallow copy by default
-			ArrayList<String> cloneparams = new ArrayList<>();
+			ArrayList<String> clonedparams = new ArrayList<>();
 			for (String string : paramlist) {
-				cloneparams.add(string);
+				clonedparams.add(string);
 			}
-			clone.setParamlist(cloneparams);
+			clone.setParamlist(clonedparams);
 		}catch (CloneNotSupportedException e){
 			throw new RuntimeException(e);
 		}

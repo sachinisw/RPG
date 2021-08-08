@@ -31,16 +31,25 @@ public class LandmarkExtractor {
 		lgg.addLGGNode(goalpredicates);
 		while(!lmCandidates.isEmpty()){
 			TreeSet<String> cprime = new TreeSet<String>();
-															//						System.err.println("LMCANDIDATES=="+ Arrays.toString(lmCandidates.toArray()));
 			for (String lprime : lmCandidates) {
 				int level = RPG.getLevelofEffect(lprime);
-															//								System.err.println("---------------------current candidate---->"+ lprime + " level------ "+level);
-				if(level>0){
-					//level-1 doesn't produce proved landmarks. if this condition is ignored then the resulting LGG contains only (greedy) necessary landmarks.
-					//to find greedy necessary, find the action that adds the predicate earliest in the graph. not only from the level before.
-					GraphLevel glevel = RPG.getLevel(level-1); 
+				if(level>0){ //this version picks the actions that adds the predicate from level before . method used in landmark heuristic meneguzzi paper.
+					int earliestLevel = level-1; //level-1 doesn't produce proved landmarks. if this condition is ignored then the resulting LGG contains only (greedy) necessary landmarks.
+//					for (int i=level-1; i>=0; i--) {//to find greedy necessary uncomment this loop. It finds the action that adds the predicate earliest in the graph. not only from the level before.
+////						GraphLevel glevel = RPG.getLevel(i);
+////						ArrayList<String> acLevelBefore = glevel.getActionLayer();
+//						for (String ac : acLevelBefore) {
+//							ArrayList<String> adds = con.findStatesAddedByAction(ac);
+//							if(listContainsPredicate(adds, lprime)){
+//								if(i<earliestLevel) {
+//									earliestLevel = i;
+//								}
+//							}
+//						}
+//					}
+					GraphLevel glevel = RPG.getLevel(earliestLevel); 
 					ArrayList<String> acLevelBefore = glevel.getActionLayer();
-															//										System.out.println("actions level before ====  "+ Arrays.toString(acLevelBefore.toArray()));
+					//										System.out.println("actions level before ====  "+ Arrays.toString(acLevelBefore.toArray()));
 					TreeSet<String> A = new TreeSet<String>();
 					for (String ac : acLevelBefore) {
 						ArrayList<String> adds = con.findStatesAddedByAction(ac);
@@ -115,7 +124,7 @@ public class LandmarkExtractor {
 		writeLandmarksToFile(lgg, vlm, orders, lmoutputfilepath);
 		return vlm; 
 	}
-
+	
 	//Remove unverified lm from adjacency list of LGG and produce the greedy necessary orders
 	public  HashMap<LGGNode, TreeSet<LGGNode>> removeUnverifiedLandmarksFromLGG(LGG lgg, ArrayList<LGGNode> verified){
 		ArrayList<LGGNode> toRemove = new ArrayList<>();
@@ -136,9 +145,6 @@ public class LandmarkExtractor {
 			lgg.removeLGGNode(n);
 		}
 		return buildOrders(lgg);
-//														System.out.println("CLEANED ADJ--------------");
-//														System.out.println(lgg);
-//														System.out.println(lgg.getEdges());
 	}
 
 	//merge edges to form a DAG indicating what LMs should be achieved together
@@ -163,6 +169,7 @@ public class LandmarkExtractor {
 	}
 	
 	//build the relaxed plan graph layer by layer in the loop. if next state == cur state then stop. not solvable.
+	//algorithm in p.6 https://arxiv.org/pdf/1106.5271.pdf
 	private boolean goalReachableWithoutLandmark(LGGNode lm, ArrayList<String> goals, ArrayList<String> inits){
 		RelaxedPlanningGraph temp_rpg = new RelaxedPlanningGraph();
 		int graphlevel = 0;
@@ -191,7 +198,7 @@ public class LandmarkExtractor {
 			if(equalLists(nxt, cur)){
 				break; //state doesn't change from now to next. stop building here.
 			}
-		}
+		}//		System.out.println(temp_rpg.toString());
 		return temp_rpg.containsGoal(goals); //if false, then goal cant be achieved without lm. lm is a verified landmark
 	}
 

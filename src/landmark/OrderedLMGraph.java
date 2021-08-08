@@ -1,25 +1,31 @@
 package landmark;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Queue;
 import java.util.TreeSet;
 
 public class OrderedLMGraph {
-	HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj;
+
+	private HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj; //child --> {parent1, parent2...}
+	private ArrayList<String> goal;
 	
-	public OrderedLMGraph() {
+	public OrderedLMGraph(ArrayList<String> g) {
 		adj = new HashMap<OrderedLMNode, TreeSet<OrderedLMNode>>();
+		goal = g;
 	}
-	
+
 	public void produceOrders(HashMap<String,TreeSet<String>> lms, ArrayList<String> goal){
 		ArrayList<OrderedLMEdge> orders = new ArrayList<>();
 		ArrayList<OrderedLMNode> nodes = new ArrayList<>();
 		Iterator<String> itr = lms.keySet().iterator();
-		while(itr.hasNext()){
-			String key = itr.next();
-			nodes.add(new OrderedLMNode(key));
+		while(itr.hasNext()){ //add all nodes (key) in lms
+			nodes.add(new OrderedLMNode(itr.next()));
 		}
+		//In some domains (ferry) aGraph may contain cycles (e.g. L -> L' -> L). If a goal node has outgoing edges, remove them
 		Iterator<String> itr2 = lms.keySet().iterator();
 		while(itr2.hasNext()){
 			String key = itr2.next();
@@ -27,17 +33,13 @@ public class OrderedLMGraph {
 			OrderedLMNode before = null, after = null;
 			after = nodes.get(nodes.indexOf(new OrderedLMNode(key)));
 			for (String s : val) {
-				OrderedLMNode dup = new OrderedLMNode(s);
-				int atF = nodes.indexOf(dup);
-				if(atF>=0) {
-					before = nodes.get(atF);
-					orders.add(new OrderedLMEdge(before, after));
-				}
+				before = nodes.get(nodes.indexOf(new OrderedLMNode(s)));
+				orders.add(new OrderedLMEdge(before, after));
 			}
 		}
 		produceOrderdLMGraph(nodes, orders);
 	}
-
+	
 	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> produceOrderdLMGraph(ArrayList<OrderedLMNode> nodes, ArrayList<OrderedLMEdge> orders) {
 		for (OrderedLMNode n : nodes) {
 			if(!adj.containsKey(n)) {
@@ -52,16 +54,180 @@ public class OrderedLMGraph {
 		}
 		return adj;
 	}
-	
+
 	public ArrayList<OrderedLMNode> findRoots(){
 		ArrayList<OrderedLMNode> last = new ArrayList<OrderedLMNode>();
-		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
-		while(itr.hasNext()){
-			OrderedLMNode key = itr.next();
-			if(adj.get(key).isEmpty()) {
-				last.add(key);
+		for (String g : goal) {
+			OrderedLMNode lmn = new OrderedLMNode(g);
+			Iterator<OrderedLMNode> itr = adj.keySet().iterator();
+			while(itr.hasNext()){
+				OrderedLMNode key = itr.next();
+				if(key.equals(lmn)) {
+					last.add(key);
+				}
 			}
 		}
 		return last;
+	}
+
+	public ArrayList<OrderedLMNode> findAllSiblingsofNode(OrderedLMNode node){
+		ArrayList<OrderedLMNode> siblings = new ArrayList<OrderedLMNode>();
+		Queue<OrderedLMNode> queue = new ArrayDeque<OrderedLMNode>();
+		queue.add(node);
+		recursivelyFindAllSiblings(queue, siblings);
+		return siblings;
+	}
+
+	private void recursivelyFindAllSiblings(Queue<OrderedLMNode> queue, ArrayList<OrderedLMNode> siblings) {
+		if(queue.isEmpty()) {
+			return;
+		}
+		OrderedLMNode current = queue.poll();
+		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode key = itr.next();
+			TreeSet<OrderedLMNode> parents = adj.get(key);
+			if(parents.contains(current)) {
+				siblings.add(key);
+				queue.add(key);
+			}
+		}
+		recursivelyFindAllSiblings(queue, siblings);
+	}
+
+	//some LGGs (e.g., easy ipc) may produce disjointed graphs. this means that the graph may contain unsound orders. this is normal
+	//see p.15 in https://www.aaai.org/Papers/JAIR/Vol22/JAIR-2208.pdf
+	//same paper also says in some domains (ferry) aGraph may contain cycles (e.g. L -> L' -> L). If a node has outgoing edges to higher value node, remove them
+	public void assignSiblingLevels() {
+		ArrayList<OrderedLMNode> roots = findRoots();
+		for (OrderedLMNode r : roots) { //put roots at level 0;
+			r.setTreeLevel(0);
+		}
+		//iterative BFS to assign level numbers for each root.
+		Queue<OrderedLMNode> queue = new ArrayDeque<OrderedLMNode>();
+		ArrayList<OrderedLMNode> explored = new ArrayList<OrderedLMNode>();
+		queue.addAll(roots);
+		while(!queue.isEmpty()) {
+			OrderedLMNode cur = queue.poll();
+			ArrayList<OrderedLMNode> children = findImmediateChildrenofNode(cur);
+			for (OrderedLMNode child : children) {
+				if(!explored.contains(child)) {
+					child.setTreeLevel(cur.getTreeLevel()+1);
+				}
+				queue.add(child);
+			}
+			explored.add(cur);
+		}
+		//update all objects in adj with the treelevel values in explored[]. explored has correct values. adj is not updated if we skip this step
+		for (OrderedLMNode orderedLMNode : explored) {
+			Iterator<OrderedLMNode> itr = adj.keySet().iterator(); 
+			while(itr.hasNext()) {
+				OrderedLMNode lmn = itr.next();
+				if(lmn.equals(orderedLMNode)) {
+					lmn.setTreeLevel(orderedLMNode.getTreeLevel());
+				}
+			}
+		}
+		//remove connections where key has children with levels lower than itself (node is going into a higher node (cycle))
+		Iterator<OrderedLMNode> itr = adj.keySet().iterator(); 
+		while(itr.hasNext()) {
+			OrderedLMNode lmn = itr.next();
+			TreeSet<OrderedLMNode> nbrs = adj.get(lmn);
+			Iterator<OrderedLMNode> it = nbrs.iterator();
+			while(it.hasNext()) {
+				OrderedLMNode n = it.next();
+				if(n.getTreeLevel()>=lmn.getTreeLevel()) {
+					it.remove();
+				}
+			}
+		}
+	}
+
+	public HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> getLevelsPerSubgoal() {
+		ArrayList<OrderedLMNode> roots = findRoots();
+		HashMap<OrderedLMNode, ArrayList<ArrayList<OrderedLMNode>>> subgoallevels = new HashMap<>();
+		for (OrderedLMNode r : roots) {
+			Queue<OrderedLMNode> queue = new ArrayDeque<OrderedLMNode>();
+			queue.add(r);
+			ArrayList<OrderedLMNode> explored = new ArrayList<OrderedLMNode>();
+			ArrayList<ArrayList<OrderedLMNode>> levels = new ArrayList<>();
+			while(!queue.isEmpty()) {
+				OrderedLMNode cur = queue.poll();
+				ArrayList<OrderedLMNode> children = findImmediateChildrenofNode(cur);
+				if(!children.isEmpty()) {
+					ArrayList<OrderedLMNode> l = new ArrayList<>(children);
+					levels.add(l);
+				}
+				for (OrderedLMNode child : children) {
+					if(!explored.contains(child)) {
+						queue.add(child);
+					}
+				}
+				explored.add(cur);
+			}
+			subgoallevels.put(r,levels); //goal1 == [level 1, level2...]
+		}
+		return subgoallevels;
+	}
+
+	public ArrayList<OrderedLMNode> findImmediateChildrenofNode(OrderedLMNode node){
+		ArrayList<OrderedLMNode> immediate = new ArrayList<OrderedLMNode>();
+		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode key = itr.next();
+			TreeSet<OrderedLMNode> parents = adj.get(key);
+			if(parents.contains(node)) {
+				immediate.add(key);
+			}
+		}
+		return immediate;
+	}
+
+	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> sortByTreeLevel(){ //sort by tree level of each node in the ascending order
+		HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> ascending = new HashMap<OrderedLMNode, TreeSet<OrderedLMNode>>();
+		ArrayList<OrderedLMNode> sortedkeys = new ArrayList<>();
+		sortedkeys.addAll(adj.keySet());
+		int i=1;
+		while(i < sortedkeys.size()) {
+		    int j = i;
+		    while( j > 0 && sortedkeys.get(j-1).getTreeLevel() > sortedkeys.get(j).getTreeLevel()) {
+		    	OrderedLMNode temp = sortedkeys.get(j);
+		        sortedkeys.set(j,sortedkeys.get(j-1));
+		        sortedkeys.set(j-1,temp);
+		        j = j - 1;
+		    }
+		    i = i + 1;
+		}
+		for (OrderedLMNode orderedLMNode : sortedkeys) {
+			ascending.put(orderedLMNode, adj.get(orderedLMNode));
+		}
+		return ascending;
+	}
+	
+	public String toString() {
+		String s = "";
+		Iterator<OrderedLMNode> itr = adj.keySet().iterator();
+		while(itr.hasNext()) {
+			OrderedLMNode key = itr.next();
+			TreeSet<OrderedLMNode> parents = adj.get(key);
+			s+=key+"=: "+Arrays.toString(parents.toArray())+"\n";
+		}
+		return s;
+	}
+	
+	public HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> getAdj() {
+		return adj;
+	}
+
+	public void setAdj(HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> adj) {
+		this.adj = adj;
+	}
+
+	public ArrayList<String> getGoal() {
+		return goal;
+	}
+
+	public void setGoal(ArrayList<String> goal) {
+		this.goal = goal;
 	}
 }

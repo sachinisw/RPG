@@ -35,7 +35,7 @@ import rpg.PlanningGraph;
 
 public class StateGenerator {
 	public static final Logger LOGGER = Logger.getLogger(StateGenerator.class.getName());
-	public final static String ffPath = "/home/sachini/domains/Metric-FF-new/ff";
+	public final static String ffPath = "/home/sachini/oldhp/sachini/domains/Planners/FF/ff";
 	public final static String dotFileExt = ".dot";
 	public final static double initProbability = 1.0;
 	public Agent agent;
@@ -108,7 +108,7 @@ public class StateGenerator {
 			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				if(fileItem.getName().contains("rpg")){
+				if(fileItem.getName().contains("rpg-problem_a")){
 					rpgFilePaths.add(fileItem.getCanonicalPath());
 				}
 			}
@@ -127,7 +127,7 @@ public class StateGenerator {
 			File dir = new File(agent.outputPath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				if(fileItem.getName().contains("con")){
+				if(fileItem.getName().contains("connectivity-problem_a")){
 					conFilePaths.add(fileItem.getCanonicalPath());
 				}
 			}
@@ -168,6 +168,7 @@ public class StateGenerator {
 	}
 
 	public ArrayList<RelaxedPlanningGraph> readRelaxedPlanningGraph(){ //used exclusively for landmarks
+		runPlanner();
 		ArrayList<String> rpgFiles = getRPGFiles();
 		ArrayList<RelaxedPlanningGraph> relaxedpgs = new ArrayList<RelaxedPlanningGraph>();
 		for(int i=0; i<rpgFiles.size(); i++){
@@ -179,6 +180,7 @@ public class StateGenerator {
 	}
 
 	public ArrayList<ConnectivityGraph> readConnectivityGraphs(){
+		runPlanner();
 		ArrayList<String> conGraphFiles = getConnectivityFiles();
 		ArrayList<ConnectivityGraph> connectivities = new ArrayList<ConnectivityGraph>();
 		for(int i=0; i<conGraphFiles.size(); i++){
@@ -399,7 +401,6 @@ public class StateGenerator {
 		System.out.println(order + " stacked crates="+crateCount);
 		System.out.println("state="+state);
 		if(!order.isEmpty() && order.get(0).contains("CRATE") && order.getLast().contains("PALLET") && crateCount== crates && clearCount==1){
-			System.out.println("***********************************match");
 			return true;
 		}
 		return false;
@@ -600,18 +601,18 @@ public class StateGenerator {
 	public void recursiveAddEdge(ArrayList<String> currentState, ConnectivityGraph con, StateGraph graph, ArrayList<State> seen, 
 			int x, int y, int crates, HashMap<String, String> deslocs){
 		if(stoppable(currentState, x, y, crates, deslocs)){
-			System.out.println("stopping"+currentState);
+//			System.out.println("stopping"+currentState);
 			seen.remove(seen.size()-1);
 			return;
 		}else{
 			ArrayList<String> actions = con.findApplicableActionsInState(currentState);
 			ArrayList<String> cleaned = null;
-												System.out.println("applicable actions======"+actions);
+//												System.out.println("applicable actions======"+actions);
 			if(domain.equalsIgnoreCase("blocks") || domain.equalsIgnoreCase("easyipc") || domain.equalsIgnoreCase("navigator") 
 					|| domain.equalsIgnoreCase("ferry") || domain.equalsIgnoreCase("logistics") || domain.equalsIgnoreCase("depot")) {//reversible domains. i.e. you can go back to previous state
 				//README::: Treat each path from root as an independent path. When cleaning you only need to clean up actions that will take you back up the tree toward root. don't have to consider if state on path A is also on path B
 				cleaned = cleanActions(actions, currentState, graph, seen, con); //actions should be cleaned by removing connections to states that are already seen on the current path.
-												System.out.println("Cleaned actions====="+cleaned);
+//												System.out.println("Cleaned actions====="+cleaned);
 			}
 			else if(domain.equalsIgnoreCase("pag") )//sequential domains
 				cleaned = cleanActionsSequential(actions, currentState, graph);
@@ -624,7 +625,8 @@ public class StateGenerator {
 				seen.add(s);
 				recursiveAddEdge(newState, con, graph, seen, x, y, crates, deslocs);
 			}
-			seen.remove(seen.size()-1);
+			if(!seen.isEmpty())
+				seen.remove(seen.size()-1);
 		}
 	}
 

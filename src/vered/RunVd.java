@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,9 +24,12 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import con.ConnectivityGraph;
 import landmark.OrderedLMGraph;
+import landmark.OrderedLMNode;
 import landmark.RelaxedPlanningGraphGenerator;
 import log.EventLogger;
 import plans.FFPlanner;
+import plans.HSPFPlan;
+import plans.HSPPlanner;
 import plans.JavaFFPlan;
 import plans.JavaFFPlanner;
 import rg.Domain;
@@ -34,19 +40,18 @@ import rg.Problem;
 
 public class RunVd {
 
-	//reads the observations corresponding to files in /data/decision
 	public static TreeSet<String> getFilesInPath(String filepath){
-		TreeSet<String> obFiles = new TreeSet<String>();
+		TreeSet<String> filepaths = new TreeSet<String>();
 		try {
 			File dir = new File(filepath);
 			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 			for (File fileItem : files) {
-				obFiles.add(fileItem.getCanonicalPath());
+				filepaths.add(fileItem.getCanonicalPath());
 			}
 		}catch (IOException e) {
 			e.printStackTrace();
 		}
-		return obFiles;	
+		return filepaths;	
 	}
 
 	public static TreeSet<String> filterFiles(TreeSet<String> files, TreeSet<String> actualobs){
@@ -65,7 +70,7 @@ public class RunVd {
 		return filtered;
 	}
 
-	public static HashMap<String,TreeSet<String>> readLandmarks(String lmfile){
+	public static HashMap<String,TreeSet<String>> readLandmarksGNOrders(String lmfile){
 		Scanner sc;
 		HashMap<String,TreeSet<String>> lms = new HashMap<String, TreeSet<String>>();	
 		boolean start = false;
@@ -103,8 +108,11 @@ public class RunVd {
 	}
 
 	//online goal recognition with landmarks - Vered 2017
-	public static void runVered(int start, int mode) {
+	//Online goal Recognition as Reasoning over Landmarks, Towards online goal recognition combining goal mirroring and landmarks
+	public static void runVered(int start) {
+		ArrayList<Long> runtimes = new ArrayList<>();
 		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			long duration = 0L; long numReqs = 0L;
 			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
 				String landmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.atLmfile;
 				String ulandmarkfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.uLmfile;
@@ -112,14 +120,7 @@ public class RunVd {
 				String criticals = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.criticalStateFile;
 				String initfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.a_initFile;
 				String testedObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.testedObservationFiles;
-				String actualObservations = "";
-				if(mode==TestConfigsVd.obFull) { //full trace
-					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observationFiles;
-				}else if(mode==TestConfigsVd.ob50lm) { //50lm
-					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation50Files;
-				}else if(mode==TestConfigsVd.ob75lm) { //75lm
-					actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observation75Files;  
-				}
+				String actualObservations = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.observationFiles;
 				String domfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.domainFile;
 				String probfile = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.a_problemFile;
 				String outdir = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.verout + TestConfigsVd.planner;
@@ -135,21 +136,26 @@ public class RunVd {
 				for (String s : partsd) {
 					desirable.add(s+")");
 				}
+				long scenario_start_time = System.currentTimeMillis();
 				generateRPGConForDesirableGoal(domfile, probfile, desirable, a_out);
 				ConnectivityGraph a_con = readConnectivityGraphs(a_out + TestConfigsVd.a_connectivityGraphFile);
 				ConnectivityGraph u_con = readConnectivityGraphs(a_out + TestConfigsVd.u_connectivityGraphFile);
-				ArrayList<String> runningstate = setInits(initfile); //set the state to init.
+				ArrayList<String> originalInit = setInits(initfile); //set the state to init.
 				TreeSet<String> obfiles = filterFiles(getFilesInPath(testedObservations), getFilesInPath(actualObservations));
-				redoLandmarks(a_out + TestConfigsVd.a_rpgFile, a_out + TestConfigsVd.a_connectivityGraphFile, critical, runningstate, landmarkfile);
-				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, runningstate, ulandmarkfile);
-				HashMap<String,TreeSet<String>> a_landmarks = readLandmarks(landmarkfile);
-				HashMap<String,TreeSet<String>> u_landmarks = readLandmarks(ulandmarkfile);
-				OrderedLMGraph aGraph = new OrderedLMGraph();
-				OrderedLMGraph uGraph = new OrderedLMGraph();
+				redoLandmarks(a_out + TestConfigsVd.a_rpgFile, a_out + TestConfigsVd.a_connectivityGraphFile, critical, originalInit, landmarkfile);
+				redoLandmarks(a_out + TestConfigsVd.u_rpgFile, a_out + TestConfigsVd.u_connectivityGraphFile, desirable, originalInit, ulandmarkfile);
+				HashMap<String,TreeSet<String>> a_landmarks = readLandmarksGNOrders(landmarkfile);
+				HashMap<String,TreeSet<String>> u_landmarks = readLandmarksGNOrders(ulandmarkfile);
+				OrderedLMGraph aGraph = new OrderedLMGraph(critical);
+				OrderedLMGraph uGraph = new OrderedLMGraph(desirable);
 				aGraph.produceOrders(a_landmarks, critical);
 				uGraph.produceOrders(u_landmarks, desirable);
+				aGraph.assignSiblingLevels();
+				uGraph.assignSiblingLevels();
 				Iterator<String> itr = obfiles.iterator();
+				int filestart = 0;
 				while(itr.hasNext()) {//iterates over observation files in the current scenario in the current instance
+					long file_start_time = System.currentTimeMillis();
 					String s = itr.next();
 					EventLogger.LOGGER.log(Level.INFO, "Current file::   "+s);
 					String path[] = s.split("/");
@@ -165,26 +171,72 @@ public class RunVd {
 					try {
 						Observations noLabel = (Observations) obs.clone();
 						noLabel.removeLabels();
-						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, runningstate, dom, probC, probD, a_con, 
-								u_con, hyp, a_landmarks, u_landmarks, outdir+path[path.length-1]+"/");
-						if(mode==TestConfigsVd.obFull) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + ".csv");
-						}else if (mode==TestConfigsVd.ob50lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "50.csv");
-						}else if (mode==TestConfigsVd.ob75lm) {
-							writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + "75.csv");
+						long start_time = 0L;
+						if(filestart==0) {
+							start_time = scenario_start_time;
+						}else {
+							start_time = file_start_time;
 						}
+						HashMap<String, String> decisions = doGoalMirroringWithLandmarks(noLabel, originalInit, dom, probC, probD, a_con, 
+								u_con, hyp, a_landmarks, u_landmarks, uGraph, aGraph, outdir+path[path.length-1]+"/", start_time);
+
+						writeResultFile(decisions, obs, outdir+path[path.length-1]+"/"+TestConfigsVd.outputfile + "_" + path[path.length-1] + ".csv");
+
 					} catch (CloneNotSupportedException e) {
 						EventLogger.LOGGER.log(Level.SEVERE, "ERROR:: "+e.getMessage());
 					}
-					break; //just read one observation file. TODO: remove after debug
+					filestart++;
 				}
-				break;
+				String current = computeProcessingTime(inst, scen);
+				duration += Long.parseLong(current.split(",")[0]);
+				numReqs += Long.parseLong(current.split(",")[1]);
 			}
-			break;
+			runtimes.add(duration);
+			runtimes.add((duration/numReqs));
 		}
+		System.out.println(runtimes);
 	}
 
+	public static TreeSet<String> getVdCSV(String path){
+		TreeSet<String> csv = new TreeSet<String>();
+		try {
+			File dir = new File(path);
+			List<File> files = (List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+			for (File fileItem : files) {
+				if(fileItem.getCanonicalPath().contains(".csv")) {
+					csv.add(fileItem.getCanonicalPath());
+				}
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+		}
+		return csv;	
+	}
+	
+	public static String computeProcessingTime(int instance, int casenum) {
+		String ds_csv_path = TestConfigsVd.prefix + TestConfigsVd.instancedir + instance + TestConfigsVd.instscenario + casenum + TestConfigsVd.verout + TestConfigsVd.planner;
+		TreeSet<String> csv = getVdCSV(ds_csv_path);
+		int number_of_decisions = 0;
+		long total_duration = 0L;
+		for (String path : csv) {
+			Scanner scan;
+			try {
+				scan = new Scanner (new File(path));
+				while(scan.hasNextLine()) {
+					String line = scan.nextLine();
+					String parts[] = line.split(",");
+					int duration = Integer.parseInt(parts[parts.length-1]); 
+					total_duration += duration;
+					number_of_decisions++;
+				}
+				scan.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return String.valueOf(total_duration)+","+String.valueOf(number_of_decisions);
+	}
+	
 	private static void generateRPGConForDesirableGoal(String domainfile, String probfile, ArrayList<String> desirabe, String out) {
 		Problem probC = new Problem(); //critical problem //use the problem for the attacker's definition.
 		probC.readProblemPDDL(probfile); 
@@ -199,37 +251,47 @@ public class RunVd {
 		ffp.runFF(2, out+TestConfigsVd.u_rpgFile);
 	}
 
-	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> state, 
+	public static HashMap<String, String> doGoalMirroringWithLandmarks(Observations obs, ArrayList<String> init,
 			Domain dom, Problem pcri, Problem pdes, ConnectivityGraph a_con, ConnectivityGraph u_con, Hypotheses hyp, 
-			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, String outdir){ //prob comes from problem_a.txt
+			HashMap<String,TreeSet<String>> lmsa, HashMap<String,TreeSet<String>> lmsd, OrderedLMGraph uGraph,
+			OrderedLMGraph aGraph, String outdir, long start_time){ //prob comes from problem_a.txt
 		HashMap<String, String> obsTolikelgoal = new HashMap<String, String>();
-		TreeSet<String> achievedAFL = new TreeSet<String>();
+		ArrayList<HSPFPlan> i_k = new ArrayList<>();
+		ArrayList<String> m_k = new ArrayList<>();
 		TreeSet<String> activeAFL = new TreeSet<String>();
-		TreeSet<String> achievedDFL = new TreeSet<String>();
 		TreeSet<String> activeDFL = new TreeSet<String>();
-		ArrayList<JavaFFPlan> i_k = new ArrayList<>();
-		ArrayList<String> prefix = new ArrayList<>();
-		i_k.add(producePlansJavaFF(dom, pcri)); //need to do it twice because I have two goals.
-		i_k.add(producePlansJavaFF(dom, pdes));
+		TreeSet<String> achievedAFL = new TreeSet<String>();
+		TreeSet<String> achievedDFL = new TreeSet<String>();
+		i_k.add(produceIdealPlanHSP(dom, pcri)); //need to do it twice because I have two goals. This is the ideal plans for the 2 goals
+		i_k.add(produceIdealPlanHSP(dom, pdes));
+
+		ArrayList<String> state = new ArrayList<>(init);
 		for (int i=0; i<obs.getObs().size(); i++) {
+			long ob_start = System.currentTimeMillis();
 			HashMap<String, Double> goalranks = new HashMap<String, Double>();
 			ArrayList<String> activeHypotheses = new ArrayList<>();
 			String now = obs.getObs().get(i);
-			prefix.add(now);
+			//System.out.println("OB--"+now);
+			m_k.add(now); //cur obs becomes part of the prefix
 			ArrayList<String> obstate = convertObservationToState(state, dom, a_con, now); //to take add/del effects can take either one
-			System.out.println(now);
-			System.out.println(obstate);
-			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa); //attack landmarks
-			achieveLandmark(now, dom, u_con, obstate, achievedDFL, activeDFL, lmsd); //desirable landmarks
-			for (int j=0; j<hyp.getHyps().size(); j++) { //wait until vered/ramon tells me how to prune hypotheses
+			achieveLandmark(now, dom, a_con, obstate, achievedAFL, activeAFL, lmsa, aGraph); //attack landmarks
+			achieveLandmark(now, dom, a_con, obstate, achievedDFL, activeDFL, lmsd, uGraph); //desirable landmarks, with same connectivity because, intervener has full observability
+			//wait until vered/ramon tells me how to prune hypotheses. they never got back to me. #sad. 
+			//to prune goals, I assumed the last ordered landmark to be the goal predicates. if the last ordered landmark is in achieved, that means the goal is already met. prune those goals out
+			for (int j=0; j<hyp.getHyps().size(); j++) {
 				String goal = hyp.getHyps().get(j);
-//				if(goal.contains("desirable")) {
-//					if(!achievedDFL.contains(goal.substring(goal.indexOf(":")+1))) {
+				ArrayList<String> goalpredicates = new ArrayList<String>();
+				String[] gparts = goal.substring(goal.indexOf(":")+2,goal.length()-1).split("\\)\\(");
+				for (String s : gparts) {
+					goalpredicates.add("("+s+")");
+				}
+				if(goal.contains("desirable")) {
+					if(!achievedLMcontainsLastOrderedLandmark(achievedDFL,uGraph,goalpredicates)) {
 						activeHypotheses.add(goal);
-//					}
-//				}else if(!achievedAFL.contains(goal)) {
-//					activeHypotheses.add(goal);
-//				}
+					}
+				}else if(!achievedLMcontainsLastOrderedLandmark(achievedAFL,aGraph,goalpredicates)) {
+					activeHypotheses.add(goal);
+				}
 			}
 			if(!activeHypotheses.isEmpty()) {
 				for (int j=0; j<activeHypotheses.size(); j++) {
@@ -243,27 +305,58 @@ public class RunVd {
 					probD.setInit(curstate);
 					probD.writeProblemFile(outdir+"/p_"+i+"_"+j+".pddl"); //don't have to write the domain 
 					JavaFFPlan suffix = producePlansJavaFF(dom,probD);
-					prefix.addAll(suffix.getActions()); // now this is m_k
+					m_k.addAll(suffix.getActions()); // m_k = prefix+suffix
 					if(activeHypotheses.get(j).contains("desirable")) {
-						goalranks.put(activeHypotheses.get(j),(double)prefix.size()/(double)i_k.get(1).getPlanCost());
+						goalranks.put(activeHypotheses.get(j),(double)i_k.get(1).getPlanCost()/(double)m_k.size());
 					}else {
-						goalranks.put(activeHypotheses.get(j),(double)prefix.size()/(double)i_k.get(0).getPlanCost());
+						goalranks.put(activeHypotheses.get(j),(double)i_k.get(0).getPlanCost()/(double)m_k.size());
 					}
-					prefix.removeAll(suffix.getActions());
+					m_k.removeAll(suffix.getActions());//System.out.println("pref======"+m_k);
 				}
 				Entry<String, Double> ent = maxLikelyGoal(goalranks); //if ent = null, then the agent wasn't able to decide what the most likely goal is
-				if(ent != null) {
-					obsTolikelgoal.put(now, ent.getKey());
+				long ob_end = System.currentTimeMillis();
+				long duration = 0L;
+				if(i==0) {
+					duration = ob_end - start_time;
 				}else {
-					obsTolikelgoal.put(now, null);
+					duration = ob_end - ob_start;
+				}
+				if(ent != null) {
+					obsTolikelgoal.put(now, ent.getKey()+","+duration);
+				}else {
+					obsTolikelgoal.put(now, null+","+duration);
 				}
 			}else { //all hypotheses are removed because of respective landmarks are active
-				obsTolikelgoal.put(now, null);
+				long duration = System.currentTimeMillis() - ob_start;
+				obsTolikelgoal.put(now, null+","+duration);
 			}
 			state.clear();
 			state.addAll(obstate);
 		}
+		state.clear(); //reset state to original init before moving on to the  next observation file
+		state.addAll(init);//System.out.println(obsTolikelgoal);
 		return obsTolikelgoal;
+	}
+
+	//find from stuff in achieved, the predicate(s) closest to the root of the landmark generation graph
+	//assuming ***last ordered landmark*** to be the goal predicates
+	private static boolean achievedLMcontainsLastOrderedLandmark(TreeSet<String> achieved, OrderedLMGraph orderedGraph, ArrayList<String> goal) {
+		ArrayList<String> achievedRoots = new ArrayList<String>();
+		for (String s : achieved) { 		//check if achieved[] contains goal predicates (ordered int = 0)
+			Iterator<OrderedLMNode> itr = orderedGraph.getAdj().keySet().iterator();
+			while(itr.hasNext()) {
+				OrderedLMNode key = itr.next();
+				if(key.getTreeLevel()==0 && key.getNodecontent().contains(s)) { //this is a root, that has been achieved.
+					achievedRoots.add(s);
+				}
+			}
+		}
+		for (String g : goal) {
+			if(!achievedRoots.contains(g)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static Entry<String, Double> maxLikelyGoal(HashMap<String, Double> map) {
@@ -287,8 +380,8 @@ public class RunVd {
 		}
 		return e;
 	}
-	
-	private static double computeNeta(HashMap<String, Double> goalranks) {
+
+	private static double computeNeta(HashMap<String, Double> goalranks) { //Vered,Kaminka 2017 Heuristic online goal recognition in continuous domains.
 		double rank = 0.0;
 		Iterator<String> itr = goalranks.keySet().iterator();
 		while(itr.hasNext()) {
@@ -300,44 +393,49 @@ public class RunVd {
 			return 0.0;
 		}
 	}
-	
+
 	//observation is a state. 
 	//achievedFL=facts that were satisfied before but no longer satisfied
 	//activeFL = facts that are satisfied in current state
-	//prune out goals from hyp if last achieved ordered landmark is associated with that goal
-	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks.
+	//prune out goals from hyp if (last achieved ordered landmark) is associated with that goal. What is this ***last achieved ordered lm***???
+	//for the remaining goals, rank them by the decreasing order of percentage of achievedlandmarks. This is not the one i am doing (From paper: Meneguzzi 2017 landmark based plan recognition ECAI, Landmark based heuristics for goal-recognition)
+	//this experiment is for the algorithm:: goal mirroring with landmarks, where landmarks are used to filter out impossible goals and remaining goals are ranked based on cost. (Towards online goal-recognition combining goal mirroring and landmarks - vered, ramon, kaminka, meneguzzi
 	public static void achieveLandmark(String ob, Domain dom, ConnectivityGraph con, ArrayList<String> stateafterob,
-			TreeSet<String> achievedAFL, TreeSet<String> activeAFL, HashMap<String, TreeSet<String>> landmarks) {
-		if((!activeAFL.isEmpty()) && (observationIntersectswithActiveFL(ob, dom, con, stateafterob, activeAFL))) {
-			achievedAFL.addAll(activeAFL);
-			activeAFL.clear();
-		}else if(activeAFL.isEmpty()) {
+			TreeSet<String> achievedFL, TreeSet<String> activeFL, HashMap<String, TreeSet<String>> landmarks, OrderedLMGraph graph) {
+		if((!activeFL.isEmpty()) && (!observationContainsActiveFL(ob, dom, con, stateafterob, activeFL, graph))) {
+			//state resulting from this observation ob contains activeFact Landmarks. this means the facts are now achieved.//can move the active to achieved.
+			achievedFL.addAll(activeFL);
+			activeFL.clear();
+		} else if(activeFL.isEmpty()) {//no active landmarks. find all fact landmarks closest to root in observed state. add to activeFL
 			Iterator<Entry<String,TreeSet<String>>> itrg = landmarks.entrySet().iterator();
+			ArrayList<String> active = new ArrayList<String>();
 			while(itrg.hasNext()) {
 				Entry<String, TreeSet<String>> e = itrg.next();
 				String cur = e.getKey();
-				TreeSet<String> curval = e.getValue();
-				boolean done = false;
-				if(stateafterob.contains(cur) && curval.isEmpty()) {
-					done = true;
-				}else if(stateafterob.contains(cur) && !curval.isEmpty()) {
-					int count = 0;
-					for (String pred : curval) {
-						for (String st : stateafterob) {
-							if(st.equalsIgnoreCase(pred)) {
-								count++;
-							}
-						}
-					}
-					if(count==curval.size()) {
-						done = true;
-					}
-				}
-				if(done) {
-					activeAFL.add(cur);
+				if(stateafterob.contains(cur)) { //don't have to check for children. cur is the head. if head is in stateafterob, also add it's children to it. because landmarks are ordered
+					active.add(cur);
 				}
 			}
+			int closeToRoot = Integer.MAX_VALUE;
+			String close = "";
+			for (String s : active) { 
+				Iterator<OrderedLMNode> itr = graph.getAdj().keySet().iterator();
+				while(itr.hasNext()) {
+					OrderedLMNode key = itr.next();
+					if(key.getNodecontent().contains(s)) {
+						if(key.getTreeLevel()<=closeToRoot && key.getTreeLevel()>=0) {
+							closeToRoot = key.getTreeLevel();
+							close = s;
+						}
+					}
+				}
+				activeFL.add(close);
+			}
 		}
+//		System.out.println("=================================");
+//		System.out.println("active    : "+activeFL);
+//		System.out.println("achieved  : "+achievedFL);
+//		System.out.println("================================");
 	}
 
 	public static ArrayList<String> convertObservationToState(ArrayList<String> state, Domain dom, ConnectivityGraph con, String obs){
@@ -356,15 +454,31 @@ public class RunVd {
 		return statenew;
 	}
 
-	public static boolean observationIntersectswithActiveFL(String ob, Domain dom, ConnectivityGraph con, 
-			ArrayList<String> state, TreeSet<String> activeFL) {
+	//check whether ob has caused activeFL to become achieved. i.e. ob contains a higher order landmark.
+	public static boolean observationContainsActiveFL(String ob, Domain dom, ConnectivityGraph con, 
+			ArrayList<String> state, TreeSet<String> activeFL, OrderedLMGraph graph) {
 		ArrayList<String> newstate = convertObservationToState(state, dom, con, ob);
-		for (String string : activeFL) {
-			for (String s : newstate) {
-				if(string.equalsIgnoreCase(s)) {
-					return true;
+		ArrayList<OrderedLMNode> closest = new ArrayList<>();
+		int currentmin = 0;
+		HashMap<OrderedLMNode, TreeSet<OrderedLMNode>> sortedbylevel = graph.sortByTreeLevel();
+		Iterator<OrderedLMNode> sorteditr = sortedbylevel.keySet().iterator();
+		while(sorteditr.hasNext()) {//from newstate find the predicate(s) with lowest tree level value
+			OrderedLMNode ord = sorteditr.next();
+			if(ord.getTreeLevel()<=currentmin && ord.getTreeLevel()>=0) {
+				currentmin = ord.getTreeLevel();
+				closest.add(ord);
+			}
+		}
+		int count = 0;
+		for (String s : newstate) {
+			for (OrderedLMNode o : closest) {
+				if(o.getNodecontent().contains(s)) {
+					++count;
 				}
 			}
+		}
+		if(count==closest.size()) {
+			return true;
 		}
 		return false;
 	}
@@ -375,9 +489,9 @@ public class RunVd {
 			File file = new File(outfile);
 			writer = new FileWriter(file);
 			for (String o : actuals.getObs()) {
-				String ob = o.substring(2);
-				String dec = decisions.get(ob);
-				writer.write(o.substring(0,2)+","+ob+","+dec+"\n");
+				String ob = o.substring(2);			
+				String decisionparts[] = decisions.get(ob).split(","); //0 = most likely goal, 1=time
+				writer.write(o.substring(0,2)+","+ob+","+decisionparts[0]+","+ decisionparts[1]+"\n");
 			}
 			writer.close();
 		} catch (IOException e) {
@@ -413,12 +527,14 @@ public class RunVd {
 
 	public static JavaFFPlan producePlansJavaFF(Domain dom, Problem prob) {
 		JavaFFPlanner ffp = new JavaFFPlanner(dom.getDomainPath(), prob.getProblemPath());
-		if(ffp.getJavaFFPlan().getActions().isEmpty()) {
-			EventLogger.LOGGER.log(Level.WARNING, "JavaFF Plan not found");
-		}
 		return ffp.getJavaFFPlan();
 	}
 
+	public static HSPFPlan produceIdealPlanHSP(Domain dom, Problem prob) {
+		HSPPlanner hsp = new HSPPlanner(dom.getDomainPath(), prob.getProblemPath());
+		return hsp.getHSPPlan();
+	}
+	
 	public static ConnectivityGraph readConnectivityGraphs(String confile){
 		ConnectivityGraph graph = new ConnectivityGraph(confile);
 		graph.readConGraphOutput(confile);
@@ -431,9 +547,147 @@ public class RunVd {
 		rpgen.runLandmarkGenerator(rpgfile, confile, critical, init, lmout);
 	}
 
+	//TNR,TPR,FNR,FPR values for R&G, using current planner
+	public static void computeResults(int start) {
+		for (int inst=start; inst<=TestConfigsVd.instances; inst++) { //blocks-3, navigator-3 easyipc-3, ferry-3 instances
+			int tp=0, tn=0, fp=0, fn=0;
+			for (int scen=0; scen<TestConfigsVd.instanceCases; scen++) { //blocks,navigator,easyipc, ferry -each instance has 20 problems
+				String outdir = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.verout + TestConfigsVd.planner;
+				String desirables = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.desirableStateFile;
+				String criticals = TestConfigsVd.prefix + TestConfigsVd.instancedir + inst + TestConfigsVd.instscenario + scen + TestConfigsVd.criticalStateFile;
+				Hypotheses hyp = setHypothesis(criticals, desirables);
+				TreeSet<String> paths = getFilesInPath(outdir);
+				for (String s : paths) {
+					if(s.contains("out_")) {
+						ArrayList<String> result = readResultOutput(s);
+						tp+=countTP(result, hyp);
+						tn+=countTN(result, hyp);
+						fp+=countFP(result, hyp);
+						fn+=countFN(result, hyp);
+					}
+				}
+			}
+			writeRatesToFile(tp, tn, fp, fn, TestConfigsVd.prefix+TestConfigsVd.instancedir + inst +TestConfigsVd.resultOutpath+"vd_jff.csv");//this is the tp, tn totals for the 20 cases for the current instance.
+		}
+	}
+
+	public static int countTP(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String critical = hyp.getHyps().get(0);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("Y:")) {
+				if(parts[2].equalsIgnoreCase(critical) ){
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int countTN(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String desirable = hyp.getHyps().get(1);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("N:")) {
+				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int countFP(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String critical = hyp.getHyps().get(0);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("N:")) {
+				if(parts[2].equalsIgnoreCase(critical)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	public static int countFN(ArrayList<String> result, Hypotheses hyp) {
+		int count = 0;
+		String desirable = hyp.getHyps().get(1);
+		for (String string : result) {
+			String[] parts = string.split(",");
+			if(parts[0].equalsIgnoreCase("Y:")) {
+				if(parts[2].equalsIgnoreCase(desirable) || parts[2].equalsIgnoreCase("null")) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	public static ArrayList<String> readResultOutput(String filename){
+		ArrayList<String> results = new ArrayList<String>();
+		Scanner sc;
+		try {
+			sc = new Scanner(new File(filename));
+			while(sc.hasNextLine()) {
+				results.add(sc.nextLine().trim());
+			}
+			sc.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return results;
+	}
+
+	public static void writeRatesToFile(int TP, int TN, int FP, int FN, String filename) {
+		FileWriter writer = null;
+		double tpr = (double) TP/(double) (TP+FN);
+		double tnr = (double) TN/(double) (TN+FP);
+		double fnr = (double) FN/(double) (TP+FN);
+		double fpr = (double) FP/(double) (TN+FP);
+		double precision = (double)TP/(double)(TP+FP); //tp/tp+fp
+		double recall = (double)TP/(double)(TP+FN);   //tp/tp+fn
+		double f1 = 2.0 * ( (precision*recall) / (precision+recall));
+		String mcc = computeMCC(TP, TN, FP, FN);
+		try {
+			File file = new File(filename);
+			writer = new FileWriter(file);
+			writer.write("TPR,TNR,FPR,FNR"+"\n");
+			writer.write(String.valueOf(tpr)+","+String.valueOf(tnr)+","+String.valueOf(fpr)+","+String.valueOf(fnr)+"\n");
+			writer.write("PRECISION,RECALL,F1,MCC\n");
+			writer.write(String.valueOf(precision)+","+String.valueOf(recall)+","+String.valueOf(f1)+","+String.valueOf(mcc)+"\n");
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+	}
+
+	public static String computeMCC(double TP, double TN, double FP, double FN) {
+		//MCC = ( (TP*TN) - (FP*FN) ) / SQRT((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))
+		BigDecimal btp = new BigDecimal(TP);
+		BigDecimal btn = new BigDecimal(TN);
+		BigDecimal bfp = new BigDecimal(FP);
+		BigDecimal bfn = new BigDecimal(FN);
+		BigDecimal top = btp.multiply(btn).subtract(bfp.multiply(bfn)) ;
+		BigDecimal a = (btp.add(bfp));
+		BigDecimal b = (btp.add(bfn));
+		BigDecimal c = (btn.add(bfp));
+		BigDecimal d = (btn.add(bfn));
+		BigDecimal bot = a.multiply(b.multiply(c).multiply(d));
+		if(bot.compareTo(new BigDecimal(0))==0) {
+			return "-"; //division by zero
+		}else {
+			BigDecimal mcc = top.divide(bot.sqrt(new MathContext(10)),3,RoundingMode.UP);
+			return mcc.toString();
+		}
+	}
+	
 	public static void main(String[] args) {
 		int start = 1;
-		int mode = 1;
-		runVered(start, mode);
+		runVered(start);
+		computeResults(start);
 	}
 }

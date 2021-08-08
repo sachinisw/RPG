@@ -6,7 +6,8 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/home/sachini/eclipse-workspace/libs/commons-io-2.6-bin/commons-io-2.6/commons-io-2.6.jar"/>
-	<classpathentry kind="lib" path="/home/sachini/eclipse-workspace/libs/commons-math3-3.6.1/commons-math3-3.6.1.jar"/>
+	<classpathentry kind="lib" path="/home/sachini/oldhp/sachini/eclipse-workspace/libs/commons-math3-3.6.1/commons-math3-3.6.1.jar"/>
+	<classpathentry kind="lib" path="/home/sachini/oldhp/sachini/eclipse-workspace/libs/commons-io-2.6-bin/commons-io-2.6/commons-io-2.6.jar"/>
+	<classpathentry kind="lib" path="/home/sachini/oldhp/sachini/domains/weka/weka-3-8-2/weka.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

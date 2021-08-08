@@ -34,7 +34,7 @@ public class Hypotheses {
 			e.printStackTrace();
 		}
 	}
-
+	
 	public ArrayList<String> getHyps() {
 		return hyps;
 	}

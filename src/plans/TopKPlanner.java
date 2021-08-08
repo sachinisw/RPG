@@ -1,20 +1,23 @@
-package tkplan;
+package plans;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
+import log.EventLogger;
+
+//http://www.cs.toronto.edu/~shirin/Sohrabi-MRC-ECAI-16-Camera-ready.pdf
 //Generates a sampling set of K plans for a given problem and domain.
-public class TopKPlanner {
-	private final static String tkPath = "python /home/sachini/domains/Planners/top-k/";
-	private final static String tkoutpath = "/home/sachini/eclipse-workspace/IJCAI16/RPG/found_plans/";
+public class TopKPlanner{
+	private final static String tkPath = "python /home/sachini/oldhp/sachini/domains/Planners/top-k/";
+	private final static String tkoutpath = "/home/sachini/oldhp/sachini/eclipse-workspace/IJCAI16/RPG/found_plans/";
 	private String domainfile;
 	private String problemfile;
 	private int k;
@@ -36,10 +39,8 @@ public class TopKPlanner {
 				}
 			}
 		}
-		catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());		
-		} catch (IOException e) {
-			System.err.println(e.getMessage());	
+		catch (IOException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR TopK getSASfiles():: " + e.getMessage());
 		}
 		return sasfiles;
 	}
@@ -49,10 +50,8 @@ public class TopKPlanner {
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
+		} catch (IOException | InterruptedException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR TopK runTopKPlanner():: " + e.getMessage());
 		}
 	}
 
@@ -61,10 +60,8 @@ public class TopKPlanner {
 		try {
 			Process proc = Runtime.getRuntime().exec(command);
 			proc.waitFor();
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (InterruptedException e) {
-			System.err.println(e.getMessage());
+		} catch (IOException | InterruptedException e) {
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR TopK removeOutputDir():: " + e.getMessage());
 		}
 	}
 
@@ -81,16 +78,14 @@ public class TopKPlanner {
 				}
 			}
 			bufferedReader.close();
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		}
+			EventLogger.LOGGER.log(Level.SEVERE, "ERROR TopK readFile():: " + e.getMessage());
+		} 
 		return lines;
 	}
 
 	//run planner, read output, delete the output folder.
-	ArrayList<SASPlan> getPlans(){
+	public ArrayList<SASPlan> getPlans(){
 		ArrayList<SASPlan> plans = new ArrayList<>();
 		runTopKPlanner();
 		ArrayList<String> paths = getSASfiles(tkoutpath);
@@ -98,19 +93,10 @@ public class TopKPlanner {
 			ArrayList<String> lines = readFile(p);
 			SASPlan sp = new SASPlan();
 			sp.setActions(lines);
-			sp.setLength(lines.size());
 			plans.add(sp);
 		}
 		removeOutputDir();
 		return plans;
-	}
-
-	public static void main(String[] args) {
-		String d = "/home/sachini/domains/BLOCKS/scenarios/0/domain.pddl";
-		String p = "/home/sachini/domains/BLOCKS/scenarios/0/problem_a.pddl";
-		TopKPlanner tk = new TopKPlanner(d, p, 10);
-		ArrayList<SASPlan> sps = tk.getPlans();
-		System.out.println(sps);
 	}
 
 	public String getDomainfile() {
@@ -136,5 +122,4 @@ public class TopKPlanner {
 	public void setK(int k) {
 		this.k = k;
 	}
-
 }

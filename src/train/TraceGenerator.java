@@ -238,7 +238,7 @@ public class TraceGenerator {
 	}
 
 	public static void main(String[] args) { 
-		int mode=0; //TODO: README edit here first 		//0-generate obs for sample intervention scenario for debugging, 1-generate obs for 20 intervention problems for training
+		int mode=1; //TODO: README edit here first 		//0-generate obs for sample intervention scenario for debugging, 1-generate obs for 20 intervention problems for training
 		if(mode==0) { //Debug  only
 			generateSampleObservationTrace();
 		}else {
